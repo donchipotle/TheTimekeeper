@@ -36,6 +36,7 @@ class obj_Actor:
 		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
+		self.name_object = name_object
 		self.sprite = sprite
 		self.IsInvulnerable = False
 
@@ -420,41 +421,50 @@ def menu_pause():
 def menu_inventory():
 	menu_close = False
 
-	menu_width = 250
-	menu_height = 200
+	#include different parameters later for teh lulz
+	menu_width = 400
+	menu_height = 700
 
 	window_width = constants.MAP_WIDTH * constants.CELL_WIDTH
-	window_height = constants.MAP_height * constants.CELL_HEIGHT
+	window_height = constants.MAP_HEIGHT * constants.CELL_HEIGHT
 
 	menu_text_font = constants.FONT_MESSAGE_TEXT
+	menu_text_height = helper_text_height(menu_text_font)
+
 
 	local_inventory_surface = pygame.Surface((menu_width, menu_height))
-
+	
 	while not menu_close:
 		#clear the menu by wiping it black
-		local_inventory_surface.fill(constants.COLOR_WHITE)
+		local_inventory_surface.fill(constants.COLOR_BLACK)
+
+		print_list = [obj.name_object for obj in PLAYER.container.inventory]
 
 		#register changes
 		events_list = pygame.event.get()
-
 		for event in events_list:
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_i:
 					menu_close = True
 
-		#draw menu
+		#draw list
+		for i, (name) in enumerate(print_list):
+			draw_text(local_inventory_surface,
+						name,
+						menu_text_font,
+						(0, 0 + (i * menu_text_height)),
+						constants.COLOR_WHITE, constants.COLOR_BLACK
+
+						)
+
+		#display menu
 		SURFACE_MAIN.blit(local_inventory_surface, 
-				((window_width / 2) - (menu_width / 2)), 
-				((window_height / 2) - (menu_height /2))
+				 ((window_width / 2) - (menu_width / 2),
+				 (window_height / 2) - (menu_height / 2))
 				)
 			#(0, 0))
 		pygame.display.update()
 		
-
-
-
-
-
 
 ###############################################################################################################
 #map functions
@@ -608,13 +618,15 @@ def game_handle_keys():
 							break
 
 				#open (and later toggle) inventory menu
-#			if event.key == pygame.K_i:
 				if event.key == pygame.K_p:
 					menu_pause()
 
 
 				if event.key == pygame.K_i:
-					menu_inventory
+					menu_inventory()
+					if constants.HARDCORE_MODE == False:
+							return "no-action"
+							break
 
 				#pygame.time.wait(constants.ArtificialLag)
 
@@ -665,14 +677,29 @@ def game_initialize():
 						creature = creature_com1,
 						container = container_com1)
 
+	#spawn enemies
+
+	#first enemy
 	item_com1 = com_Item()
+								#name of enemy when alive
 	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster) #the crab's creature name
-	ai_com = ai_Test()
-	ENEMY = obj_Actor(15, 15, "crab", actors_cat.S_ENEMY, creature = creature_com2, ai = ai_com, item = item_com1)
+	ai_com1 = ai_Test()
+							#name of item when picked up
+	ENEMY = obj_Actor(5, 5, "Greater Nightcrawler carcass", actors_cat.S_ENEMY, 
+		creature = creature_com2, ai = ai_com1, item = item_com1)
+
+	#second enemy
+	item_com2 = com_Item()
+								#name of enemy when alive
+	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster) #the crab's creature name
+	ai_com2 = ai_Test()
+							#name of item when picked up
+	ENEMY2 = obj_Actor(8, 9, "Lesser Nightcrawler carcass", actors_cat.S_ENEMY, 
+		creature = creature_com3, ai = ai_com2, item = item_com2)
 
 
-
-	GAME.current_objects = [ENEMY, PLAYER]
+	#player listed last to be rendered on top of enemies
+	GAME.current_objects = [ENEMY, ENEMY2, PLAYER]
 
 
 if __name__ == '__main__':

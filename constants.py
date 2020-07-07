@@ -20,6 +20,7 @@ HARDCORE_MODE = False
 MAP_WIDTH = 55
 MAP_HEIGHT = 30
 
+
 #color definitions
 COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
