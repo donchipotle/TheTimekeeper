@@ -1,0 +1,31 @@
+This are external assets or inspirations from other creators.
+
+Gameplay and design are strongly influenced by the Hacklikes/Roguelikes Omega and NetHack, 
+though I hope, without the former's inventory system and the latter's keyboard-smashing, 
+gut-wrenching, Halo's LASO's one-upping difficulty.
+
+ASCII characters, names, items, locations and even some monsters all find inspirational roots
+in Ukrainian culture, alphabet, etc. As a non-Ukrainian who at the time of writing this has 
+not personally visited there, it's probably pathetic in the eyes of someone who knows better
+than I do, but oh well. For example, the Cyrillic Я (used to represent the player) is 
+commonly used in Ukraine and Russia for the first person, singular pronoun "I." Fun fact.
+
+The House of Pages is very, very strongly inspired by Mark Danielewski's novel House of Leaves.
+Why? Well, why not? I'm bored and I needed ideas for a dungeon.
+
+The Nightcrawlers in the dungeon are inspired by the Fresno Nightcrawler, an infamous
+cryptid.
+
+
+
+
+Pocket watch 3d model by evilvoland on cgtrader
+
+
+Rose Flinch font
+
+
+Massive shoutout to The Terrible Programmer on YouTube, whose Python tutorial series helped 
+immensely, as well as to commenters and other resources who aided in debugging things like  
+deprecation issues. Since I'm a moron who isn't fit for programming even a Hello World, 
+none of this would have been possible without them.

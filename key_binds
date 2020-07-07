@@ -1,0 +1,71 @@
+#3rd party modules
+import pygame
+import tcod as libtcod
+
+def game_handle_keys():
+	global FOV_CALCULATE
+	events_list = pygame.event.get()
+	for event in events_list:
+		if event.type == pygame.QUIT:
+			return "QUIT"	
+
+		if event.type == pygame.KEYDOWN:
+				#arrow bindings, probably redundant
+				if event.key == pygame.K_UP:
+					PLAYER.creature.move(0, -1)
+				if event.key == pygame.K_DOWN:
+					PLAYER.creature.move(0, 1)
+				if event.key == pygame.K_LEFT:
+					PLAYER.creature.move(-1, 0)
+				if event.key == pygame.K_RIGHT:
+					PLAYER.creature.move(1, 0)
+				#numpad bindings
+				if event.key == pygame.K_KP1:
+					PLAYER.creature.move(-1, 1)
+				if event.key == pygame.K_KP2:
+					PLAYER.creature.move(0, 1)
+				if event.key == pygame.K_KP3:
+					PLAYER.creature.move(1, 1)
+				if event.key == pygame.K_KP4:
+					PLAYER.creature.move(-1, 0)
+				#this one does literally nothing, just kinda sitting here till I feel like using it
+				if event.key == pygame.K_KP5:
+					PLAYER.creature.move(0, 0)
+				if event.key == pygame.K_KP6:
+					PLAYER.creature.move(1, 0)
+				if event.key == pygame.K_KP7:
+					PLAYER.creature.move(-1, -1)
+				if event.key == pygame.K_KP8:
+					PLAYER.creature.move(0, -1)
+				if event.key == pygame.K_KP9:
+					PLAYER.creature.move(1, -1)
+
+				#non-movement, non turn-changing ?
+				if event.key == pygame.K_COMMA:
+					objects_at_player = map_objects_at_coords(PLAYER.x, PLAYER.y)
+					for obj in objects_at_player:
+						if obj.item:
+							obj.item.pick_up(PLAYER)
+							return "no-action"
+							break
+
+				if event.key == pygame.K_d:
+					if len(PLAYER.container.inventory) > 0:
+						PLAYER.container.inventory[-1].item.drop(PLAYER.x, PLAYER.y)
+						return "no-action"
+						break
+
+				#open (and later toggle) inventory menu
+#			if event.key == pygame.K_i:
+
+
+				if event.key == pygame.K_p:
+					menu_Pause()
+
+
+
+
+				#pygame.time.wait(constants.ArtificialLag)
+				FOV_CALCULATE = True
+				return "player-moved"
+	return "no-action"

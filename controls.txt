@@ -1,0 +1,8 @@
+TIMEKEEPER CONTROLS
+
+Vertical/horizontal movement:			Arrow keys
+Vertical/horizontal/diagonal movement:		NUMPAD 1-9
+Pickup object:					,
+Ascend:						<
+Descend: 					>
+View inventory:					i
