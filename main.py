@@ -156,7 +156,7 @@ class com_Item:
 				game_message("Not enough volume to pick up " + self.name + ".")
 
 			else:
-				game_message("Picked up" + self.name + ".")
+				game_message("Picked up " + self.name + ".")
 				actor.container.inventory.append(self.owner)
 				GAME.current_objects.remove(self.owner)
 				self.container = actor.container
@@ -277,7 +277,8 @@ def draw_game():
 		obj.draw()
 
 	#fix at some point idk tho
-	#draw_debug()
+	if constants.ENABLE_DEBUG == True:
+		draw_debug()
 
 	draw_messages()
 
@@ -289,84 +290,108 @@ def draw_game():
 	#game functions
 
 #add multiple colors for the House
-def draw_text(display_surface, text_to_display, font, T_coords, text_color, back_color = None):
+#def draw_text(display_surface, text_to_display, font, T_coords, text_color, back_color = None):
 	#this function takes in some text and displays it on the desired surface
 	
 	#draw_text(SURFACE_MAIN, str(int(CLOCK.get_fps())), (0, 0), constants.COLOR_BLACK)
 	#text_x, text_y = T_coords
 	T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
 
-#arguments are incoming_text, incoming_font, incoming_color, incoming_bg
-	text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
 
-	text_rect.topleft = T_coords
+def draw_text(display_surface, text_to_display, font,
+              coords, text_color, back_color = None):
 
-	display_surface.blit(text_surf, text_rect)
+    # get both the surface and rectangle of the desired message
+    text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
+
+    # draw the text onto the display surface.
+    display_surface.blit(text_surf, text_rect)
 
 def draw_debug():
 	if constants.DISPLAY_FPS :
-		draw_text(SURFACE_MAIN, str(CLOCK.get_fps() + " frames per second."), (0, 0), constants.COLOR_GRAY, constants.COLOR_BLACK)
-		#draw_text(SURFACE_MAIN, str(int(CLOCK.get_fps())), (0, 0), constants.COLOR_GRAY)
-		print("This is a placeholder so I don't get a flipping error.")
+	    draw_text(SURFACE_MAIN,
+              "fps: " + str(int(CLOCK.get_fps())),
+              constants.FONT_DEBUG_MESSAGE,
+              (0, 0),
+              constants.COLOR_WHITE,
+              constants.COLOR_BLACK)
 
 def draw_messages():
+	#include 'timer' for clearing message log, later
 
 
-	#to_draw = GAME_MESSAGES[-(constants.NUM_MESSAGES)]
+	#this whole thing is fucked, i don't care anymore
 
-	#start_x = constants.MAP_HEIGHT*constants.CELL_HEIGHT - (constants.NUM_MESSAGES * constants.FONT_MESSAGE_TEXT)
-
-	#draw last 4 messages in the list
+	#add last 4 messages to the queue
 	if len(GAME.message_history) <= constants.NUM_MESSAGES:
 		to_draw = GAME.message_history
 	else:
 		to_draw = GAME.message_history[-(constants.NUM_MESSAGES):]
 
 	text_height = helper_text_height(constants.FONT_MESSAGE_TEXT)
-	#text_height = 10
 
-	#start_y = (constants.MAP_HEIGHT * constants.CELL_HEIGHT - (constants.NUM_MESSAGES * text_height)) #- 5
-	start_y = ((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height))
+	start_y = ((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height)) 	
 
 	
-	#i = 0
-	#for i in range(constants.NUM_MESSAGES):
+	#draw_text(SURFACE_MAIN, message, (start_y + (i * text_height), 0), color, constants.COLOR_WHITE) #here you change the color of the text, I think?
+	
+
+	for counter, (message, color) in enumerate(to_draw):
+		#print(start_y)
+		#print(counter)
+		#print(text_height)
+	
+		draw_text(SURFACE_MAIN, message, constants.FONT_INVENTORY_TEXT, 
+			(1, start_y + (counter * text_height)), 
+			color, constants.COLOR_BLACK)
+		print(counter*text_height)
+		
+
+
+#	for i, (message, color) in enumerate(to_draw):
 	#for message, color in to_draw:
-	#	message, color = to_draw[i]
+#		line_coords = (0, (start_y - (i * text_height)))
+#		draw_text(SURFACE_MAIN, message, constants.FONT_MESSAGE_TEXT, line_coords, 
+#		 	constants.COLOR_WHITE, #text color
+#		 	constants.COLOR_BLACK) #background color, optional, I guess
+		#print(i)
+#		i += 1
+		
+		#print(message)
 
 	
-	#for message, color in to_draw:
-		#draw_text(SURFACE_MAIN, message, (start_y + (i * text_height), 0), color, constants.COLOR_WHITE) #here you change the color of the text, I think?
-	for i, (message, color) in enumerate(to_draw):
-		draw_text(SURFACE_MAIN,
-		 			message, 
-		 			constants.FONT_MESSAGE_TEXT,
-		 			(0, start_y + (i * text_height)), 
-		 			constants.COLOR_BLACK, 
-		 			constants.COLOR_WHITE) #here you change the color of the text, I think?
-		#i += 1
-		#print("looped successfully")
-
-
-
-
 #########################################################################################################
 #helper functions
+#	if incoming_bg:
+#		Text_surface = constants.FONT_DEBUG_MESSAGE.render(incoming_text, 
+#															constants.TEXT_AA, 
+#															#(1, 1, 1, 0), 
+#															incoming_color,
+#															incoming_bg)
+#	else:
+#		Text_surface = constants.FONT_DEBUG_MESSAGE.render(incoming_text, 
+#															constants.TEXT_AA, 
+#															#(1, 1, 1, 0), 
+#															incoming_color)
+
+
+#	return Text_surface, Text_surface.get_rect()
+
+
 def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
-	if incoming_bg:
-		Text_surface = constants.FONT_DEBUG_MESSAGE.render(incoming_text, 
-															constants.TEXT_AA, 
-															#(1, 1, 1, 0), 
-															incoming_color,
-															incoming_bg)
-	else:
-		Text_surface = constants.FONT_DEBUG_MESSAGE.render(incoming_text, 
-															constants.TEXT_AA, 
-															#(1, 1, 1, 0), 
-															incoming_color)
+    # if there is a background color, render with that.
+    if incoming_bg:
+        Text_surface = incoming_font.render(incoming_text,
+                                            False,
+                                            incoming_color,
+                                            incoming_bg)
 
+    else:  # otherwise, render without a background.
+        Text_surface = incoming_font.render(incoming_text,
+                                            False,
+                                            incoming_color)
 
-	return Text_surface, Text_surface.get_rect()
+    return Text_surface, Text_surface.get_rect()
 
 
 def helper_text_height(font):
@@ -374,6 +399,7 @@ def helper_text_height(font):
 	#font_rect = font_object.get_rect()
 	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
 
+	#print(font_rect.height)
 	return font_rect.height
 
 def helper_text_width(font):
@@ -381,6 +407,7 @@ def helper_text_width(font):
 	#font_rect = font_object.get_rect()
 	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
 
+	#print(font_rect.width)
 	return font_rect.width
 
 ###############################################################################################################
@@ -429,8 +456,10 @@ def menu_inventory():
 	window_height = constants.MAP_HEIGHT * constants.CELL_HEIGHT
 
 	menu_text_font = constants.FONT_MESSAGE_TEXT
-	menu_text_height = helper_text_height(menu_text_font)
+	
 
+	menu_text_height = helper_text_height(menu_text_font)
+	
 
 	local_inventory_surface = pygame.Surface((menu_width, menu_height))
 	
@@ -448,14 +477,16 @@ def menu_inventory():
 					menu_close = True
 
 		#draw list
-		for i, (name) in enumerate(print_list):
-			draw_text(local_inventory_surface,
-						name,
-						menu_text_font,
-						(0, 0 + (i * menu_text_height)),
-						constants.COLOR_WHITE, constants.COLOR_BLACK
+		#for i, name in enumerate(print_list):
+		i = 1
+		for name in print_list:
+			draw_text(local_inventory_surface, name, menu_text_font, (0, (0 + (i * 20))), constants.COLOR_WHITE, constants.COLOR_BLACK
+			)
+			print(i * menu_text_height)
+						
+			i += 1
 
-						)
+
 
 		#display menu
 		SURFACE_MAIN.blit(local_inventory_surface, 

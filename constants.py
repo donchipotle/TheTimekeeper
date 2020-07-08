@@ -41,19 +41,23 @@ FOV_LIGHT_WALLS = True
 TORCH_RADIUS = 18
 
 #fonts
-FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 16)
-FONT_MESSAGE_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 16)
+FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
+FONT_MESSAGE_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
+FONT_INVENTORY_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 20)
 
 #MISC
 ArtificialLag = 75
 #artificial limiter
 GAME_FPS = 60
-#fix later, don't feel like doing it now
-DISPLAY_FPS = True
+
+ENABLE_DEBUG = True
+
+DISPLAY_FPS = False
+
 
 #message console
-NUM_MESSAGES = 7
-TEXT_AA = False
+NUM_MESSAGES = 4
+TEXT_AA = True
 TEXT_X_OVERRIDE = 10
 TEXT_Y_OVERRIDE = 10
 TEXT_HEIGHT = 20
