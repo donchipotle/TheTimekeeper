@@ -1,12 +1,13 @@
 #3rd party modules
 import pygame
 import tcod as libtcod
+
 #mport tcod
 
 #necessary game files
 import constants
-#figure out this nonsense later
-#path.append('/catalogs')
+#import toolbox
+
 
 #import key_binds
 import environ_cat
@@ -306,6 +307,7 @@ def draw_text(display_surface, text_to_display, font,
 
     # draw the text onto the display surface.
     display_surface.blit(text_surf, text_rect)
+    #SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
 
 def draw_debug():
 	if constants.DISPLAY_FPS :
@@ -323,8 +325,12 @@ def draw_messages():
 	#this whole thing is fucked, i don't care anymore
 
 	#add last 4 messages to the queue
-	if len(GAME.message_history) <= constants.NUM_MESSAGES:
-		to_draw = GAME.message_history
+
+	if (len(GAME.message_history) == 0):
+		return
+
+	elif (len(GAME.message_history) <= constants.NUM_MESSAGES):
+			to_draw = GAME.message_history
 	else:
 		to_draw = GAME.message_history[-(constants.NUM_MESSAGES):]
 
@@ -336,28 +342,14 @@ def draw_messages():
 	#draw_text(SURFACE_MAIN, message, (start_y + (i * text_height), 0), color, constants.COLOR_WHITE) #here you change the color of the text, I think?
 	
 
-	for counter, (message, color) in enumerate(to_draw):
-		#print(start_y)
-		#print(counter)
-		#print(text_height)
-	
-		draw_text(SURFACE_MAIN, message, constants.FONT_INVENTORY_TEXT, 
-			(1, start_y + (counter * text_height)), 
-			color, constants.COLOR_BLACK)
-		print(counter*text_height)
-		
+	#refactor into a library function later so I can minimize the masochism
 
-
-#	for i, (message, color) in enumerate(to_draw):
-	#for message, color in to_draw:
-#		line_coords = (0, (start_y - (i * text_height)))
-#		draw_text(SURFACE_MAIN, message, constants.FONT_MESSAGE_TEXT, line_coords, 
-#		 	constants.COLOR_WHITE, #text color
-#		 	constants.COLOR_BLACK) #background color, optional, I guess
-		#print(i)
-#		i += 1
-		
-		#print(message)
+	for i, (message, color) in enumerate(to_draw):
+		draw_text(SURFACE_MAIN,
+                  message,
+                  constants.FONT_MESSAGE_TEXT,
+                  (0, start_y + (i * text_height)),
+                  color, constants.COLOR_BLACK)
 
 	
 #########################################################################################################

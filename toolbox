@@ -1,0 +1,28 @@
+#3rd party modules
+import pygame
+import tcod as libtcod
+import libtcodpy as libtcod
+
+#necessary game files
+import constants
+#figure out this nonsense later
+#path.append('/catalogs')
+
+#import key_binds
+import environ_cat
+import actors_cat
+
+
+
+# getting the headache of queued lines of text out of the way once and for all
+# add in additional parameters for things like line spacing
+# printing multiple lines has thus far been a nightmare and I just want it over with
+# come on, will the pain never end?
+
+def Multiline_Print(incoming_list, incoming_font, incoming_color, incoming_background, queue_length, anchor_coords):
+	print("Go Steelers.")
+
+
+
+
+
