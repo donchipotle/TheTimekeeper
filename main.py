@@ -6,6 +6,7 @@ import tcod as libtcod
 
 #necessary game files
 import constants
+import settings
 #import toolbox
 
 
@@ -40,6 +41,8 @@ class obj_Actor:
 		self.name_object = name_object
 		self.sprite = sprite
 		self.IsInvulnerable = False
+
+		#replace sprite with letter/character, primary color and background color
 
 		self.creature = creature
 		if creature: 
@@ -101,9 +104,6 @@ class com_Creature:
 
 		#else:
 			#print (self.name_instance + "'s health is " + str(self.hp) + "/" + str(self.maxhp))
-
-
-
 	def move(self, dx, dy):
 		tile_is_wall = (GAME.current_map[self.owner.x + dx][self.owner.y + dy].block_path == True)
 
@@ -119,14 +119,9 @@ class com_Creature:
 		if not tile_is_wall and target is None:
 			self.owner.x += dx
 			self.owner.y += dy
-		
-		
-
 	def attack(self, target, damage):
 		game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage) + " damage."), constants.COLOR_WHITE)
 		target.creature.take_damage(damage)
-
-
 
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = []):
@@ -142,7 +137,6 @@ class com_Container:
 
 
 		#get weight of everything
-
 
 class com_Item:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo"):
@@ -278,7 +272,7 @@ def draw_game():
 		obj.draw()
 
 	#fix at some point idk tho
-	if constants.ENABLE_DEBUG == True:
+	if settings.ENABLE_DEBUG == True:
 		draw_debug()
 
 	draw_messages()
@@ -299,18 +293,15 @@ def draw_game():
 	T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
 
 
-def draw_text(display_surface, text_to_display, font,
-              coords, text_color, back_color = None):
-
+def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None):
     # get both the surface and rectangle of the desired message
     text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
-
     # draw the text onto the display surface.
     display_surface.blit(text_surf, text_rect)
     #SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
 
 def draw_debug():
-	if constants.DISPLAY_FPS :
+	if settings.DISPLAY_FPS :
 	    draw_text(SURFACE_MAIN,
               "fps: " + str(int(CLOCK.get_fps())),
               constants.FONT_DEBUG_MESSAGE,
@@ -322,53 +313,31 @@ def draw_messages():
 	#include 'timer' for clearing message log, later
 
 
-	#this whole thing is fucked, i don't care anymore
 
 	#add last 4 messages to the queue
-
-	if (len(GAME.message_history) == 0):
-		return
-
-	elif (len(GAME.message_history) <= constants.NUM_MESSAGES):
-			to_draw = GAME.message_history
+	if len(GAME.message_history) <= constants.NUM_MESSAGES:
+		to_draw = GAME.message_history
 	else:
 		to_draw = GAME.message_history[-(constants.NUM_MESSAGES):]
 
 	text_height = helper_text_height(constants.FONT_MESSAGE_TEXT)
 
-	start_y = ((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height)) 	
+	start_y = ((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height))
 
-	
-	#draw_text(SURFACE_MAIN, message, (start_y + (i * text_height), 0), color, constants.COLOR_WHITE) #here you change the color of the text, I think?
-	
-
-	#refactor into a library function later so I can minimize the masochism
+	#print(start_y)
+    # get both the surface and rectangle of the desired message
 
 	for i, (message, color) in enumerate(to_draw):
-		draw_text(SURFACE_MAIN,
-                  message,
-                  constants.FONT_MESSAGE_TEXT,
-                  (0, start_y + (i * text_height)),
-                  color, constants.COLOR_BLACK)
+		draw_text(SURFACE_MAIN, 
+			message, 
+			constants.FONT_MESSAGE_TEXT, 
+			(0, start_y + (i * text_height)), 
+			color, constants.COLOR_BLACK)
+
 
 	
 #########################################################################################################
 #helper functions
-#	if incoming_bg:
-#		Text_surface = constants.FONT_DEBUG_MESSAGE.render(incoming_text, 
-#															constants.TEXT_AA, 
-#															#(1, 1, 1, 0), 
-#															incoming_color,
-#															incoming_bg)
-#	else:
-#		Text_surface = constants.FONT_DEBUG_MESSAGE.render(incoming_text, 
-#															constants.TEXT_AA, 
-#															#(1, 1, 1, 0), 
-#															incoming_color)
-
-
-#	return Text_surface, Text_surface.get_rect()
-
 
 def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
     # if there is a background color, render with that.
@@ -433,6 +402,7 @@ def menu_pause():
 		draw_text(SURFACE_MAIN, menu_text, constants.FONT_DEBUG_MESSAGE,
 			 ((window_width / 2) - (text_width / 2), (window_height / 2) - (text_height / 2)), 
 			  constants.COLOR_WHITE, constants.COLOR_BLACK)
+		CLOCK.tick(constants.GAME_FPS)
 
 		pygame.display.flip()
 
@@ -440,19 +410,22 @@ def menu_pause():
 def menu_inventory():
 	menu_close = False
 
-	#include different parameters later for teh lulz
-	menu_width = 400
-	menu_height = 700
 
 	window_width = constants.MAP_WIDTH * constants.CELL_WIDTH
 	window_height = constants.MAP_HEIGHT * constants.CELL_HEIGHT
 
+	#include different parameters later for teh lulz
+	menu_width = 900
+	menu_height = 700
+	menu_x = (window_width / 2) - (menu_width / 2)
+	menu_y = (window_height / 2) - (menu_height / 2)
+
+
 	menu_text_font = constants.FONT_MESSAGE_TEXT
-	
 
 	menu_text_height = helper_text_height(menu_text_font)
-	
 
+	#local_inventory_surface = pygame.Surface((menu_width, menu_height))
 	local_inventory_surface = pygame.Surface((menu_width, menu_height))
 	
 	while not menu_close:
@@ -463,6 +436,35 @@ def menu_inventory():
 
 		#register changes
 		events_list = pygame.event.get()
+
+
+		mouse_x, mouse_y = pygame.mouse.get_pos()
+		if settings.DEBUG_MOUSE_POSITON == True:
+			print(mouse_x, mouse_y)
+
+		delta_x = mouse_x - menu_x
+		delta_y = mouse_y - menu_y
+
+		mouse_in_window = (delta_x > 0 and 
+						   delta_y > 0 and
+						   delta_x < menu_width and
+						   delta_y < menu_height)
+
+
+		#replace conversation -> int function later
+		mouse_line_selection = int(delta_y / menu_text_height)
+
+		#if mouse_in_window == True:
+			#temporarily commented out
+
+			#print(mouse_line_selection)
+
+
+
+		if settings.DEBUG_MOUSE_DELTA == True:
+			if delta_x > 0 and delta_y > 0:
+				print(delta_x, delta_y)
+
 		for event in events_list:
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_i:
@@ -470,22 +472,26 @@ def menu_inventory():
 
 		#draw list
 		#for i, name in enumerate(print_list):
-		i = 1
-		for name in print_list:
-			draw_text(local_inventory_surface, name, menu_text_font, (0, (0 + (i * 20))), constants.COLOR_WHITE, constants.COLOR_BLACK
-			)
-			print(i * menu_text_height)
+		#i = 1
+		#print_list.reverse()
+		for line, (name) in enumerate(print_list):
+			draw_text(local_inventory_surface, 
+				name, 
+				menu_text_font, 
+				(0, (line * menu_text_height * 200)), 
+				constants.COLOR_WHITE, constants.COLOR_BLACK)
+			
+			#print((line * menu_text_height))
+
 						
-			i += 1
-
-
+			#i += 1
 
 		#display menu
-		SURFACE_MAIN.blit(local_inventory_surface, 
-				 ((window_width / 2) - (menu_width / 2),
-				 (window_height / 2) - (menu_height / 2))
-				)
-			#(0, 0))
+		SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
+			
+		CLOCK.tick(constants.GAME_FPS)
+
+
 		pygame.display.update()
 		
 
@@ -654,8 +660,6 @@ def game_handle_keys():
 				#pygame.time.wait(constants.ArtificialLag)
 
 
-
-
 				FOV_CALCULATE = True
 				return "player-moved"
 	return "no-action"
@@ -674,6 +678,10 @@ def game_initialize():
 	global SURFACE_MAIN, GAME, CLOCK, FOV_CALCULATE, PLAYER, ENEMY, TURNS_ELAPSED
 
 	pygame.init()
+
+	if constants.PermitKeyHolding == True:
+		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
+
 	#create the rendered window
 	SURFACE_MAIN = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH, 
 											constants.MAP_HEIGHT * constants.CELL_HEIGHT))

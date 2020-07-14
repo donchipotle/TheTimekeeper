@@ -42,17 +42,19 @@ TORCH_RADIUS = 18
 
 #fonts
 FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
-FONT_MESSAGE_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
-FONT_INVENTORY_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 20)
+#FONT_MESSAGE_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
+FONT_MESSAGE_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 35)
+FONT_INVENTORY_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 20)
 
 #MISC
-ArtificialLag = 75
+#ArtificialLag = 75					#deprecated, should not be needed but will be left in
+PermitKeyHolding = True
+KeyDownDelay = 200
+KeyRepeatDelay = 70
 #artificial limiter
 GAME_FPS = 60
 
-ENABLE_DEBUG = True
 
-DISPLAY_FPS = False
 
 
 #message console
