@@ -139,10 +139,12 @@ class com_Container:
 		#get weight of everything
 
 class com_Item:
-	def __init__(self, weight = 0.0, volume = 0.0, name = "foo"):
+	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", use_function = None, value = None):
 		self.weight = weight
 		self.volume = volume
 		self.name = name
+		self.value = value
+		self.use_function = use_function
 
 		#pick up this item
 	def pick_up(self, actor):
@@ -172,6 +174,11 @@ class com_Item:
 
 
 		#active effects
+
+	def use(self):
+		if self.use_function:
+			self.use_function(self.owner, self.value)
+
 
 
 ######################################################################################################################
@@ -342,7 +349,7 @@ def draw_messages():
 
 
 	
-#########################################################################################################
+###############################################################################################################
 #helper functions
 
 def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
@@ -376,6 +383,14 @@ def helper_text_width(font):
 
 	#print(font_rect.width)
 	return font_rect.width
+
+
+
+###############################################################################################################
+#magic
+
+def cast_heal(target, value):
+	print(target.name_object + " healed for " + str(value) + " HP.")
 
 ###############################################################################################################
 #menus
@@ -484,7 +499,8 @@ def menu_inventory():
 
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
-						PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
+						#PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
+						PLAYER.container.inventory[mouse_line_selection].item.use()
 						#print(True)
 
 
@@ -727,7 +743,7 @@ def game_initialize():
 	#spawn enemies
 
 	#first enemy
-	item_com1 = com_Item()
+	item_com1 = com_Item(value = 7, use_function = cast_heal, name = "Greater Nightcrawler carcass")  #FYI, pass function in as parameter without parentheses
 								#name of enemy when alive
 	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster) #the crab's creature name
 	ai_com1 = ai_Test()
@@ -736,7 +752,7 @@ def game_initialize():
 		creature = creature_com2, ai = ai_com1, item = item_com1)
 
 	#second enemy
-	item_com2 = com_Item()
+	item_com2 = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass")
 								#name of enemy when alive
 	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster) #the crab's creature name
 	ai_com2 = ai_Test()
