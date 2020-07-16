@@ -21,6 +21,7 @@ MAP_WIDTH = 55
 MAP_HEIGHT = 30
 
 
+
 #color definitions
 COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
@@ -58,7 +59,7 @@ GAME_FPS = 60
 
 
 #message console
-NUM_MESSAGES = 3
+NUM_MESSAGES = 4
 TEXT_AA = True
 TEXT_X_OVERRIDE = 10
 TEXT_Y_OVERRIDE = 10

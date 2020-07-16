@@ -296,7 +296,13 @@ def draw_game():
 def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None):
     # get both the surface and rectangle of the desired message
     text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
+    
+
+
+    text_rect.topleft = coords
+
     # draw the text onto the display surface.
+
     display_surface.blit(text_surf, text_rect)
     #SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
 
@@ -469,22 +475,32 @@ def menu_inventory():
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_i:
 					menu_close = True
+					COLOR_GRAY = (100, 100, 100)
 
-		#draw list
-		#for i, name in enumerate(print_list):
-		#i = 1
-		#print_list.reverse()
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				#print(event.button) #gets the id of button clicked, returns int
+				#if (event.button == 1 or 2 or 3):
+				if (event.button == 1):
+
+					if (mouse_in_window and 
+						mouse_line_selection <= len(print_list) - 1):
+
+						print(True)
+
+
+					
+
 		for line, (name) in enumerate(print_list):
-			draw_text(local_inventory_surface, 
-				name, 
-				menu_text_font, 
-				(0, (line * menu_text_height * 200)), 
-				constants.COLOR_WHITE, constants.COLOR_BLACK)
-			
-			#print((line * menu_text_height))
-
-						
-			#i += 1
+			if line == mouse_line_selection and mouse_in_window == True:
+				draw_text(local_inventory_surface,
+					name,
+					menu_text_font,
+					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
+			else:
+				draw_text(local_inventory_surface,
+					name,
+					menu_text_font,
+					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
 
 		#display menu
 		SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
