@@ -62,7 +62,6 @@ class obj_Actor:
 		if self.item:
 			self.item.owner = self
 
-
 	def draw(self):
 		#is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
@@ -83,21 +82,23 @@ class obj_Game:
 #components
 
 class com_Creature:
-	def __init__(self, name_instance, hp = 10, death_function = None):
+	def __init__(self, name_instance, hp = 10, death_function = None, money = 0, gender = 0):
 		self.name_instance = name_instance
-		self.maxhp = hp
-		self.hp = hp
+		self.max_hp = hp
+		self.current_hp = hp
+		self.money = money
 		self.death_function = death_function
+		self.gender = gender
 
 
 		#add new damage types and stuff later
 	def take_damage(self, damage):
 		#game_message(self.name_instance +  "'s health is " + str(self.hp) + "/" + str(self.maxhp), constants.COLOR_RED)
-		self.hp -= damage
+		self.current_hp -= damage
 		#print (self.name_instance + "'s health is " + str(self.hp) + "/" + str(self.maxhp))
 
 		#possibly change later to include the name of the attacker
-		if self.hp <= 0:
+		if self.current_hp <= 0:
 
 			if self.death_function is not None:
 				self.death_function(self.owner)
@@ -122,6 +123,11 @@ class com_Creature:
 	def attack(self, target, damage):
 		game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage) + " damage."), constants.COLOR_WHITE)
 		target.creature.take_damage(damage)
+	def heal(self, value):
+		self.current_hp += value
+		#include at a later date, the possibility of overhealing
+		if self.current_hp > self.max_hp:
+			self.current_hp = self.max_hp
 
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = []):
@@ -158,7 +164,6 @@ class com_Item:
 				GAME.current_objects.remove(self.owner)
 				self.container = actor.container
 				#game_messge(self.name + " dropped.")
-
 	def drop(self, new_x, new_y):
 		GAME.current_objects.append(self.owner)
 		self.container.inventory.remove(self.owner)
@@ -175,10 +180,15 @@ class com_Item:
 
 		#active effects
 
+		#consumables
 	def use(self):
 		if self.use_function:
-			self.use_function(self.owner, self.value)
-
+			result = self.use_function(self.container.owner, self.value)
+			#if result == "cancelled":
+			if result is not None:
+				print("use_function failed")
+			else:
+				self.container.inventory.remove(self.owner)
 
 
 ######################################################################################################################
@@ -286,19 +296,14 @@ def draw_game():
 
 	#update the display
 	pygame.display.flip()
-
-
-
 	#game functions
-
-#add multiple colors for the House
-#def draw_text(display_surface, text_to_display, font, T_coords, text_color, back_color = None):
+	#add multiple colors for the House
+	#def draw_text(display_surface, text_to_display, font, T_coords, text_color, back_color = None):
 	#this function takes in some text and displays it on the desired surface
 	
 	#draw_text(SURFACE_MAIN, str(int(CLOCK.get_fps())), (0, 0), constants.COLOR_BLACK)
 	#text_x, text_y = T_coords
 	T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
-
 
 def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None):
     # get both the surface and rectangle of the desired message
@@ -346,8 +351,6 @@ def draw_messages():
 			constants.FONT_MESSAGE_TEXT, 
 			(0, start_y + (i * text_height)), 
 			color, constants.COLOR_BLACK)
-
-
 	
 ###############################################################################################################
 #helper functions
@@ -367,7 +370,6 @@ def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_b
 
     return Text_surface, Text_surface.get_rect()
 
-
 def helper_text_height(font):
 	#font_object = font.render('a', False, (0, 0, 0))
 	#font_rect = font_object.get_rect()
@@ -384,13 +386,23 @@ def helper_text_width(font):
 	#print(font_rect.width)
 	return font_rect.width
 
-
-
 ###############################################################################################################
 #magic
 
 def cast_heal(target, value):
-	print(target.name_object + " healed for " + str(value) + " HP.")
+	if target.creature.current_hp == target.creature.max_hp:
+		game_message(target.creature.name_instance + " is already at full health.")
+		return "cancelled"
+
+	else:
+		game_message(target.creature.name_instance + " the " + target.name_object + " healed for " + str(value) + " health.")
+		target.creature.heal(value)
+
+		if target.creature.current_hp >= target.creature.max_hp:
+			game_message(target.creature.name_instance + " is now at full health.")
+		print(target.creature.current_hp)
+		
+	return None
 
 ###############################################################################################################
 #menus
@@ -733,12 +745,14 @@ def game_initialize():
 	GAME.current_map = map_create()
 	GAME.message_history = []
 
+	#create the player
 	container_com1 = com_Container()
 	creature_com1 = com_Creature("The Mariner")    #player's creature component name
 	PLAYER = obj_Actor(4, 6, "python", 
 						actors_cat.S_PLAYER, 
 						creature = creature_com1,
-						container = container_com1)
+						container = container_com1
+						)
 
 	#spawn enemies
 
