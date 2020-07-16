@@ -484,8 +484,8 @@ def menu_inventory():
 
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
-
-						print(True)
+						PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
+						#print(True)
 
 
 					
