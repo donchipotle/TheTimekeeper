@@ -11,8 +11,11 @@ import settings
 
 
 #import key_binds
+
+#import asset catalogs
 import environ_cat
 import actors_cat
+import misc_cat
 
 
 #structures
@@ -34,13 +37,15 @@ class struc_Tile:
 
 #objects
 class obj_Actor:
-	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, container = None, item = None):
+	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, container = None, item = None, 
+		description = "No description for this actor."):
 		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
 		self.name_object = name_object
 		self.sprite = sprite
 		self.IsInvulnerable = False
+		self.description = description
 
 		#replace sprite with letter/character, primary color and background color
 
@@ -294,8 +299,7 @@ def draw_game():
 
 	draw_messages()
 
-	#update the display
-	pygame.display.flip()
+
 	#game functions
 	#add multiple colors for the House
 	#def draw_text(display_surface, text_to_display, font, T_coords, text_color, back_color = None):
@@ -303,7 +307,7 @@ def draw_game():
 	
 	#draw_text(SURFACE_MAIN, str(int(CLOCK.get_fps())), (0, 0), constants.COLOR_BLACK)
 	#text_x, text_y = T_coords
-	T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
+	#T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
 
 def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None):
     # get both the surface and rectangle of the desired message
@@ -351,6 +355,24 @@ def draw_messages():
 			constants.FONT_MESSAGE_TEXT, 
 			(0, start_y + (i * text_height)), 
 			color, constants.COLOR_BLACK)
+
+def draw_tile_rect(coords):
+	x, y = coords
+
+	new_x = x * constants.CELL_WIDTH
+	new_y = y * constants.CELL_HEIGHT
+
+	new_surface = pygame.Surface((constants.CELL_WIDTH, constants.CELL_HEIGHT))
+
+	new_surface.fill(constants.COLOR_WHITE)
+	#new_surface.fill(misc_cat.S_SELECTED_DEFAULT)
+
+	new_surface.set_alpha(150)
+
+	SURFACE_MAIN.blit(new_surface, (new_x, new_y))
+
+	
+
 	
 ###############################################################################################################
 #helper functions
@@ -534,10 +556,52 @@ def menu_inventory():
 		SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
 			
 		CLOCK.tick(constants.GAME_FPS)
-
-
 		pygame.display.update()
-		
+
+
+def menu_tile_select():
+	#this menu lets the player select a tile 
+
+	#this function pauses the game, produces an on screen rectangle and 
+	#and when the player presses the left mouse button, it will return a message
+	#containing the map address
+	#will be changed to be more suitable to this project at a later date
+
+	menu_close = False
+
+	while not menu_close:
+
+		#get mouse postion
+		mouse_x, mouse_y = pygame.mouse.get_pos()
+
+		#get button clicks
+		events_list = pygame.event.get()
+
+		#mouse map selection
+		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
+		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
+
+		#get map coords on  LMB
+		for event in events_list:
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_l:
+					menu_close = True
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				if event.button == 1:
+					#will turn into a return
+					game_message(str(map_coord_x) + ", " + str(map_coord_y))
+
+	
+		draw_game()
+
+		#draw rectangle at mouse position
+		draw_tile_rect((map_coord_x, map_coord_y))
+
+		pygame.display.flip()
+		CLOCK.tick(constants.GAME_FPS)
+
+
+	
 
 ###############################################################################################################
 #map functions
@@ -623,14 +687,22 @@ def game_main_loop():
 			print(str(TURNS_ELAPSED) + " turns have elapsed so far")
 		#render the game
 		draw_game()
-		#report framerate
-		#remove/change parameter to change framerate limit
+
+		#update the display
+		pygame.display.flip()
+
+		#tick the clock
 		CLOCK.tick(constants.GAME_FPS)
+
+
 
 	#quit the game
 	game_quit_sequence()
 	
-	#input updates have an artificial lag to prevent unnecessary movement, to be fixed later
+
+
+#########################################################################################################
+	#input updates 
 		#remember, up/down is inverted and therefore confusing
 		#move to a separate folder for organization's sake\
 
@@ -702,6 +774,11 @@ def game_handle_keys():
 							break
 
 				#pygame.time.wait(constants.ArtificialLag)
+
+
+				#key L, turn on tile selection. change later as needed
+				if event.key == pygame.K_l:
+					menu_tile_select()
 
 
 				FOV_CALCULATE = True
