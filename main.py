@@ -448,20 +448,28 @@ def cast_heal(target, value):
 
 def cast_lightning(damage):
 	print("Lightning cast.")
-	# prompt player for a tile
-	point_selected = menu_tile_select()
+	player_location = (PLAYER.x, PLAYER.y)
 
+	# prompt player for a tile
+	point_selected = menu_tile_select(coords_origin = player_location, 
+										max_range = 5, 
+										penetrate_walls = False)
+
+	if point_selected:
 	# convert that tile into a list of coordinates, A -> B
 	#refactor with Caster and AI target coords
-	list_of_tiles = map_find_line((PLAYER.x, PLAYER.y), point_selected)
+		list_of_tiles = map_find_line(player_location, point_selected)
 
-	#cycle through list and damage everything found
-	for i, (x, y) in enumerate(list_of_tiles):
-		if settings.RENDER_BALLISTICS:
-			draw_projectile(x, y, constants.COLOR_L_BLUE)
-		target = map_check_for_creatures(x, y)
-		if target and i != 0:
-			target.creature.take_damage(damage)
+		#cycle through list and damage everything found
+		for i, (x, y) in enumerate(list_of_tiles):
+			if settings.RENDER_BALLISTICS:
+				draw_projectile(x, y, constants.COLOR_L_BLUE)
+			target = map_check_for_creatures(x, y)
+			if target: # and i != 0:
+				#check if spell uselessly hits wall
+				#if (target.x, target.y)  
+				target.creature.take_damage(damage)
+				#game_message("Lightning strikes the " + target.creature.name_instance + " for " + str(damage) + ".")
 
 	#later, render effect on each tile in sequence
 
@@ -600,7 +608,7 @@ def menu_inventory():
 		pygame.display.update()
 
 
-def menu_tile_select():
+def menu_tile_select(coords_origin = None, max_range = None, penetrate_walls = True):
 	#this menu lets the player select a tile 
 
 	#this function pauses the game, produces an on screen rectangle and 
@@ -622,6 +630,22 @@ def menu_tile_select():
 		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
 		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
 
+		valid_tiles = []
+
+		if coords_origin:
+			full_list_of_tiles = map_find_line(coords_origin, (map_coord_x, map_coord_y))
+
+			for i, (x, y) in enumerate(full_list_of_tiles):
+				valid_tiles.append((x, y))
+				if max_range and i == max_range:
+					break
+				if not penetrate_walls and GAME.current_map[x][y].block_path: 
+					break
+
+
+		else:
+			valid_tiles = [(map_coord_x, map_coord_y)]
+
 		#get map coords on  LMB
 		for event in events_list:
 			if event.type == pygame.KEYDOWN:
@@ -630,10 +654,13 @@ def menu_tile_select():
 
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
-					return(map_coord_x, map_coord_y)
+					return(valid_tiles[-1])
 
 	
 		draw_game()
+
+		for (tile_x, tile_y) in valid_tiles:
+			draw_tile_rect((tile_x, tile_y))
 
 		#draw rectangle at mouse position
 		draw_tile_rect((map_coord_x, map_coord_y))
