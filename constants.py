@@ -28,6 +28,7 @@ COLOR_WHITE = (255, 255, 255)
 COLOR_GRAY = (100, 100, 100)
 COLOR_RED = (255, 0, 0)
 COLOR_BLUE = (0, 0, 255)
+COLOR_L_BLUE = (149, 202, 255)
 
 #game color palette
 COLOR_DEFAULT_BG = COLOR_GRAY
@@ -48,7 +49,7 @@ FONT_MESSAGE_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 35)
 FONT_INVENTORY_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 20)
 
 #MISC
-#ArtificialLag = 75					#deprecated, should not be needed but will be left in
+#ArtificialLag = 75					#deprecated, should not be needed but will be left in for now
 PermitKeyHolding = True
 KeyDownDelay = 200
 KeyRepeatDelay = 70

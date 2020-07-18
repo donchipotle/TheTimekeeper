@@ -32,9 +32,6 @@ class struc_Tile:
 		self.elevation = 0
 
 #class struc_Assets:
-
-
-
 #objects
 class obj_Actor:
 	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, container = None, item = None, 
@@ -313,8 +310,6 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
     # get both the surface and rectangle of the desired message
     text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
     
-
-
     text_rect.topleft = coords
 
     # draw the text onto the display surface.
@@ -371,7 +366,32 @@ def draw_tile_rect(coords):
 
 	SURFACE_MAIN.blit(new_surface, (new_x, new_y))
 
-	
+#factor into ballistic weapons and spells later, possibly move damage over to this function under 'handle projectiles'
+def draw_projectile(ballistic_x, ballistic_y, projectile_color):
+	print("Drawing projectiles on screen.")
+	projectile_surface = pygame.Surface((constants.CELL_WIDTH, constants.CELL_HEIGHT))
+	projectile_surface.fill(projectile_color)
+	#new_surface.fill(misc_cat.S_SELECTED_DEFAULT)
+	projectile_surface.set_alpha(150)
+
+	#render ballistic
+	SURFACE_MAIN.blit(projectile_surface, (ballistic_x * constants.CELL_WIDTH, ballistic_y * constants.CELL_HEIGHT))
+	pygame.display.flip()
+	#ballistic tick duration
+	pygame.time.delay(settings.BALLISTIC_TICK_UPPER)
+	#clear ballistic
+	projectile_surface.fill((0, 0, 0))
+	draw_game()
+	pygame.display.flip()
+	#time between ticks
+	pygame.time.delay(settings.BALLISTIC_TICK_LOWER)
+
+
+
+
+
+
+	#end after iterating
 
 	
 ###############################################################################################################
@@ -425,6 +445,27 @@ def cast_heal(target, value):
 		print(target.creature.current_hp)
 		
 	return None
+
+def cast_lightning(damage):
+	print("Lightning cast.")
+	# prompt player for a tile
+	point_selected = menu_tile_select()
+
+	# convert that tile into a list of coordinates, A -> B
+	#refactor with Caster and AI target coords
+	list_of_tiles = map_find_line((PLAYER.x, PLAYER.y), point_selected)
+
+	#cycle through list and damage everything found
+	for i, (x, y) in enumerate(list_of_tiles):
+		if settings.RENDER_BALLISTICS:
+			draw_projectile(x, y, constants.COLOR_L_BLUE)
+		target = map_check_for_creatures(x, y)
+		if target and i != 0:
+			target.creature.take_damage(damage)
+
+	#later, render effect on each tile in sequence
+
+
 
 ###############################################################################################################
 #menus
@@ -586,10 +627,10 @@ def menu_tile_select():
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_l:
 					menu_close = True
+
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
-					#will turn into a return
-					game_message(str(map_coord_x) + ", " + str(map_coord_y))
+					return(map_coord_x, map_coord_y)
 
 	
 		draw_game()
@@ -599,9 +640,6 @@ def menu_tile_select():
 
 		pygame.display.flip()
 		CLOCK.tick(constants.GAME_FPS)
-
-
-	
 
 ###############################################################################################################
 #map functions
@@ -657,6 +695,30 @@ def map_check_for_creatures(x, y, exclude_object = None):
 			if target:
 				return target	
 
+def map_find_line(startcoords, endcoords):
+	#converts beginning/end point tuples (X, Y) into list of tiles between
+	(start_x, start_y) = startcoords
+	
+	(end_x, end_y) = endcoords
+
+	libtcod.line_init(start_x, start_y, end_x, end_y)
+
+	calc_x, calc_y = libtcod.line_step()
+
+	coord_list = []
+
+	if (start_x == end_x) and (start_y == end_y):
+		print("Spell targeting self.")
+		return[(start_x, start_y)]
+
+	while (not calc_x is None):
+		coord_list.append((calc_x, calc_y))
+
+		calc_x, calc_y = libtcod.line_step()
+	return coord_list
+
+################################################################################################################
+
 #Main game loop, on tick
 def game_main_loop():
 	global TURNS_ELAPSED
@@ -704,7 +766,7 @@ def game_main_loop():
 #########################################################################################################
 	#input updates 
 		#remember, up/down is inverted and therefore confusing
-		#move to a separate folder for organization's sake\
+		#move to a separate folder for organization's sake
 
 def game_handle_keys():
 	global FOV_CALCULATE
@@ -751,16 +813,16 @@ def game_handle_keys():
 					for obj in objects_at_player:
 						if obj.item:
 							obj.item.pick_up(PLAYER)
-							if constants.HARDCORE_MODE == False:
+							if settings.Mod2 == False:
 								return "no-action"
-								break
+								
 
 				if event.key == pygame.K_d:
 					if len(PLAYER.container.inventory) > 0:
 						PLAYER.container.inventory[-1].item.drop(PLAYER.x, PLAYER.y)
-						if constants.HARDCORE_MODE == False:
+						if settings.Mod2 == False:
 							return "no-action"
-							break
+							
 
 				#open (and later toggle) inventory menu
 				if event.key == pygame.K_p:
@@ -769,17 +831,18 @@ def game_handle_keys():
 
 				if event.key == pygame.K_i:
 					menu_inventory()
-					if constants.HARDCORE_MODE == False:
+					if settings.Mod2 == False:
 							return "no-action"
 							break
 
-				#pygame.time.wait(constants.ArtificialLag)
+				if event.key == pygame.K_q:
+					print("Placeholder - this will return name/info of object at tile.")
 
 
 				#key L, turn on tile selection. change later as needed
 				if event.key == pygame.K_l:
-					menu_tile_select()
-
+					#menu_tile_select()
+					cast_lightning(9)
 
 				FOV_CALCULATE = True
 				return "player-moved"

@@ -6,3 +6,6 @@ Pickup object:					,
 Ascend:						<
 Descend: 					>
 View inventory:					i
+
+Identify Tile					q
+Answer prompt Yes, No or Quit			y, n, x

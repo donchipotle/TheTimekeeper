@@ -1,0 +1,37 @@
+
+	These are modifiers which will make The Timekeeper stupidly unfair, and
+can be enabled in settings.py.
+	You will not have fun.
+
+#1: NOSING AROUND
+	Have fun gawking at your surroundings while enemies hack, slash, stab, 
+poison, burn and bludgeon you and devour your soul! Examining your surroundings 
+costs you a turn. Being nosy does not pay.
+
+#2: DISORGANIZED
+	Oh, and opening your inventory now costs you a turn too. Maybe next time 
+you'll learn to, oh, I don't know... ACTUALLY PREPARE FOR FIGHTS AHEAD OF TIME?
+
+#3: BAD LUCK
+	Oh boy. Enemy combat rolls are biased against you. But what about your
+rolls? Don't worry, they're biased against you too. Forgive me for saying this, 
+but... Good luck.
+
+#4: YOU AND WHAT ARMY?
+	With some exceptions, such as unique characters, enemy spawns are doubled.
+Hallelujah, it's raining Nightcrawlers!
+
+#5: ALL ABOARD THE PAIN TRAIN
+	Incoming and outgoing damage is doubled for every single character in the 
+game, including you. CHOO CHOO!!!
+
+#6: YOU DONE GOOFED
+	Like a good roguelike, permadeath is there!
+
+#7: 
+
+(spells do damage to caster and target, includig player? idk)
+	
+
+
+

@@ -1,22 +1,44 @@
 
-#graphics
-
-
-#game interface
 
 
 
-#menu
+
+	###graphics
+#toggle rendering ballistics (spells, projectiles, etc.)
+RENDER_BALLISTICS = True
+#ms elapsed before ballistic is cleared
+BALLISTIC_TICK_UPPER = 50
+#ms elapsed before next tick
+BALLISTIC_TICK_LOWER = 50
+
+	###game interface
 
 
-#gameplay
+
+	###menu
 
 
-#difficulty
+	###gameplay
+
+
+	###difficulty modifiers, see modifiers.txt for descriptions
+
+#NOSING AROUND 
+Mod1 = False
+#DISORGANIZED 
+Mod2 = False
+#BAD LUCK
+Mod3 = False
+#YOU AND WHAT ARMY?
+Mod4 = False
+#ALL ABOARD THE PAIN TRAIN
+Mod5 = False
+#YOU DONE GOOFED
+Mod6 = False
 
 
 
-#debug
+	###debug
 
 ENABLE_DEBUG = False
 DISPLAY_FPS = False
