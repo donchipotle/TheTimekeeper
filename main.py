@@ -84,13 +84,14 @@ class obj_Game:
 #components
 
 class com_Creature:
-	def __init__(self, name_instance, hp = 10, death_function = None, money = 0, gender = 0):
+	def __init__(self, name_instance, hp = 10, death_function = None, money = 0, gender = 0, base_xp = 15):
 		self.name_instance = name_instance
 		self.max_hp = hp
 		self.current_hp = hp
 		self.money = money
 		self.death_function = death_function
 		self.gender = gender
+		self.base_xp = base_xp
 
 
 		#add new damage types and stuff later
@@ -191,7 +192,6 @@ class com_Item:
 				print("use_function failed")
 			else:
 				self.container.inventory.remove(self.owner)
-
 
 ######################################################################################################################
 #AI scripts
@@ -351,18 +351,26 @@ def draw_messages():
 			(0, start_y + (i * text_height)), 
 			color, constants.COLOR_BLACK)
 
-def draw_tile_rect(coords):
+def draw_tile_rect(coords, tile_color = None, tile_alpha = None):
 	x, y = coords
+
+	#default tile colors
+	if tile_color: local_color = tile_color
+	else: local_color = constants.COLOR_WHITE
+
+	#default alpha
+	if tile_alpha: local_alpha = tile_alpha
+	else: local_alpha = 150
 
 	new_x = x * constants.CELL_WIDTH
 	new_y = y * constants.CELL_HEIGHT
 
 	new_surface = pygame.Surface((constants.CELL_WIDTH, constants.CELL_HEIGHT))
 
-	new_surface.fill(constants.COLOR_WHITE)
+	new_surface.fill((tile_color))
 	#new_surface.fill(misc_cat.S_SELECTED_DEFAULT)
 
-	new_surface.set_alpha(150)
+	new_surface.set_alpha(local_alpha)
 
 	SURFACE_MAIN.blit(new_surface, (new_x, new_y))
 
@@ -385,15 +393,35 @@ def draw_projectile(ballistic_x, ballistic_y, projectile_color):
 	pygame.display.flip()
 	#time between ticks
 	pygame.time.delay(settings.BALLISTIC_TICK_LOWER)
-
-
-
-
-
-
 	#end after iterating
 
+
+
+#allow blast to expand from center, at a later date
+def draw_explosion(radius, blast_x, blast_y, color):
+	print("This is a placeholder for when explosions and other AoE actions are properly taken care of.")
 	
+	#explosion_surface = pygame.Surface((constants.CELL_WIDTH, constants.CELL_HEIGHT))
+	#explosion_surface.set_alpha(150)
+	#explosion_surface.fill(color)
+
+	area_effect = map_find_radius(valid_tiles[-1], radius)
+	for (tile_x, tile_y) in area_effect:
+			draw_tile_rect((tile_x, tile_y), color)
+
+	#(ballistic_x * constants.CELL_WIDTH, ballistic_y * constants.CELL_HEIGHT))
+
+	#SURFACE_MAIN.blit(explosion_surface, ((blast_x * constants.CELL_WIDTH), (blast_y * constants.CELL_HEIGHT)))
+	#pygame.display.flip()
+	#pygame.time.delay(settings.EXPLOSION_TICK_UPPER)
+
+	#explosion_surface.fill((0, 0, 0))
+
+
+
+	#draw_game()
+
+
 ###############################################################################################################
 #helper functions
 
@@ -446,18 +474,18 @@ def cast_heal(target, value):
 		
 	return None
 
-def cast_lightning(damage):
-	print("Lightning cast.")
+def cast_lightning():
+
+	damage = 5
+	
 	player_location = (PLAYER.x, PLAYER.y)
 
 	# prompt player for a tile
 	point_selected = menu_tile_select(coords_origin = player_location, 
-										max_range = 5, 
-										penetrate_walls = False)
+		max_range = 5, penetrate_walls = False)
 
 	if point_selected:
 	# convert that tile into a list of coordinates, A -> B
-	#refactor with Caster and AI target coords
 		list_of_tiles = map_find_line(player_location, point_selected)
 
 		#cycle through list and damage everything found
@@ -466,12 +494,50 @@ def cast_lightning(damage):
 				draw_projectile(x, y, constants.COLOR_L_BLUE)
 			target = map_check_for_creatures(x, y)
 			if target: # and i != 0:
+				game_message("The Mariner casts Alenko-Kharyalov Effect.")
 				#check if spell uselessly hits wall
 				#if (target.x, target.y)  
 				target.creature.take_damage(damage)
-				#game_message("Lightning strikes the " + target.creature.name_instance + " for " + str(damage) + ".")
 
+				#if target.creature.name_instance:
+				#	game_message(target.creature.name_instance + " takes " + str(damage) + " damage.")
+		return "no-action"
 	#later, render effect on each tile in sequence
+
+def cast_fireball():
+	#definitions, change later
+	damage = 5
+	local_radius = 2
+	max_r = 10
+	player_location = (PLAYER.x, PLAYER.y)
+
+	#TODO get target tile
+	point_selected = menu_tile_select(coords_origin = player_location, max_range = max_r,
+		 penetrate_walls = False, 
+		 pierce_creature = False, 
+		 radius = local_radius)
+
+	if point_selected:
+		#get sequence of tiles
+		tiles_to_damage = map_find_radius(point_selected, local_radius)
+		creature_hit = False
+
+		game_message("You cast Alenko-Kharyalov Conflagration.")
+
+		#damage all creatures in tiles
+		for (x, y) in tiles_to_damage:
+			#add visual feedback to fireball, maybe even adding a trail to its destination later
+			#draw_explosion(radius, x, y, constants.COLOR_ORANGE)
+
+			creature_to_damage = map_check_for_creatures(x, y)
+			if creature_to_damage: 
+				creature_to_damage.creature.take_damage(damage)
+				
+				if creature_to_damage is not PLAYER:
+					creature_hit = True
+
+		if creature_hit:
+			game_message("You hear the disgusting sizzling sound of burning flesh.", constants.COLOR_RED)
 
 
 
@@ -608,18 +674,16 @@ def menu_inventory():
 		pygame.display.update()
 
 
-def menu_tile_select(coords_origin = None, max_range = None, penetrate_walls = True):
+def menu_tile_select(coords_origin = None, max_range = None, 
+	radius = None, penetrate_walls = True, pierce_creature = True):
 	#this menu lets the player select a tile 
 
 	#this function pauses the game, produces an on screen rectangle and 
-	#and when the player presses the left mouse button, it will return a message
 	#containing the map address
-	#will be changed to be more suitable to this project at a later date
 
 	menu_close = False
 
 	while not menu_close:
-
 		#get mouse postion
 		mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -627,7 +691,7 @@ def menu_tile_select(coords_origin = None, max_range = None, penetrate_walls = T
 		events_list = pygame.event.get()
 
 		#mouse map selection
-		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
+		map_coord_x = int(mouse_x / constants.CELL_WIDTH)
 		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
 
 		valid_tiles = []
@@ -637,10 +701,16 @@ def menu_tile_select(coords_origin = None, max_range = None, penetrate_walls = T
 
 			for i, (x, y) in enumerate(full_list_of_tiles):
 				valid_tiles.append((x, y))
+				#stop at max range
 				if max_range and i == max_range:
 					break
+				#stop at wall
 				if not penetrate_walls and GAME.current_map[x][y].block_path: 
 					break
+				#stop at creature
+				if not pierce_creature and map_check_for_creatures(x, y):
+					break
+
 
 
 		else:
@@ -655,15 +725,22 @@ def menu_tile_select(coords_origin = None, max_range = None, penetrate_walls = T
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
 					return(valid_tiles[-1])
-
 	
 		draw_game()
 
 		for (tile_x, tile_y) in valid_tiles:
-			draw_tile_rect((tile_x, tile_y))
+			draw_tile_rect(tile_color = constants.COLOR_RED, coords = (tile_x, tile_y))
+
+		#draw theoretical blast radius of AoE spells
+		if radius:
+			area_effect = map_find_radius(valid_tiles[-1], radius)
+			for (tile_x, tile_y) in area_effect:
+				draw_tile_rect(coords = (tile_x, tile_y),
+					tile_color = constants.COLOR_ORANGE,
+					tile_alpha = 150)
 
 		#draw rectangle at mouse position
-		draw_tile_rect((map_coord_x, map_coord_y))
+		draw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (map_coord_x, map_coord_y))
 
 		pygame.display.flip()
 		CLOCK.tick(constants.GAME_FPS)
@@ -744,6 +821,53 @@ def map_find_line(startcoords, endcoords):
 		calc_x, calc_y = libtcod.line_step()
 	return coord_list
 
+def map_find_radius(coords, radius):
+	center_x, center_y = coords
+
+	tile_list = []
+
+	#define the bounds of the spell blast radius
+	start_x = center_x - radius
+	end_x = center_x + radius + 1
+	start_y = center_y - radius
+	end_y = center_y + radius + 1
+
+	#two dimensional iterator
+	for x in range((start_x), (end_x)):
+		for y in range((start_y), (end_y)):
+			tile_list.append((x, y))
+	return tile_list
+
+
+
+def map_tile_query():
+	print("Map tile query initialized.")
+	menu_close = False
+
+	while not menu_close:
+		player_location = (PLAYER.x, PLAYER.y)
+
+		#get mouse postion
+		mouse_x, mouse_y = pygame.mouse.get_pos()
+
+		#get button clicks
+		events_list = pygame.event.get()
+
+		#mouse map selection
+		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
+		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
+
+		draw_tile_rect((mouse_x, mouse_y))
+
+		menu_tile_select(penetrate_walls = True)
+	
+		#get map coords on  LMB
+		for event in events_list:
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_q:
+						menu_close = True
+						print("Map tile query terminated.")
+
 ################################################################################################################
 
 #Main game loop, on tick
@@ -787,8 +911,6 @@ def game_main_loop():
 
 	#quit the game
 	game_quit_sequence()
-	
-
 
 #########################################################################################################
 	#input updates 
@@ -859,17 +981,20 @@ def game_handle_keys():
 				if event.key == pygame.K_i:
 					menu_inventory()
 					if settings.Mod2 == False:
-							return "no-action"
-							break
+						return "no-action"
+						#break
 
 				if event.key == pygame.K_q:
-					print("Placeholder - this will return name/info of object at tile.")
-
+					map_tile_query()
+					if settings.Mod2 == False:
+						return "no-action"
+						#break
 
 				#key L, turn on tile selection. change later as needed
 				if event.key == pygame.K_l:
 					#menu_tile_select()
-					cast_lightning(9)
+					#cast_lightning(9)
+					cast_fireball()
 
 				FOV_CALCULATE = True
 				return "player-moved"

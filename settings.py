@@ -10,6 +10,10 @@ RENDER_BALLISTICS = True
 BALLISTIC_TICK_UPPER = 50
 #ms elapsed before next tick
 BALLISTIC_TICK_LOWER = 50
+#ms elapsed between explosion is cleared
+EXPLOSION_TICK_UPPER = 50
+#ms elapsed before animation ends
+EXPLOSION_TICK_LOWER = 50
 
 	###game interface
 
