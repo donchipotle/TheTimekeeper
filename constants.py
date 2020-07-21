@@ -30,6 +30,7 @@ COLOR_RED = (255, 0, 0)
 COLOR_BLUE = (0, 0, 255)
 COLOR_L_BLUE = (149, 202, 255)
 COLOR_ORANGE = (255, 128, 0)
+COLOR_GREEN = (0, 255, 0)
 
 #game color palette
 COLOR_DEFAULT_BG = COLOR_GRAY
@@ -45,7 +46,7 @@ TORCH_RADIUS = 18
 
 #fonts
 FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
-#FONT_MESSAGE_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
+FONT_CURSOR_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', CELL_HEIGHT)
 FONT_MESSAGE_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 35)
 FONT_INVENTORY_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 20)
 

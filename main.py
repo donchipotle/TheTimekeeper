@@ -1,6 +1,7 @@
 #3rd party modules
 import pygame
 import tcod as libtcod
+import math
 
 #mport tcod
 
@@ -73,12 +74,29 @@ class obj_Actor:
 		#else 
 		#takes in difference of x and difference of y
 
+	def distance_to(self, other):
+		delta_x = other.x - self.x
+		delta_y = other.y - self.y
+		return math.sqrt(delta_x ** 2 + delta_y ** 2)
+
+	def move_towards(self, other):
+		
+		delta_x = other.x - self.x
+		delta_y = other.y - self.y
+		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
+
+		delta_x = int(round(delta_x / distance))
+		delta_y = int(round(delta_y/distance))
+
+		#check later if this actually works or not
+		#idk I'm actually pretty drunk right now so my judgment is probably off by a bit
+		self.creature.move(delta_x, delta_y)
+			
 class obj_Game:
 	def __init__(self):
 		self.current_map = map_create()
 		self.message_history = []
 		self.current_objects = []
-
 
 ###############################################################################################################################
 #components
@@ -123,6 +141,7 @@ class com_Creature:
 		if not tile_is_wall and target is None:
 			self.owner.x += dx
 			self.owner.y += dy
+
 	def attack(self, target, damage):
 		game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage) + " damage."), constants.COLOR_WHITE)
 		target.creature.take_damage(damage)
@@ -196,10 +215,59 @@ class com_Item:
 ######################################################################################################################
 #AI scripts
 	#execute once per turn
-class ai_Test:
+class ai_Confuse:
+	def __init__(self, old_ai, num_turns):
+		self.old_ai = old_ai
+		#number of turns remaining until AI script ends
+		self.num_turns = num_turns
+
 	def take_turn(self):
+		if num_turns > 0:
 		#script causes AI to move to random locations, remember for later (followers?)
-		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			self.num_turns -= 1
+		else:
+			self.owner.ai = self.old_ai
+
+class ai_Chase:
+	#a basic ai script which chases and tries to harm the player
+	#refactor later with target seleciton
+	def take_turn(self):
+		monster = self.owner
+
+		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
+			#move towards the player if far away (out of weapon reach)
+			
+			if monster.distance_to(PLAYER) >= 2:
+				self.owner.move_towards(PLAYER)
+			elif PLAYER.creature.current_hp > 0:
+				monster.creature.attack(PLAYER, 3)
+
+#class ai_Ranged_Assault:
+
+
+#class ai_Ranged_Fall_Back:
+
+
+#class ai_Retreat:
+
+#class ai_Offensive_Spell:
+
+#class ai_Crowd_Control:
+
+class ai_ally_follow:
+	def_take_turn(self):
+		monster = self.owner
+
+		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
+		#move towards the player if far away (out of weapon reach)
+			
+			if monster.distance_to(PLAYER) >= 3:
+				self.owner.move_towards(PLAYER)
+		#maybe add in a script to wander in circles around the player
+			elif:
+				return
+
 
 class com_AI:
 	def take_turn(self):
@@ -306,11 +374,15 @@ def draw_game():
 	#text_x, text_y = T_coords
 	#T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
 
-def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None):
+def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None, center = False):
     # get both the surface and rectangle of the desired message
     text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
     
-    text_rect.topleft = coords
+    if not center:
+    	text_rect.topleft = coords
+
+    else:
+    	text_rect.center = coords
 
     # draw the text onto the display surface.
 
@@ -339,7 +411,7 @@ def draw_messages():
 
 	text_height = helper_text_height(constants.FONT_MESSAGE_TEXT)
 
-	start_y = ((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height))
+	start_y = (((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height)) - 20)
 
 	#print(start_y)
     # get both the surface and rectangle of the desired message
@@ -348,10 +420,10 @@ def draw_messages():
 		draw_text(SURFACE_MAIN, 
 			message, 
 			constants.FONT_MESSAGE_TEXT, 
-			(0, start_y + (i * text_height)), 
+			(20, start_y + (i * text_height)), 
 			color, constants.COLOR_BLACK)
 
-def draw_tile_rect(coords, tile_color = None, tile_alpha = None):
+def draw_tile_rect(coords, tile_color = None, tile_alpha = None, mark = None):
 	x, y = coords
 
 	#default tile colors
@@ -371,6 +443,12 @@ def draw_tile_rect(coords, tile_color = None, tile_alpha = None):
 	#new_surface.fill(misc_cat.S_SELECTED_DEFAULT)
 
 	new_surface.set_alpha(local_alpha)
+
+	if mark:
+		#move the centering calculation elsewhere to prevent unnecessary calculations
+		draw_text(new_surface, mark, font = constants.FONT_CURSOR_TEXT, 
+				coords = (constants.CELL_WIDTH/2, constants.CELL_HEIGHT/2), 
+				text_color = constants.COLOR_BLACK, center = True)
 
 	SURFACE_MAIN.blit(new_surface, (new_x, new_y))
 
@@ -511,6 +589,7 @@ def cast_fireball():
 	max_r = 10
 	player_location = (PLAYER.x, PLAYER.y)
 
+
 	#TODO get target tile
 	point_selected = menu_tile_select(coords_origin = player_location, max_range = max_r,
 		 penetrate_walls = False, 
@@ -518,11 +597,12 @@ def cast_fireball():
 		 radius = local_radius)
 
 	if point_selected:
+		game_message(PLAYER.creature.name_instance + " casts Alenko-Kharyalov Conflagration.")
 		#get sequence of tiles
 		tiles_to_damage = map_find_radius(point_selected, local_radius)
 		creature_hit = False
 
-		game_message("You cast Alenko-Kharyalov Conflagration.")
+		
 
 		#damage all creatures in tiles
 		for (x, y) in tiles_to_damage:
@@ -538,6 +618,29 @@ def cast_fireball():
 
 		if creature_hit:
 			game_message("You hear the disgusting sizzling sound of burning flesh.", constants.COLOR_RED)
+
+def cast_confusion():
+	#select tile
+	point_selected = menu_tile_select(max_range = 12)
+				#radius = local_radius)
+
+	#get target from that tile
+	if point_selected:
+		(tile_x, tile_y) = point_selected
+		target = map_check_for_creatures(tile_x, tile_y)
+
+		#temporarily confuse the target
+		if target:
+			oldai = target.ai
+
+			target.ai = ai_Confuse(old_ai = oldai, num_turns = 5)
+			target.ai.owner = target
+			game_message(target.creature.name_instance + " is confused.", constants.COLOR_GREEN)
+			#print(target.creature.name_instance + " is confused.")
+			
+
+
+	 
 
 
 
@@ -575,7 +678,6 @@ def menu_pause():
 		CLOCK.tick(constants.GAME_FPS)
 
 		pygame.display.flip()
-
 
 def menu_inventory():
 	menu_close = False
@@ -673,7 +775,6 @@ def menu_inventory():
 		CLOCK.tick(constants.GAME_FPS)
 		pygame.display.update()
 
-
 def menu_tile_select(coords_origin = None, max_range = None, 
 	radius = None, penetrate_walls = True, pierce_creature = True):
 	#this menu lets the player select a tile 
@@ -711,8 +812,6 @@ def menu_tile_select(coords_origin = None, max_range = None,
 				if not pierce_creature and map_check_for_creatures(x, y):
 					break
 
-
-
 		else:
 			valid_tiles = [(map_coord_x, map_coord_y)]
 
@@ -727,9 +826,12 @@ def menu_tile_select(coords_origin = None, max_range = None,
 					return(valid_tiles[-1])
 	
 		draw_game()
-
+		#draw rect at mouse position over game screen, marking tile targeted
 		for (tile_x, tile_y) in valid_tiles:
-			draw_tile_rect(tile_color = constants.COLOR_RED, coords = (tile_x, tile_y))
+			if (tile_x, tile_y) == valid_tiles[-1]:
+				draw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (tile_x, tile_y), mark = "X")
+			else:
+				draw_tile_rect(tile_color = constants.COLOR_BLACK, coords = (tile_x, tile_y))
 
 		#draw theoretical blast radius of AoE spells
 		if radius:
@@ -837,8 +939,6 @@ def map_find_radius(coords, radius):
 		for y in range((start_y), (end_y)):
 			tile_list.append((x, y))
 	return tile_list
-
-
 
 def map_tile_query():
 	print("Map tile query initialized.")
@@ -994,7 +1094,7 @@ def game_handle_keys():
 				if event.key == pygame.K_l:
 					#menu_tile_select()
 					#cast_lightning(9)
-					cast_fireball()
+					cast_confusion()
 
 				FOV_CALCULATE = True
 				return "player-moved"
@@ -1039,7 +1139,7 @@ def game_initialize():
 
 	#create the player
 	container_com1 = com_Container()
-	creature_com1 = com_Creature("The Mariner")    #player's creature component name
+	creature_com1 = com_Creature("Bob The Guy")    #player's creature component name
 	PLAYER = obj_Actor(4, 6, "python", 
 						actors_cat.S_PLAYER, 
 						creature = creature_com1,
@@ -1052,7 +1152,7 @@ def game_initialize():
 	item_com1 = com_Item(value = 7, use_function = cast_heal, name = "Greater Nightcrawler carcass")  #FYI, pass function in as parameter without parentheses
 								#name of enemy when alive
 	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster) #the crab's creature name
-	ai_com1 = ai_Test()
+	ai_com1 = ai_Chase()
 							#name of item when picked up
 	ENEMY = obj_Actor(5, 5, "Greater Nightcrawler carcass", actors_cat.S_ENEMY, 
 		creature = creature_com2, ai = ai_com1, item = item_com1)
@@ -1061,7 +1161,7 @@ def game_initialize():
 	item_com2 = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass")
 								#name of enemy when alive
 	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster) #the crab's creature name
-	ai_com2 = ai_Test()
+	ai_com2 = ai_Chase()
 							#name of item when picked up
 	ENEMY2 = obj_Actor(8, 9, "Lesser Nightcrawler carcass", actors_cat.S_ENEMY, 
 		creature = creature_com3, ai = ai_com2, item = item_com2)
