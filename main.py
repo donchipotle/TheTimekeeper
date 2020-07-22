@@ -39,7 +39,8 @@ class obj_Actor:
 		container = None, item = None, 
 		description = "No description for this actor.", num_turns = 0, 
 		icon = "x", 
-		icon_color = constants.COLOR_WHITE):
+		icon_color = constants.COLOR_WHITE,\
+		equipment = None):
 
 		#map addresses, later to be converted to pixel address
 		self.x = x
@@ -51,6 +52,14 @@ class obj_Actor:
 
 		self.icon = icon
 		self.icon_color = icon_color
+
+
+		self.equipment = equipment
+		if self.equipment:
+			self.equipment.owner = self
+
+			self.item = com_Item()
+			self.item.owner = self
 
 		#replace sprite with letter/character, primary color and background color
 
@@ -225,6 +234,37 @@ class com_Item:
 			else:
 				self.container.inventory.remove(self.owner)
 
+#add more bonuses later
+class com_Equipment:
+	def __init__(self, attack_bonus, defense_bonus, slot):
+		self.attack_bonus = attack_bonus
+		self.defense_bonus = defense_bonus
+		self.slot = slot
+		self.equipped = False
+
+	def toggle_equip(self):
+
+		if self.equipped:
+			self.unequip()
+
+		else:
+			self.equip()
+
+	def equip():
+		#toggle self.equipped
+		self.equipped = True
+
+		game_message("equipped")
+
+
+	def unequip():
+				#toggle self.equipped
+		self.equipped = False
+
+		game_message("unequipped")
+
+
+
 ######################################################################################################################
 #AI scripts
 	#execute once per turn
@@ -340,6 +380,14 @@ def map_create():
 	return new_map
 
 
+
+#		if is_visible:
+#			draw_text(SURFACE_MAIN, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
+#				coords = ((self.x * constants.CELL_WIDTH), (self.y * constants.CELL_HEIGHT)), 
+#				text_color = self.icon_color, 
+#				center = False)
+
+
 def draw_map(map_to_draw):
 	for x in range(0, constants.MAP_WIDTH):
 		for y in range(0,constants.MAP_HEIGHT):
@@ -347,24 +395,40 @@ def draw_map(map_to_draw):
 			is_visible = libtcod.map_is_in_fov(FOV_MAP, x, y)
 
 			if is_visible:
-
 				map_to_draw[x][y].explored = True
 
+					#draw visible wall tiles
 				if map_to_draw[x][y].block_path == True:
-					#draw wall
-					SURFACE_MAIN.blit(environ_cat.S_WALL, (x*constants.CELL_WIDTH, y*constants.CELL_HEIGHT))
+					#draw wall, switch to actor walls instead of hardcoded ones
+					draw_text(
+						SURFACE_MAIN, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
+						coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+						text_color = constants.COLOR_L_BROWN, back_color = constants.COLOR_BLACK,
+						center = False)
 				else:
-					#draw floor
-					SURFACE_MAIN.blit(environ_cat.S_FLOOR, (x*constants.CELL_WIDTH, y*constants.CELL_HEIGHT))
+					#draw visible floor tiles
+						draw_text(
+						SURFACE_MAIN, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
+						coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
+						center = False)	
 			else:
+				#draw explored but not visible wall tiles
 				if map_to_draw[x][y].explored:
 					if map_to_draw[x][y].block_path == True:
 						#draw wall
-						SURFACE_MAIN.blit(environ_cat.S_WALLEXPLORED, (x*constants.CELL_WIDTH, y*constants.CELL_HEIGHT))
+						draw_text(
+							SURFACE_MAIN, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
+							coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+							text_color = constants.COLOR_BROWN, back_color = constants.COLOR_BLACK,
+							center = False)
 					else:
-						#draw floor
-						SURFACE_MAIN.blit(environ_cat.S_FLOOREXPLORED, (x*constants.CELL_WIDTH, y*constants.CELL_HEIGHT))
-
+						#draw explored floor but not visible wall tiles
+						draw_text(
+							SURFACE_MAIN, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
+							coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
+							center = False)
 
 #drawing functions
 
@@ -1022,8 +1086,6 @@ def game_main_loop():
 
 		#tick the clock
 		CLOCK.tick(constants.GAME_FPS)
-
-
 
 	#quit the game
 	game_quit_sequence()
