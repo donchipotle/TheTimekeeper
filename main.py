@@ -35,8 +35,12 @@ class struc_Tile:
 #class struc_Assets:
 #objects
 class obj_Actor:
-	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, container = None, item = None, 
-		description = "No description for this actor.", num_turns = 0):
+	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, 
+		container = None, item = None, 
+		description = "No description for this actor.", num_turns = 0, 
+		icon = "x", 
+		icon_color = constants.COLOR_WHITE):
+
 		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
@@ -44,6 +48,9 @@ class obj_Actor:
 		self.sprite = sprite
 		self.IsInvulnerable = False
 		self.description = description
+
+		self.icon = icon
+		self.icon_color = icon_color
 
 		#replace sprite with letter/character, primary color and background color
 
@@ -70,7 +77,13 @@ class obj_Actor:
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 
 		if is_visible:
-			SURFACE_MAIN.blit(self.sprite, (self.x*constants.CELL_WIDTH, self.y*constants.CELL_HEIGHT))
+			draw_text(SURFACE_MAIN, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
+				coords = ((self.x * constants.CELL_WIDTH), (self.y * constants.CELL_HEIGHT)), 
+				text_color = self.icon_color, 
+				center = False)
+
+			#SURFACE_MAIN.blit(self.sprite, (self.x*constants.CELL_WIDTH, self.y*constants.CELL_HEIGHT))
+			
 		#else 
 		#takes in difference of x and difference of y
 
@@ -222,10 +235,8 @@ class ai_Confuse:
 
 		self.num_turns = num_turns
 
-
 	def take_turn(self):
-		print("Hi.")
-		
+		#print("Hi.")		
 
 		#I really hope that plugging self into this is a final fix to this stupid bug
 		if self.num_turns > 0:
@@ -249,18 +260,23 @@ class ai_Chase:
 			elif PLAYER.creature.current_hp > 0:
 				monster.creature.attack(PLAYER, 3)
 
+#fire ranged until entering melee range. sustain fire at all times
 #class ai_Ranged_Assault:
 
-
+#ranged only, retreating from target while attacking
 #class ai_Ranged_Fall_Back:
 
 
+#run from target
 #class ai_Retreat:
 
+#cast offensive spell
 #class ai_Offensive_Spell:
 
+#cast suppressive spell
 #class ai_Crowd_Control:
 
+#follow ally, idling when too close
 #class ai_ally_follow:
 #	def_take_turn(self):
 #		monster = self.owner
@@ -1143,7 +1159,8 @@ def game_initialize():
 	PLAYER = obj_Actor(4, 6, "python", 
 						actors_cat.S_PLAYER, 
 						creature = creature_com1,
-						container = container_com1
+						container = container_com1,
+						icon = "Я"
 						)
 
 	#spawn enemies

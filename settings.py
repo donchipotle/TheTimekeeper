@@ -15,6 +15,10 @@ EXPLOSION_TICK_UPPER = 50
 #ms elapsed before animation ends
 EXPLOSION_TICK_LOWER = 50
 
+#render every tile with ASCII instead of bitmaps (legacy)
+RENDER_ASCII = True
+
+
 	###game interface
 
 
