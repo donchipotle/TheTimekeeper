@@ -36,7 +36,7 @@ class struc_Tile:
 #objects
 class obj_Actor:
 	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, container = None, item = None, 
-		description = "No description for this actor."):
+		description = "No description for this actor.", num_turns = 0):
 		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
@@ -219,11 +219,17 @@ class ai_Confuse:
 	def __init__(self, old_ai, num_turns):
 		self.old_ai = old_ai
 		#number of turns remaining until AI script ends
+
 		self.num_turns = num_turns
 
+
 	def take_turn(self):
-		if num_turns > 0:
-		#script causes AI to move to random locations, remember for later (followers?)
+		print("Hi.")
+		
+
+		#I really hope that plugging self into this is a final fix to this stupid bug
+		if self.num_turns > 0:
+		#script causes AI to move to random locations, remember for later (bored/idle followers?)
 			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
 			self.num_turns -= 1
 		else:
@@ -255,18 +261,18 @@ class ai_Chase:
 
 #class ai_Crowd_Control:
 
-class ai_ally_follow:
-	def_take_turn(self):
-		monster = self.owner
+#class ai_ally_follow:
+#	def_take_turn(self):
+#		monster = self.owner
 
-		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
+#		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
 		#move towards the player if far away (out of weapon reach)
 			
-			if monster.distance_to(PLAYER) >= 3:
-				self.owner.move_towards(PLAYER)
+#			if monster.distance_to(PLAYER) >= 3:
+#				self.owner.move_towards(PLAYER)
 		#maybe add in a script to wander in circles around the player
-			elif:
-				return
+#			elif:
+#				return
 
 
 class com_AI:
@@ -473,8 +479,6 @@ def draw_projectile(ballistic_x, ballistic_y, projectile_color):
 	pygame.time.delay(settings.BALLISTIC_TICK_LOWER)
 	#end after iterating
 
-
-
 #allow blast to expand from center, at a later date
 def draw_explosion(radius, blast_x, blast_y, color):
 	print("This is a placeholder for when explosions and other AoE actions are properly taken care of.")
@@ -638,10 +642,6 @@ def cast_confusion():
 			game_message(target.creature.name_instance + " is confused.", constants.COLOR_GREEN)
 			#print(target.creature.name_instance + " is confused.")
 			
-
-
-	 
-
 
 
 ###############################################################################################################
