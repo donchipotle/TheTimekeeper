@@ -35,9 +35,17 @@ class struc_Tile:
 #class struc_Assets:
 #objects
 class obj_Actor:
-	def __init__(self, x, y, name_object, sprite, creature = None, ai = None, 
-		container = None, item = None, 
-		description = "No description for this actor.", num_turns = 0, 
+	def __init__(self, x, y,
+
+		name_object, sprite, 
+		creature = None, 
+		ai = None, 
+
+		container = None, 
+		item = None, 
+		description = "No description for this actor.", 
+
+		num_turns = 0, 
 		icon = "x", 
 		icon_color = constants.COLOR_WHITE,\
 		equipment = None):
@@ -52,14 +60,6 @@ class obj_Actor:
 
 		self.icon = icon
 		self.icon_color = icon_color
-
-
-		self.equipment = equipment
-		if self.equipment:
-			self.equipment.owner = self
-
-			self.item = com_Item()
-			self.item.owner = self
 
 		#replace sprite with letter/character, primary color and background color
 
@@ -81,6 +81,13 @@ class obj_Actor:
 		if self.item:
 			self.item.owner = self
 
+		self.equipment = equipment
+		if self.equipment:
+			self.equipment.owner = self
+
+			self.item = com_Item()
+			self.item.owner = self
+
 	def draw(self):
 		#is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
@@ -89,7 +96,7 @@ class obj_Actor:
 			draw_text(SURFACE_MAIN, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 				coords = ((self.x * constants.CELL_WIDTH), (self.y * constants.CELL_HEIGHT)), 
 				text_color = self.icon_color, 
-				center = False)
+				center = True)
 
 			#SURFACE_MAIN.blit(self.sprite, (self.x*constants.CELL_WIDTH, self.y*constants.CELL_HEIGHT))
 			
@@ -198,12 +205,16 @@ class com_Item:
 
 		#pick up this item
 	def pick_up(self, actor):
+
 		if actor.container:
 			if (actor.container.volume + self.volume) > actor.container.max_volume:
 				game_message("Not enough volume to pick up " + self.name + ".")
+				print("Can't pick up.")
 
 			else:
+				print("Picked up.")
 				game_message("Picked up " + self.name + ".")
+				print("item picked up is " + self.name)
 				actor.container.inventory.append(self.owner)
 				GAME.current_objects.remove(self.owner)
 				self.container = actor.container
@@ -226,6 +237,13 @@ class com_Item:
 
 		#consumables
 	def use(self):
+		if self.owner.equipment:
+			self.owner.equipment.toggle_equip()
+			return
+		else: 
+			print("Typical, it's not working.")
+		
+
 		if self.use_function:
 			result = self.use_function(self.container.owner, self.value)
 			#if result == "cancelled":
@@ -236,7 +254,7 @@ class com_Item:
 
 #add more bonuses later
 class com_Equipment:
-	def __init__(self, attack_bonus, defense_bonus, slot):
+	def __init__(self, attack_bonus = None, defense_bonus = None, slot = None):
 		self.attack_bonus = attack_bonus
 		self.defense_bonus = defense_bonus
 		self.slot = slot
@@ -250,18 +268,18 @@ class com_Equipment:
 		else:
 			self.equip()
 
-	def equip():
+	def equip(self):
 		#toggle self.equipped
 		self.equipped = True
 
 		game_message("equipped")
 
 
-	def unequip():
+	def unequip(self):
 				#toggle self.equipped
 		self.equipped = False
-
 		game_message("unequipped")
+
 
 
 
@@ -394,6 +412,7 @@ def draw_map(map_to_draw):
 
 			is_visible = libtcod.map_is_in_fov(FOV_MAP, x, y)
 
+			#tiles that are currently visible
 			if is_visible:
 				map_to_draw[x][y].explored = True
 
@@ -408,10 +427,12 @@ def draw_map(map_to_draw):
 				else:
 					#draw visible floor tiles
 						draw_text(
-						SURFACE_MAIN, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
+						SURFACE_MAIN, text_to_display = " . ", font = constants.FONT_RENDER_TEXT, 
 						coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
 						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
 						center = False)	
+
+			#tiles that have already been rendered but are no longer visible
 			else:
 				#draw explored but not visible wall tiles
 				if map_to_draw[x][y].explored:
@@ -661,6 +682,8 @@ def cast_lightning():
 				#if (target.x, target.y)  
 				target.creature.take_damage(damage)
 
+				game_message("You smell ozone.")
+
 				#if target.creature.name_instance:
 				#	game_message(target.creature.name_instance + " takes " + str(damage) + " damage.")
 		return "no-action"
@@ -701,7 +724,7 @@ def cast_fireball():
 					creature_hit = True
 
 		if creature_hit:
-			game_message("You hear the disgusting sizzling sound of burning flesh.", constants.COLOR_RED)
+			game_message("You smell the repugnant stench of burning flesh.", constants.COLOR_RED)
 
 def cast_confusion():
 	#select tile
@@ -849,8 +872,13 @@ def menu_inventory():
 					menu_text_font,
 					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
 
+
+		#render game 
+		draw_game()
+
+
 		#display menu
-		SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
+		SURFACE_MAIN.blit(local_inventory_surface, (int(menu_x), int(menu_y)))
 			
 		CLOCK.tick(constants.GAME_FPS)
 		pygame.display.update()
@@ -1172,7 +1200,8 @@ def game_handle_keys():
 				if event.key == pygame.K_l:
 					#menu_tile_select()
 					#cast_lightning(9)
-					cast_confusion()
+					#cast_confusion()
+					cast_fireball()
 
 				FOV_CALCULATE = True
 				return "player-moved"
@@ -1222,7 +1251,8 @@ def game_initialize():
 						actors_cat.S_PLAYER, 
 						creature = creature_com1,
 						container = container_com1,
-						icon = "Я"
+						icon = " Я ",
+
 						)
 
 	#spawn enemies
@@ -1233,8 +1263,8 @@ def game_initialize():
 	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster) #the crab's creature name
 	ai_com1 = ai_Chase()
 							#name of item when picked up
-	ENEMY = obj_Actor(5, 5, "Greater Nightcrawler carcass", actors_cat.S_ENEMY, 
-		creature = creature_com2, ai = ai_com1, item = item_com1)
+	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", actors_cat.S_ENEMY, 
+		creature = creature_com2, ai = ai_com1, item = item_com1, icon = "Ж", icon_color = constants.COLOR_GRAY)
 
 	#second enemy
 	item_com2 = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass")
@@ -1242,12 +1272,16 @@ def game_initialize():
 	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster) #the crab's creature name
 	ai_com2 = ai_Chase()
 							#name of item when picked up
-	ENEMY2 = obj_Actor(8, 9, "Lesser Nightcrawler carcass", actors_cat.S_ENEMY, 
-		creature = creature_com3, ai = ai_com2, item = item_com2)
+	ENEMY2 = obj_Actor(20, 19, "Lesser Nightcrawler carcass", actors_cat.S_ENEMY, 
+		creature = creature_com3, ai = ai_com2, item = item_com2, icon = " Ж ", icon_color = constants.COLOR_GRAY)
 
+	#create a sword
+	equipment_com1 = com_Equipment()
+	SWORD = obj_Actor( 2, 2, sprite = None, name_object = "Sword of Damocles", 
+		icon = " ) ", icon_color = constants.COLOR_L_BLUE, equipment = equipment_com1)
 
 	#player listed last to be rendered on top of enemies
-	GAME.current_objects = [ENEMY, ENEMY2, PLAYER]
+	GAME.current_objects = [ENEMY, ENEMY2, SWORD, PLAYER]
 
 
 if __name__ == '__main__':

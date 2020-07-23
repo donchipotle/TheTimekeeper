@@ -48,7 +48,9 @@ TORCH_RADIUS = 18
 
 #fonts
 #font for rendering the entire screen
-FONT_RENDER_TEXT = pygame.font.Font('fonts/Montserrat-Regular.ttf', 35)
+#FONT_RENDER_TEXT = pygame.font.Font('fonts/Montserrat-Regular.ttf', 35)
+FONT_RENDER_TEXT = pygame.font.Font('fonts/Azoft Sans.otf', 35)
+
 
 FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
 FONT_CURSOR_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', CELL_HEIGHT)
