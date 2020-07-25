@@ -28,7 +28,19 @@ game, including you. CHOO CHOO!!!
 #6: YOU DONE GOOFED
 	Like a good roguelike, permadeath is there!
 
-#7: 
+#7: WHERE'S THE ZIPPER?
+	Donning armor now takes twice as long. Maybe you'll think to get changed 
+BEFORE starting the battle? Hmm?
+
+#8:
+
+
+#9:
+
+
+#10:
+
+
 
 (spells do damage to caster and target, includig player? idk)
 	

@@ -16,7 +16,7 @@ EXPLOSION_TICK_UPPER = 50
 EXPLOSION_TICK_LOWER = 50
 
 #render every tile with ASCII instead of bitmaps (legacy)
-RENDER_ASCII = True
+#RENDER_ASCII = True
 
 
 	###game interface
@@ -28,6 +28,13 @@ RENDER_ASCII = True
 
 	###gameplay
 
+
+#ASCI ICONS
+scroll_icon = "ґ"
+weapon_icon = ")"
+armor_icon = "]"
+food_icon = "%"
+potion_icon = "!"
 
 	###difficulty modifiers, see modifiers.txt for descriptions
 
@@ -53,3 +60,6 @@ DISPLAY_FPS = False
 
 DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
+
+#Inventory
+CLOSE_AFTER_USE = True

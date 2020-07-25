@@ -41,7 +41,7 @@ class struc_Tile:
 class obj_Actor:
 	def __init__(self, x, y,
 
-		name_object, sprite, 
+		name_object,
 		creature = None, 
 		ai = None, 
 
@@ -58,7 +58,7 @@ class obj_Actor:
 		self.x = x
 		self.y = y
 		self.name_object = name_object
-		self.sprite = sprite
+#		self.sprite = sprite
 		self.IsInvulnerable = False
 		self.description = description
 
@@ -347,7 +347,7 @@ class com_Equipment:
 				return
 		self.equipped = True
 		print("Equipped successfully")
-		game_message("Equipped in " + self.slot + ".")
+		game_message("Equipped in " + (str(self.slot)) + ".")
 			
 	#toggle self.equipped
 	def unequip(self):
@@ -530,6 +530,7 @@ def draw_map(map_to_draw):
 #drawing functions
 
 def draw_game():
+	global GAME
 	global SURFACE_MAIN, PLAYER #, GAME.current_map
 
 	#clear the surface
@@ -717,7 +718,7 @@ def helper_text_width(font):
 	return font_rect.width
 
 def helper_dice(upper_bound, bias):
-	dice_roll = random.randint(0, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
+	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
 	return dice_roll
 
 
@@ -739,15 +740,18 @@ def cast_heal(target, value):
 		
 	return None
 
-def cast_lightning():
+def cast_lightning(caster, T_damage_maxrange):
 
-	damage = 5
-	
+	damage, m_range = T_damage_maxrange
+
+	#damage = helper_dice(5, 6)
+	#m_range = 6
+
 	player_location = (PLAYER.x, PLAYER.y)
 
 	# prompt player for a tile
 	point_selected = menu_tile_select(coords_origin = player_location, 
-		max_range = 5, penetrate_walls = False)
+		max_range = m_range, penetrate_walls = False)
 
 	if point_selected:
 	# convert that tile into a list of coordinates, A -> B
@@ -771,11 +775,9 @@ def cast_lightning():
 		return "no-action"
 	#later, render effect on each tile in sequence
 
-def cast_fireball():
+def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
-	damage = 5
-	local_radius = 2
-	max_r = 10
+	damage, local_radius, max_r = T_damage_radius_range
 	player_location = (PLAYER.x, PLAYER.y)
 
 
@@ -807,7 +809,7 @@ def cast_fireball():
 		if creature_hit:
 			game_message("You smell the repugnant stench of burning flesh.", constants.COLOR_RED)
 
-def cast_confusion():
+def cast_confusion(caster, effect_duration):
 	#select tile
 	point_selected = menu_tile_select(max_range = 12)
 				#radius = local_radius)
@@ -821,9 +823,9 @@ def cast_confusion():
 		if target:
 			oldai = target.ai
 
-			target.ai = ai_Confuse(old_ai = oldai, num_turns = 5)
+			target.ai = ai_Confuse(old_ai = oldai, num_turns = effect_duration)
 			target.ai.owner = target
-			game_message(target.creature.name_instance + " is confused.", constants.COLOR_GREEN)
+			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
 			#print(target.creature.name_instance + " is confused.")
 			
 
@@ -863,6 +865,7 @@ def menu_pause():
 
 		pygame.display.flip()
 
+#really messy, clean up later
 def menu_inventory():
 	menu_close = False
 
@@ -936,7 +939,8 @@ def menu_inventory():
 						mouse_line_selection <= len(print_list) - 1):
 						#PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
 						PLAYER.container.inventory[mouse_line_selection].item.use()
-						#print(True)
+						
+						if settings.CLOSE_AFTER_USE == True: menu_close
 
 
 					
@@ -1156,6 +1160,100 @@ def map_tile_query():
 				if event.key == pygame.K_q:
 						menu_close = True
 						print("Map tile query terminated.")
+##########################################################################################################
+#procedural generators
+
+
+#use better solution later
+def gen_item(coords): #random scrolls
+	global GAME
+
+	random_num = helper_dice(6, 0)
+	if random_num == 1: new_item = gen_scroll_lightning(coords)
+	elif random_num == 2: new_item = gen_scroll_fireball(coords)
+	elif random_num == 3:  new_item = gen_scroll_confusion(coords)
+	elif random_num == 4:  new_item = gen_weapon_sword(coords)
+	elif random_num == 5:  new_item = gen_armor_armor(coords)
+	#elif random_num == 6:  new_item = gen_consumable_potion(coords)
+	
+	
+	GAME.current_objects.append(new_item)
+	
+
+
+def gen_scroll_lightning(coords):
+	x, y = coords
+
+	damage = helper_dice(5, 6)
+	m_range = 8
+
+	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range))#not going to worry about weight or volume yet
+
+	return_object =obj_Actor(x, y, "Scroll of Lightning", item = item_com, 
+							icon = settings.scroll_icon, icon_color = constants.COLOR_WHITE)
+
+	return return_object
+
+
+def gen_scroll_fireball(coords):
+	x, y = coords
+
+	damage = helper_dice(7, 7)
+	local_radius = 2
+	max_r = 9
+
+	item_com = com_Item(use_function = cast_fireball, value = (damage, local_radius, max_r))#not going to worry about weight or volume yet
+
+	return_object =obj_Actor(x, y, "Scroll of Fireball", item = item_com, 
+							icon = settings.scroll_icon, icon_color = constants.COLOR_ORANGE)
+
+	return return_object
+
+def gen_scroll_confusion(coords):
+	x, y = coords
+
+	effect_duration = helper_dice(3, 3)
+
+	item_com = com_Item(use_function = cast_confusion, value = (effect_duration))#not going to worry about weight or volume yet
+
+	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, 
+							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
+
+	return return_object
+
+def gen_weapon_sword(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(attack_bonus = 8, defense_bonus = 1, slot = "Main Hand")
+
+	return_object = obj_Actor(x, y, "Longsword",
+					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
+					equipment = equipment_com)
+	return return_object
+
+def gen_armor_armor(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Armor")
+
+	return_object = obj_Actor(x, y, "Leather Armor",
+					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
+					equipment = equipment_com)
+	return return_object
+
+def gen_consumable_potion(coords):
+	x, y = coords
+	item_com = com_Item(value = 5)
+	return_object = obj_Actor(x, y, "Bottle of Beer",
+					icon = settings.potion_icon, icon_color = constants.COLOR_BROWN,
+					item = item_com )
+
+
+
+
+
 
 ################################################################################################################
 
@@ -1328,9 +1426,8 @@ def game_initialize():
 	#create the player
 	container_com1 = com_Container()
 	creature_com1 = com_Creature("Bob The Guy", 
-									base_attack = 20, base_defense = 2) #player's creature component name
-	PLAYER = obj_Actor(4, 6, "python", 
-						sprite = None, 
+									base_attack = 5, base_defense = 2) #player's creature component name
+	PLAYER = obj_Actor(4, 6, "python",  
 						creature = creature_com1,
 						container = container_com1,
 						icon = " Я ",
@@ -1343,40 +1440,59 @@ def game_initialize():
 	item_com1 = com_Item(value = 7, use_function = cast_heal, name = "Greater Nightcrawler carcass")  #FYI, pass function in as parameter without parentheses
 								#name of enemy when alive
 	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster,
-								base_attack = 7,
-								base_defense = 3
+								base_attack = 10,
+								base_defense = 8
 	) 
 	#the crab's creature name
 	ai_com1 = ai_Chase()
 							#name of item when picked up
-	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", sprite = None, 
+	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", 
 		creature = creature_com2, ai = ai_com1, item = item_com1, icon = "Ж", icon_color = constants.COLOR_GRAY)
 
 	#second enemy
 	item_com2 = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass")
 								#name of enemy when alive
 	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster,
-								base_attack = 4,
-								base_defense = 3
+								base_attack = 9,
+								base_defense = 5
 	) 
 	ai_com2 = ai_Chase()
 							#name of item when picked up
-	ENEMY2 = obj_Actor(20, 19, "Lesser Nightcrawler carcass", sprite = None, 
+	ENEMY2 = obj_Actor(20, 19, "Lesser Nightcrawler carcass",
 		creature = creature_com3, ai = ai_com2, item = item_com2, icon = " Ж ", icon_color = constants.COLOR_GRAY)
 
 	#create a sword
-	equipment_com1 = com_Equipment(attack_bonus = 7, name = "The Sword of Damocles", slot = "Main Hand")
-	SWORD = obj_Actor( 2, 2, sprite = None, name_object = "The Sword of Damocles", 
-		icon = " ) ", icon_color = constants.COLOR_L_BLUE, equipment = equipment_com1)
+#	equipment_com1 = com_Equipment(attack_bonus = 10, name = "The Sword of Damocles", slot = "Main Hand")
+#	SWORD = obj_Actor( 2, 2, name_object = "The Sword of Damocles", 
+#		icon = " ) ", icon_color = constants.COLOR_L_BLUE, equipment = equipment_com1)
+#
+#	#create some armor
+#	equipment_com2 = com_Equipment(defense_bonus = 6, name = "Temryavite Hauberk", slot = "Armor")
+#	ARMOR = obj_Actor(2, 3, name_object = "Temryavite Hauberk",
+#		icon = " [ ", icon_color = constants.COLOR_GRAY, equipment = equipment_com2)
+#
+#	#create some more armor
+#	equipment_com3 = com_Equipment(defense_bonus = 2, name = "Temryavite Helmet", slot = "Helmet")
+#	ARMOR2 = obj_Actor(3, 3, name_object = "Temryavite Helmet",
+#		icon = " [ ", icon_color = constants.COLOR_GRAY, equipment = equipment_com3)
 
+	GAME.current_objects = [ENEMY, ENEMY2, PLAYER]
 
-	#create some armor
-	equipment_com2 = com_Equipment(defense_bonus = 4, name = "Temryavite Hauberk", slot = "Armor")
-	ARMOR = obj_Actor(2, 3, sprite = None, name_object = "Temryavite Hauberk",
-		icon = " [ ", icon_color = constants.COLOR_GRAY, equipment = equipment_com2)
+	#stuff
+	gen_item((4, 4))
+	gen_item((4, 3))
+#	gen_item((4, 3))
+	gen_item((3, 3))
+	gen_item((2,2))
+	gen_item((3,2))
+
 
 	#player listed last to be rendered on top of enemies
-	GAME.current_objects = [ENEMY, ENEMY2, SWORD, ARMOR, PLAYER]
+#	
+
+
+
+
 
 
 if __name__ == '__main__':
