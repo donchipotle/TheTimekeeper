@@ -3,7 +3,7 @@ import pygame
 import tcod as libtcod
 import math
 
-#mport tcod
+#import tcod
 
 #necessary game files
 import constants
@@ -11,12 +11,16 @@ import settings
 #import toolbox
 
 
+#for dice rolls, move when that function is moved too
+import random
+
+
 #import key_binds
 
 #import asset catalogs
-import environ_cat
-import actors_cat
-import misc_cat
+#import environ_cat
+#import actors_cat
+#import misc_cat
 
 
 #structures
@@ -47,7 +51,7 @@ class obj_Actor:
 
 		num_turns = 0, 
 		icon = "x", 
-		icon_color = constants.COLOR_WHITE,\
+		icon_color = constants.COLOR_WHITE,
 		equipment = None):
 
 		#map addresses, later to be converted to pixel address
@@ -87,6 +91,17 @@ class obj_Actor:
 
 			self.item = com_Item()
 			self.item.owner = self
+
+	@property
+	def display_name(self):
+		if self.creature:
+			return(self.creature.name_instance + " the " + self.name_object)
+
+		if self.item:
+			if self.equipment and self.equipment.equipped:
+				return (self.name_object + "(" + self.equipment.slot + ")") 
+			else:
+				return self.name_object
 
 	def draw(self):
 		#is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
@@ -131,7 +146,9 @@ class obj_Game:
 #components
 
 class com_Creature:
-	def __init__(self, name_instance, hp = 10, death_function = None, money = 0, gender = 0, base_xp = 15):
+	def __init__(self, name_instance, 
+		hp = 10, base_attack = 5, base_defense = 5, 
+		death_function = None, money = 0, gender = 0, base_xp = 15):
 		self.name_instance = name_instance
 		self.max_hp = hp
 		self.current_hp = hp
@@ -139,6 +156,8 @@ class com_Creature:
 		self.death_function = death_function
 		self.gender = gender
 		self.base_xp = base_xp
+		self.base_attack = base_attack
+		self.base_defense = base_defense
 
 
 		#add new damage types and stuff later
@@ -163,40 +182,82 @@ class com_Creature:
 
 		#possibly move this statement into loop above
 		if target:
-			#damage = (libtcod.random_get_int(self, 2, 4))
-			damage = 4
-			self.attack(target, damage)
+
+			self.attack(target, 3)
 
 		if not tile_is_wall and target is None:
 			self.owner.x += dx
 			self.owner.y += dy
 
 	def attack(self, target, damage):
-		game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage) + " damage."), constants.COLOR_WHITE)
-		target.creature.take_damage(damage)
+
+		damage_dealt = self.power - target.creature.defense
+
+		if (damage_dealt < 0):
+			game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
+
+		else:
+			game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
+			target.creature.take_damage(damage_dealt)
 	def heal(self, value):
 		self.current_hp += value
 		#include at a later date, the possibility of overhealing
 		if self.current_hp > self.max_hp:
 			self.current_hp = self.max_hp
 
+	@property
+	def power(self):
+		total_power = self.base_attack
+		object_bonuses = []
+		if self.owner.container:
+			object_bonuses = [obj.equipment.attack_bonus 
+			for obj in self.owner.container.equipped_items]
+
+		for bonus in object_bonuses:
+			if bonus:
+				total_power += bonus
+
+
+		return total_power
+
+	@property
+	def defense(self):
+		total_defense = self.base_defense
+
+		object_bonuses = []
+		if self.owner.container:
+			object_bonuses = [obj.equipment.defense_bonus
+								for obj in self.owner.container.equipped_items]
+		for bonus in object_bonuses:
+			if bonus:
+				total_defense += bonus
+
+
+		return total_defense
+
+
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = []):
 		self.inventory = inventory
 		self.max_volume = volume
-		self.volume = max_volume
+		#self.volume = max_volume
 
 		#names of everything in inventory
 		#get volume within container
-		@property 
-		def volume(self):
-			return 0.0
+	@property 
+	def volume(self):
+		return 0.0
 
+	@property
+	def equipped_items(self):
+		list_of_equipped_items = [obj for obj in self.inventory 
+									if obj.equipment and obj.equipment.equipped ]
+		return list_of_equipped_items
 
 		#get weight of everything
 
 class com_Item:
-	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", use_function = None, value = None):
+	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", use_function = None, value = None, slot = None):
 		self.weight = weight
 		self.volume = volume
 		self.name = name
@@ -205,7 +266,6 @@ class com_Item:
 
 		#pick up this item
 	def pick_up(self, actor):
-
 		if actor.container:
 			if (actor.container.volume + self.volume) > actor.container.max_volume:
 				game_message("Not enough volume to pick up " + self.name + ".")
@@ -217,11 +277,12 @@ class com_Item:
 				print("item picked up is " + self.name)
 				actor.container.inventory.append(self.owner)
 				GAME.current_objects.remove(self.owner)
-				self.container = actor.container
+				#self.container = actor.container
+				self.current_container = actor.container
 				#game_messge(self.name + " dropped.")
 	def drop(self, new_x, new_y):
 		GAME.current_objects.append(self.owner)
-		self.container.inventory.remove(self.owner)
+		self.current_container.inventory.remove(self.owner)
 
 		self.owner.x = new_x
 		self.owner.y = new_y
@@ -240,28 +301,31 @@ class com_Item:
 		if self.owner.equipment:
 			self.owner.equipment.toggle_equip()
 			return
-		else: 
-			print("Typical, it's not working.")
+		#else: 
+		#	print("Equipment's not working. Typical.")
 		
 
 		if self.use_function:
-			result = self.use_function(self.container.owner, self.value)
+			result = self.use_function(self.current_container.owner, self.value)
+			#result = self.use_function(self.container.owner, self.value)
 			#if result == "cancelled":
 			if result is not None:
 				print("use_function failed")
 			else:
-				self.container.inventory.remove(self.owner)
+				self.current_container.inventory.remove(self.owner)
 
 #add more bonuses later
 class com_Equipment:
-	def __init__(self, attack_bonus = None, defense_bonus = None, slot = None):
+	def __init__(self, attack_bonus = None, defense_bonus = None, slot = None, name = None):
 		self.attack_bonus = attack_bonus
 		self.defense_bonus = defense_bonus
+
 		self.slot = slot
 		self.equipped = False
 
-	def toggle_equip(self):
 
+	def toggle_equip(self):
+		print("Equip toggle function called.")
 		if self.equipped:
 			self.unequip()
 
@@ -270,17 +334,27 @@ class com_Equipment:
 
 	def equip(self):
 		#toggle self.equipped
+
+	
+		all_equipped_items = self.owner.item.current_container.equipped_items
+		
+
+		for item in all_equipped_items:
+			#if item.equipment.slot and (item.equipment.slot != self.slot):
+			if item.equipment.slot and (item.equipment.slot == self.slot):
+				game_message(self.slot + " is already occupied.", constants.COLOR_RED)
+					#ynaq prompt?
+				return
 		self.equipped = True
-
-		game_message("equipped")
-
-
+		print("Equipped successfully")
+		game_message("Equipped in " + self.slot + ".")
+			
+	#toggle self.equipped
 	def unequip(self):
-				#toggle self.equipped
+		print("Unequip function called.")	
 		self.equipped = False
-		game_message("unequipped")
-
-
+		#game_message(self.item.equipment.slot + " is now empty.")
+		game_message("Unequipped.")
 
 
 ######################################################################################################################
@@ -303,6 +377,8 @@ class ai_Confuse:
 			self.num_turns -= 1
 		else:
 			self.owner.ai = self.old_ai
+
+			game_message(self.owner.display_name + " pauses and turns back to face you.")
 
 class ai_Chase:
 	#a basic ai script which chases and tries to harm the player
@@ -631,6 +707,7 @@ def helper_text_height(font):
 	#print(font_rect.height)
 	return font_rect.height
 
+
 def helper_text_width(font):
 	#font_object = font.render('a', False, (0, 0, 0))
 	#font_rect = font_object.get_rect()
@@ -638,6 +715,11 @@ def helper_text_width(font):
 
 	#print(font_rect.width)
 	return font_rect.width
+
+def helper_dice(upper_bound, bias):
+	dice_roll = random.randint(0, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
+	return dice_roll
+
 
 ###############################################################################################################
 #magic
@@ -709,8 +791,7 @@ def cast_fireball():
 		tiles_to_damage = map_find_radius(point_selected, local_radius)
 		creature_hit = False
 
-		
-
+	
 		#damage all creatures in tiles
 		for (x, y) in tiles_to_damage:
 			#add visual feedback to fireball, maybe even adding a trail to its destination later
@@ -807,11 +888,11 @@ def menu_inventory():
 		#clear the menu by wiping it black
 		local_inventory_surface.fill(constants.COLOR_BLACK)
 
-		print_list = [obj.name_object for obj in PLAYER.container.inventory]
+		#print_list = [obj.name_object for obj in PLAYER.container.inventory]
+		print_list = [obj.display_name for obj in PLAYER.container.inventory]
 
 		#register changes
 		events_list = pygame.event.get()
-
 
 		mouse_x, mouse_y = pygame.mouse.get_pos()
 		if settings.DEBUG_MOUSE_POSITON == True:
@@ -859,7 +940,7 @@ def menu_inventory():
 
 
 					
-
+		#draw every line in the list
 		for line, (name) in enumerate(print_list):
 			if line == mouse_line_selection and mouse_in_window == True:
 				draw_text(local_inventory_surface,
@@ -1246,9 +1327,10 @@ def game_initialize():
 
 	#create the player
 	container_com1 = com_Container()
-	creature_com1 = com_Creature("Bob The Guy")    #player's creature component name
+	creature_com1 = com_Creature("Bob The Guy", 
+									base_attack = 20, base_defense = 2) #player's creature component name
 	PLAYER = obj_Actor(4, 6, "python", 
-						actors_cat.S_PLAYER, 
+						sprite = None, 
 						creature = creature_com1,
 						container = container_com1,
 						icon = " Я ",
@@ -1260,28 +1342,41 @@ def game_initialize():
 	#first enemy
 	item_com1 = com_Item(value = 7, use_function = cast_heal, name = "Greater Nightcrawler carcass")  #FYI, pass function in as parameter without parentheses
 								#name of enemy when alive
-	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster) #the crab's creature name
+	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster,
+								base_attack = 7,
+								base_defense = 3
+	) 
+	#the crab's creature name
 	ai_com1 = ai_Chase()
 							#name of item when picked up
-	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", actors_cat.S_ENEMY, 
+	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", sprite = None, 
 		creature = creature_com2, ai = ai_com1, item = item_com1, icon = "Ж", icon_color = constants.COLOR_GRAY)
 
 	#second enemy
 	item_com2 = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass")
 								#name of enemy when alive
-	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster) #the crab's creature name
+	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster,
+								base_attack = 4,
+								base_defense = 3
+	) 
 	ai_com2 = ai_Chase()
 							#name of item when picked up
-	ENEMY2 = obj_Actor(20, 19, "Lesser Nightcrawler carcass", actors_cat.S_ENEMY, 
+	ENEMY2 = obj_Actor(20, 19, "Lesser Nightcrawler carcass", sprite = None, 
 		creature = creature_com3, ai = ai_com2, item = item_com2, icon = " Ж ", icon_color = constants.COLOR_GRAY)
 
 	#create a sword
-	equipment_com1 = com_Equipment()
-	SWORD = obj_Actor( 2, 2, sprite = None, name_object = "Sword of Damocles", 
+	equipment_com1 = com_Equipment(attack_bonus = 7, name = "The Sword of Damocles", slot = "Main Hand")
+	SWORD = obj_Actor( 2, 2, sprite = None, name_object = "The Sword of Damocles", 
 		icon = " ) ", icon_color = constants.COLOR_L_BLUE, equipment = equipment_com1)
 
+
+	#create some armor
+	equipment_com2 = com_Equipment(defense_bonus = 4, name = "Temryavite Hauberk", slot = "Armor")
+	ARMOR = obj_Actor(2, 3, sprite = None, name_object = "Temryavite Hauberk",
+		icon = " [ ", icon_color = constants.COLOR_GRAY, equipment = equipment_com2)
+
 	#player listed last to be rendered on top of enemies
-	GAME.current_objects = [ENEMY, ENEMY2, SWORD, PLAYER]
+	GAME.current_objects = [ENEMY, ENEMY2, SWORD, ARMOR, PLAYER]
 
 
 if __name__ == '__main__':
