@@ -159,7 +159,6 @@ class com_Creature:
 		self.base_attack = base_attack
 		self.base_defense = base_defense
 
-
 		#add new damage types and stuff later
 	def take_damage(self, damage):
 		#game_message(self.name_instance +  "'s health is " + str(self.hp) + "/" + str(self.maxhp), constants.COLOR_RED)
@@ -168,7 +167,6 @@ class com_Creature:
 
 		#possibly change later to include the name of the attacker
 		if self.current_hp <= 0:
-
 			if self.death_function is not None:
 				self.death_function(self.owner)
 
@@ -178,7 +176,6 @@ class com_Creature:
 		tile_is_wall = (GAME.current_map[self.owner.x + dx][self.owner.y + dy].block_path == True)
 
 		target = map_check_for_creatures(self.owner.x + dx, self.owner.y + dy, self.owner)
-		
 
 		#possibly move this statement into loop above
 		if target:
@@ -199,6 +196,7 @@ class com_Creature:
 		else:
 			game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
 			target.creature.take_damage(damage_dealt)
+
 	def heal(self, value):
 		self.current_hp += value
 		#include at a later date, the possibility of overhealing
@@ -217,7 +215,6 @@ class com_Creature:
 			if bonus:
 				total_power += bonus
 
-
 		return total_power
 
 	@property
@@ -232,9 +229,7 @@ class com_Creature:
 			if bonus:
 				total_defense += bonus
 
-
 		return total_defense
-
 
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = []):
@@ -395,23 +390,28 @@ class ai_Chase:
 				monster.creature.attack(PLAYER, 3)
 
 #fire ranged until entering melee range. sustain fire at all times
-#class ai_Ranged_Assault:
+class ai_Ranged_Assault:
+	print("Placeholder.")
 
 #ranged only, retreating from target while attacking
-#class ai_Ranged_Fall_Back:
-
+class ai_Ranged_Fall_Back:
+	print("Placeholder.")
 
 #run from target
-#class ai_Retreat:
+class ai_Retreat:
+	print("Placeholder.")
 
 #cast offensive spell
-#class ai_Offensive_Spell:
+class ai_Offensive_Spell:
+	print("Placeholder.")
 
 #cast suppressive spell
-#class ai_Crowd_Control:
+class ai_Crowd_Control:
+	print("Placeholder.")
 
 #follow ally, idling when too close
-#class ai_ally_follow:
+class ai_ally_follow:
+	print("Placeholder.")
 #	def_take_turn(self):
 #		monster = self.owner
 
@@ -436,7 +436,6 @@ class ai_Static:
 class ai_Player:
 	def take_turn(self):
 		return
-
 
 def death_monster(monster):
 	if monster.IsInvulnerable != True:
@@ -473,14 +472,11 @@ def map_create():
 
 	return new_map
 
-
-
 #		if is_visible:
 #			draw_text(SURFACE_MAIN, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 #				coords = ((self.x * constants.CELL_WIDTH), (self.y * constants.CELL_HEIGHT)), 
 #				text_color = self.icon_color, 
 #				center = False)
-
 
 def draw_map(map_to_draw):
 	for x in range(0, constants.MAP_WIDTH):
@@ -497,16 +493,16 @@ def draw_map(map_to_draw):
 					#draw wall, switch to actor walls instead of hardcoded ones
 					draw_text(
 						SURFACE_MAIN, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
-						coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 						text_color = constants.COLOR_L_BROWN, back_color = constants.COLOR_BLACK,
-						center = False)
+						center = True)
 				else:
 					#draw visible floor tiles
 						draw_text(
 						SURFACE_MAIN, text_to_display = " . ", font = constants.FONT_RENDER_TEXT, 
-						coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
-						center = False)	
+						center = True)	
 
 			#tiles that have already been rendered but are no longer visible
 			else:
@@ -516,16 +512,16 @@ def draw_map(map_to_draw):
 						#draw wall
 						draw_text(
 							SURFACE_MAIN, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
-							coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 							text_color = constants.COLOR_BROWN, back_color = constants.COLOR_BLACK,
-							center = False)
+							center = True)
 					else:
 						#draw explored floor but not visible wall tiles
 						draw_text(
 							SURFACE_MAIN, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
-							coords = ((x * constants.CELL_WIDTH), (y * constants.CELL_HEIGHT)), 
+							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
-							center = False)
+							center = True)
 
 #drawing functions
 
@@ -631,10 +627,10 @@ def draw_tile_rect(coords, tile_color = None, tile_alpha = None, mark = None):
 	if mark:
 		#move the centering calculation elsewhere to prevent unnecessary calculations
 		draw_text(new_surface, mark, font = constants.FONT_CURSOR_TEXT, 
-				coords = (constants.CELL_WIDTH/2, constants.CELL_HEIGHT/2), 
-				text_color = constants.COLOR_BLACK, center = True)
+			coords = ((constants.CELL_WIDTH), (constants.CELL_HEIGHT)), 
+			        text_color = constants.COLOR_BLACK, center = True)
 
-	SURFACE_MAIN.blit(new_surface, (new_x, new_y))
+	SURFACE_MAIN.blit(new_surface, (new_x + 16, new_y + 16))
 
 #factor into ballistic weapons and spells later, possibly move damage over to this function under 'handle projectiles'
 def draw_projectile(ballistic_x, ballistic_y, projectile_color):
@@ -681,7 +677,6 @@ def draw_explosion(radius, blast_x, blast_y, color):
 
 	#draw_game()
 
-
 ###############################################################################################################
 #helper functions
 
@@ -707,7 +702,6 @@ def helper_text_height(font):
 
 	#print(font_rect.height)
 	return font_rect.height
-
 
 def helper_text_width(font):
 	#font_object = font.render('a', False, (0, 0, 0))
@@ -826,8 +820,10 @@ def cast_confusion(caster, effect_duration):
 			target.ai = ai_Confuse(old_ai = oldai, num_turns = effect_duration)
 			target.ai.owner = target
 			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
-			#print(target.creature.name_instance + " is confused.")
-			
+			#print(target.creature.name_instance + " is confused.")		
+
+def ranged_attack():
+	print("Useless placeholder code so the game doesn't give me an error for having this function in here.")
 
 
 ###############################################################################################################
@@ -1163,7 +1159,7 @@ def map_tile_query():
 ##########################################################################################################
 #procedural generators
 
-
+#items
 #use better solution later
 def gen_item(coords): #random scrolls
 	global GAME
@@ -1173,13 +1169,12 @@ def gen_item(coords): #random scrolls
 	elif random_num == 2: new_item = gen_scroll_fireball(coords)
 	elif random_num == 3:  new_item = gen_scroll_confusion(coords)
 	elif random_num == 4:  new_item = gen_weapon_sword(coords)
-	elif random_num == 5:  new_item = gen_armor_armor(coords)
+	elif random_num == 5:  new_item = gen_armor_leather(coords)
+	elif random_num == 6:  new_item = gen_weapon_sword(coords)
 	#elif random_num == 6:  new_item = gen_consumable_potion(coords)
 	
-	
-	GAME.current_objects.append(new_item)
-	
-
+	GAME.current_objects.insert(0, new_item)
+	#GAME.current_objects.append(new_item)
 
 def gen_scroll_lightning(coords):
 	x, y = coords
@@ -1193,7 +1188,6 @@ def gen_scroll_lightning(coords):
 							icon = settings.scroll_icon, icon_color = constants.COLOR_WHITE)
 
 	return return_object
-
 
 def gen_scroll_fireball(coords):
 	x, y = coords
@@ -1225,14 +1219,14 @@ def gen_weapon_sword(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(attack_bonus = 8, defense_bonus = 1, slot = "Main Hand")
+	equipment_com = com_Equipment(attack_bonus = 18, defense_bonus = 1, slot = "Main Hand")
 
 	return_object = obj_Actor(x, y, "Longsword",
 					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
 					equipment = equipment_com)
 	return return_object
 
-def gen_armor_armor(coords):
+def gen_armor_leather(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
@@ -1250,10 +1244,66 @@ def gen_consumable_potion(coords):
 					icon = settings.potion_icon, icon_color = constants.COLOR_BROWN,
 					item = item_com )
 
+def gen_player(coords):
+
+	x, y = coords
+	print("Useless placeholder code so the game doesn't give me an error for having this function in here.")
+	#create the player
+	container_com = com_Container()
+	creature_com = com_Creature("Bob The Guy", 
+									base_attack = 5, base_defense = 2) #player's creature component name
+	PLAYER = obj_Actor(4, 6, "python",  
+						creature = creature_com,
+						container = container_com,
+						icon = " Я ",
+						)
+	return PLAYER
 
 
+#enemies
+def gen_enemy(coords):
+	global GAME
 
+	random_num = helper_dice(100, 0)
+	if random_num  <= 30 : new_enemy = gen_nightcrawler_greater(coords)
+	else:					 new_enemy = gen_nightcrawler_lesser(coords)
+	#elif random_num >= 31 : new_enemy = gen_nightcrawler_lesser(coords)
 
+	#elif random_num == 6:  new_item = gen_consumable_potion(coords)
+	
+	
+	GAME.current_objects.insert(-1, new_enemy)
+
+def gen_nightcrawler_lesser(coords):
+	x, y = coords
+
+	item_com = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass") 
+	creature_com = com_Creature("Lesser Nightcrawler", death_function = death_monster,
+								hp = 12,
+								base_attack = (helper_dice(3, 5)),
+								base_defense = (helper_dice(3, 3))
+	) 
+	ai_com = ai_Chase()
+							#name of item when picked up
+	ENEMY = obj_Actor(20, 19, "Lesser Nightcrawler carcass",
+		creature = creature_com, ai = ai_com, item = item_com,
+		icon = " ж ", icon_color = constants.COLOR_GRAY)
+	return ENEMY
+
+def gen_nightcrawler_greater(coords):
+	item_com = com_Item(value = 5, use_function = cast_heal, name = "Greater Nightcrawler carcass")								#name of enemy when alive
+	creature_com = com_Creature("Greater Nightcrawler", death_function = death_monster,
+								hp = 15,
+								base_attack = (helper_dice(4, 9)),
+								base_defense = (helper_dice(4, 4))
+	) 
+	#the crab's creature name
+	ai_com = ai_Chase()
+							#name of item when picked up
+	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", 
+		creature = creature_com, ai = ai_com, item = item_com, icon = "Ж", icon_color = constants.COLOR_GRAY)
+
+	return ENEMY
 
 ################################################################################################################
 
@@ -1377,10 +1427,11 @@ def game_handle_keys():
 
 				#key L, turn on tile selection. change later as needed
 				if event.key == pygame.K_l:
+					print("A useless function, for the time being.")
 					#menu_tile_select()
 					#cast_lightning(9)
 					#cast_confusion()
-					cast_fireball()
+					#cast_fireball(PLAYER, 2)
 
 				FOV_CALCULATE = True
 				return "player-moved"
@@ -1396,7 +1447,6 @@ def game_quit_sequence():
 
 #'''initializing the main window and pygame'''
 def game_initialize():
-
 	global SURFACE_MAIN, GAME, CLOCK, FOV_CALCULATE, PLAYER, ENEMY, TURNS_ELAPSED
 
 	pygame.init()
@@ -1407,7 +1457,6 @@ def game_initialize():
 	#create the rendered window
 	SURFACE_MAIN = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH, 
 											constants.MAP_HEIGHT * constants.CELL_HEIGHT))
-
 	GAME = obj_Game
 
 	CLOCK = pygame.time.Clock()
@@ -1423,77 +1472,25 @@ def game_initialize():
 	GAME.current_map = map_create()
 	GAME.message_history = []
 
-	#create the player
-	container_com1 = com_Container()
-	creature_com1 = com_Creature("Bob The Guy", 
-									base_attack = 5, base_defense = 2) #player's creature component name
-	PLAYER = obj_Actor(4, 6, "python",  
-						creature = creature_com1,
-						container = container_com1,
-						icon = " Я ",
+	GAME.current_objects = []
 
-						)
-
-	#spawn enemies
-
-	#first enemy
-	item_com1 = com_Item(value = 7, use_function = cast_heal, name = "Greater Nightcrawler carcass")  #FYI, pass function in as parameter without parentheses
-								#name of enemy when alive
-	creature_com2 = com_Creature("Greater Nightcrawler", death_function = death_monster,
-								base_attack = 10,
-								base_defense = 8
-	) 
-	#the crab's creature name
-	ai_com1 = ai_Chase()
-							#name of item when picked up
-	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", 
-		creature = creature_com2, ai = ai_com1, item = item_com1, icon = "Ж", icon_color = constants.COLOR_GRAY)
-
-	#second enemy
-	item_com2 = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass")
-								#name of enemy when alive
-	creature_com3 = com_Creature("Lesser Nightcrawler", death_function = death_monster,
-								base_attack = 9,
-								base_defense = 5
-	) 
-	ai_com2 = ai_Chase()
-							#name of item when picked up
-	ENEMY2 = obj_Actor(20, 19, "Lesser Nightcrawler carcass",
-		creature = creature_com3, ai = ai_com2, item = item_com2, icon = " Ж ", icon_color = constants.COLOR_GRAY)
-
-	#create a sword
-#	equipment_com1 = com_Equipment(attack_bonus = 10, name = "The Sword of Damocles", slot = "Main Hand")
-#	SWORD = obj_Actor( 2, 2, name_object = "The Sword of Damocles", 
-#		icon = " ) ", icon_color = constants.COLOR_L_BLUE, equipment = equipment_com1)
-#
-#	#create some armor
-#	equipment_com2 = com_Equipment(defense_bonus = 6, name = "Temryavite Hauberk", slot = "Armor")
-#	ARMOR = obj_Actor(2, 3, name_object = "Temryavite Hauberk",
-#		icon = " [ ", icon_color = constants.COLOR_GRAY, equipment = equipment_com2)
-#
-#	#create some more armor
-#	equipment_com3 = com_Equipment(defense_bonus = 2, name = "Temryavite Helmet", slot = "Helmet")
-#	ARMOR2 = obj_Actor(3, 3, name_object = "Temryavite Helmet",
-#		icon = " [ ", icon_color = constants.COLOR_GRAY, equipment = equipment_com3)
-
-	GAME.current_objects = [ENEMY, ENEMY2, PLAYER]
-
-	#stuff
-	gen_item((4, 4))
-	gen_item((4, 3))
-#	gen_item((4, 3))
-	gen_item((3, 3))
+	#procedurally distribute items  (later add check to verify that each location is empty)
+	gen_item((4,4))
+	gen_item((4,3))
+	gen_item((3,3))
 	gen_item((2,2))
 	gen_item((3,2))
+	gen_item((4,2))
 
+	#create 5 enemies
+	gen_enemy((15, 15))
+	gen_enemy((20, 17))
+	gen_enemy((29, 30))
+	gen_enemy((12, 25))
 
 	#player listed last to be rendered on top of enemies
-#	
-
-
-
-
-
+	PLAYER = gen_player((2,6))
+	GAME.current_objects.append(PLAYER)
 
 if __name__ == '__main__':
 	game_initialize()
