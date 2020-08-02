@@ -14,15 +14,18 @@ CELL_HALF_HEIGHT = 16
 #gameplay
 HARDCORE_MODE = False
 #HC changes are:
-	#	inventory actions cost a turn
-	#	
+	#	inventory actions cost a turn	
 
-
-#map vars
+#map limitations
 MAP_WIDTH = 55
 MAP_HEIGHT = 30
+MAP_MAX_NUM_ROOMS = 5
 
-
+#room limitations
+ROOM_MAX_HEIGHT = 7
+ROOM_MIN_HEIGHT = 3
+ROOM_MAX_WIDTH = 5
+ROOM_MIN_WIDTH = 3
 
 #color definitions
 COLOR_BLACK = (0, 0, 0)
@@ -40,7 +43,6 @@ COLOR_L_BROWN = (205,133,63)
 COLOR_DEFAULT_BG = COLOR_GRAY
 
 #items
-
 
 #FOV settings, multiple options to consider
 FOV_ALGO = libtcod.FOV_SHADOW 
@@ -66,9 +68,6 @@ KeyDownDelay = 200
 KeyRepeatDelay = 70
 #artificial limiter
 GAME_FPS = 60
-
-
-
 
 #message console
 NUM_MESSAGES = 4

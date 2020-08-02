@@ -52,13 +52,14 @@ class obj_Actor:
 		num_turns = 0, 
 		icon = "x", 
 		icon_color = constants.COLOR_WHITE,
-		equipment = None):
+		equipment = None,
+		interact_function = None
+		):
 
 		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
 		self.name_object = name_object
-#		self.sprite = sprite
 		self.IsInvulnerable = False
 		self.description = description
 
@@ -138,9 +139,33 @@ class obj_Actor:
 			
 class obj_Game:
 	def __init__(self):
-		self.current_map = map_create()
+		#self.current_map = map_create()
 		self.message_history = []
 		self.current_objects = []
+
+	#this is a rectangle that lives on the map
+class obj_Room:
+	def __init__(self, coords, size): #coords are upper left corner location 
+		self.x1, self.y1 = coords
+		self.w, self.h = size
+
+		self.x2 = self.x1 + self.w
+		self.y2 = self.y1 + self.h
+
+	@property
+	def center(self):
+		center_x = ((self.x1 + self.x2) // 2)
+		center_y = ((self.y1 + self.y2) // 2)
+
+		return (center_x, center_y)
+
+	def intersect(self, other):
+		#return true if another obj intersects with this one
+		objects_intersect = (self.x1 <= other.x2 and self.x2 >= other.x1 and
+                             self.y1 <= other.y2 and self.y2 >= other.y1)
+
+		#return objects_intersect
+		return objects_intersect
 
 ###############################################################################################################################
 #components
@@ -390,28 +415,28 @@ class ai_Chase:
 				monster.creature.attack(PLAYER, 3)
 
 #fire ranged until entering melee range. sustain fire at all times
-class ai_Ranged_Assault:
-	print("Placeholder.")
+#class ai_Ranged_Assault:
+#	print("Placeholder.")
 
 #ranged only, retreating from target while attacking
-class ai_Ranged_Fall_Back:
-	print("Placeholder.")
+#class ai_Ranged_Fall_Back:
+#	print("Placeholder.")
 
 #run from target
-class ai_Retreat:
-	print("Placeholder.")
+#class ai_Retreat:
+#	print("Placeholder.")
 
 #cast offensive spell
-class ai_Offensive_Spell:
-	print("Placeholder.")
+#class ai_Offensive_Spell:
+#	print("Placeholder.")
 
 #cast suppressive spell
-class ai_Crowd_Control:
-	print("Placeholder.")
+#class ai_Crowd_Control:
+#	print("Placeholder.")
 
 #follow ally, idling when too close
-class ai_ally_follow:
-	print("Placeholder.")
+#class ai_ally_follow:
+#	print("Placeholder.")
 #	def_take_turn(self):
 #		monster = self.owner
 
@@ -452,31 +477,105 @@ def death_monster(monster):
 
 ###########################################################################################################################
 #map functions
+def map_random_walk():
+	print("Placeholder. (map gen)")
+	
 
 def map_create():
-	new_map = [[ struc_Tile(False) for y in range(0, constants.MAP_HEIGHT)] for x in range (0, constants.MAP_WIDTH)]
+	#initialize empty map, flooded with unwalkable tiles
+	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
+									for x in range (0, constants.MAP_WIDTH)]
 
-	new_map[10][10].block_path = True
-	new_map[10][15].block_path = True
+	# generate new room
+	list_of_rooms = []
+	num = 0
+	for num in range(constants.MAP_MAX_NUM_ROOMS):
+		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH, 
+										constants.ROOM_MAX_WIDTH)
+		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, 
+										constants.ROOM_MAX_HEIGHT)
 
-	for x in range(constants.MAP_WIDTH):
-		new_map[x][0].block_path = True
-		new_map[x][constants.MAP_HEIGHT-1].block_path = True
+		x = libtcod.random_get_int(0, 2, constants.MAP_WIDTH - w - 2)
 
-	for y in range(constants.MAP_HEIGHT):
-		new_map[0][y].block_path = True
-		new_map[constants.MAP_WIDTH-1][y].block_path = True
+		y = libtcod.random_get_int(0, 2, constants.MAP_HEIGHT - h - 2)
 
 
+
+		#print(w, h, x, y)
+		#create room
+		new_room = obj_Room((x, y), (w, h))
+
+		failed = False
+
+		#check for interference (overlapping with any others)
+		for other_room in list_of_rooms:
+			#if new_room.intersect(other_room):
+			if other_room.intersect(new_room):
+				failed = True
+				#print("This dumb thing failed.")
+				break
+
+		if not failed:
+			#place room
+			map_create_room(new_map, new_room)
+			current_center = new_room.center
+			center_x, center_y = new_room.center
+
+			#put player in the first room
+			if len(list_of_rooms) == 0:
+				gen_player(current_center)
+				print("Player (supposed to be) spawned.")
+
+			else: 			
+				##dig tunnels (from center to center?
+				prev_index = len(list_of_rooms) - 1
+				previous_center = list_of_rooms[prev_index].center
+				#previous_center = list_of_rooms[-1].center
+				map_create_tunnels(current_center, previous_center, new_map)
+				#print("idk bro")
+			list_of_rooms.append(new_room)	
+	#create FOV map		
 	map_make_fov(new_map)
-
+	print("map creation finished")
+	#finalize
 	return new_map
 
-#		if is_visible:
-#			draw_text(SURFACE_MAIN, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
-#				coords = ((self.x * constants.CELL_WIDTH), (self.y * constants.CELL_HEIGHT)), 
-#				text_color = self.icon_color, 
-#				center = False)
+
+def map_create_room(new_map, new_room):
+	for x in range(new_room.x1, new_room.x2):
+		for y in range(new_room.y1, new_room.y2):
+			new_map[x][y].block_path = False
+
+def map_create_tunnels(coords1, coords2, new_map):
+	#coin_flip = (libtcod.random_get_int(0, 0, 1) == 1)
+	coin_flip = 0
+
+	x1, y1 = coords1
+	x2, y2 = coords2
+
+	if coin_flip:
+		for x in range(int(min(int(x1), int(x2))), int(max(int(x1), int(x2)) + 1)):
+			new_map[int(x)][int(y1)].block_path = False
+		for y in range(min(y1, y2), max(y1, y2) + 1):
+			new_map[int(x2)][int(y)].block_path = False
+	else:
+		for y in range(min(int(y1), int(y2)), max(int(y1), int(y2)) +1):
+			new_map[int(x1)][int(y)].block_path = False
+		for x in range(min(int(x1), int(x2)), max(x1, x2) +1):
+
+			new_map[x][y2].block_path = False
+
+	if coin_flip:
+		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
+			new_map[int(x)][int(y1)].block_path = False
+		for y in range(min(int(y1), int(y2)), max(int(y1), int(y2)) +1):
+			new_map[int(x1)][int(y)].block_path = False
+	else: 
+		for y in range(min(int(y1), int(y2)), max(int(y1), int(y2)) +1):
+			new_map[int(x1)][int(y1)].block_path = False
+		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
+			new_map[int(x)][int(y1)].block_path = False
+
 
 def draw_map(map_to_draw):
 	for x in range(0, constants.MAP_WIDTH):
@@ -821,9 +920,10 @@ def cast_confusion(caster, effect_duration):
 			target.ai.owner = target
 			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
 			#print(target.creature.name_instance + " is confused.")		
-
-def ranged_attack():
-	print("Useless placeholder code so the game doesn't give me an error for having this function in here.")
+#print("Ranged attack placeholder..")
+def ranged_attack(caster, ranged_weapon, target, ammo_count):
+	if (ammo_count > 0 and target and ranged_weapon):
+		print("Ranged attack placeholder..")
 
 
 ###############################################################################################################
@@ -1050,14 +1150,16 @@ def map_make_fov(incoming_map):
 				not incoming_map[x][y].block_path, not incoming_map[x][y].block_path)
 
 def map_calculate_fov():
-	global FOV_CALCULATE
+	global FOV_CALCULATE, PLAYER
 	#global FOV_MAP
 	#map_make_fov(incoming_map)
 
 	if FOV_CALCULATE:
 		FOV_CALCULATE = False
-		libtcod.map_compute_fov(FOV_MAP, PLAYER.x, PLAYER.y, constants.TORCH_RADIUS, constants.FOV_LIGHT_WALLS, 
-			constants.FOV_ALGO)
+		libtcod.map_compute_fov(FOV_MAP, 
+								PLAYER.x, PLAYER.y, 
+								constants.TORCH_RADIUS, constants.FOV_LIGHT_WALLS, 
+								constants.FOV_ALGO)
 
 def map_objects_at_coords(coords_x, coords_y):
 	object_options = [obj for obj in GAME.current_objects 
@@ -1159,6 +1261,11 @@ def map_tile_query():
 ##########################################################################################################
 #procedural generators
 
+
+#note - possibly include 'special function' in items?
+#to allow additional behaviors in items such as pickaxes
+
+
 #items
 #use better solution later
 def gen_item(coords): #random scrolls
@@ -1226,6 +1333,17 @@ def gen_weapon_sword(coords):
 					equipment = equipment_com)
 	return return_object
 
+def gen_weapon_pickaxe(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(attack_bonus = 4, defense_bonus = 1, slot = "Main Hand")
+
+	return_object = obj_Actor(x, y, "Pickaxer",
+					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
+					equipment = equipment_com)
+	return return_object
+
 def gen_armor_leather(coords):
 	x, y = coords
 
@@ -1244,19 +1362,23 @@ def gen_consumable_potion(coords):
 					icon = settings.potion_icon, icon_color = constants.COLOR_BROWN,
 					item = item_com )
 
+#player
 def gen_player(coords):
+	global PLAYER  #this line was SOMEHOW the linchpin in this entire procgen system as
+	#the whole flipping thing was broken for at least a week without it lulz
 
 	x, y = coords
-	print("Useless placeholder code so the game doesn't give me an error for having this function in here.")
 	#create the player
 	container_com = com_Container()
 	creature_com = com_Creature("Bob The Guy", 
 									base_attack = 5, base_defense = 2) #player's creature component name
-	PLAYER = obj_Actor(4, 6, "python",  
+	PLAYER = obj_Actor(x, y, "python",  
 						creature = creature_com,
 						container = container_com,
-						icon = " Я ",
+						icon = " Я ", icon_color = constants.COLOR_WHITE
 						)
+
+	GAME.current_objects.append(PLAYER)
 	return PLAYER
 
 
@@ -1309,7 +1431,7 @@ def gen_nightcrawler_greater(coords):
 
 #Main game loop, on tick
 def game_main_loop():
-	global TURNS_ELAPSED
+	global TURNS_ELAPSED, PLAYER
 
 	game_quit = False
 
@@ -1322,8 +1444,8 @@ def game_main_loop():
 		player_action = game_handle_keys()
 
 		#map_make_fov(incoming_map)
-
-		map_calculate_fov()
+		if PLAYER:
+			map_calculate_fov()
 
 		if player_action == "QUIT":
 			game_quit = True
@@ -1450,6 +1572,7 @@ def game_initialize():
 	global SURFACE_MAIN, GAME, CLOCK, FOV_CALCULATE, PLAYER, ENEMY, TURNS_ELAPSED
 
 	pygame.init()
+	print("Init began.")
 
 	if constants.PermitKeyHolding == True:
 		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
@@ -1457,7 +1580,25 @@ def game_initialize():
 	#create the rendered window
 	SURFACE_MAIN = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH, 
 											constants.MAP_HEIGHT * constants.CELL_HEIGHT))
-	GAME = obj_Game
+
+	#side panel
+	#SURFACE_SIDE = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH * ( 1.3), 
+	#										constants.MAP_HEIGHT * constants.CELL_HEIGHT))
+
+
+	#create GAME object to track progress
+	GAME = obj_Game()
+	print("Game Object created.")
+	GAME.current_objects = []
+
+	print("map_create function called.")
+	GAME.current_map = map_create()
+	print("map_create SUPPOSED to be complete")
+
+	#player listed last to be rendered on top of enemies
+
+	#PLAYER = gen_player((12,15))
+	#GAME.current_objects.append(PLAYER)
 
 	CLOCK = pygame.time.Clock()
 
@@ -1467,30 +1608,8 @@ def game_initialize():
 
 	#map_make_fov(incoming_map)
 
-	#creatures
-
 	GAME.current_map = map_create()
 	GAME.message_history = []
-
-	GAME.current_objects = []
-
-	#procedurally distribute items  (later add check to verify that each location is empty)
-	gen_item((4,4))
-	gen_item((4,3))
-	gen_item((3,3))
-	gen_item((2,2))
-	gen_item((3,2))
-	gen_item((4,2))
-
-	#create 5 enemies
-	gen_enemy((15, 15))
-	gen_enemy((20, 17))
-	gen_enemy((29, 30))
-	gen_enemy((12, 25))
-
-	#player listed last to be rendered on top of enemies
-	PLAYER = gen_player((2,6))
-	GAME.current_objects.append(PLAYER)
 
 if __name__ == '__main__':
 	game_initialize()

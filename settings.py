@@ -33,8 +33,13 @@ EXPLOSION_TICK_LOWER = 50
 scroll_icon = "ґ"
 weapon_icon = ")"
 armor_icon = "]"
-food_icon = "%"
-potion_icon = "!"
+food_icon = "ф"
+potion_icon = "ї"
+door_icon = "+"
+chest_icon = "д"
+guard_icon = "и"
+human_icon = "@"
+ammo_icon = "ю"
 
 	###difficulty modifiers, see modifiers.txt for descriptions
 
