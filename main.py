@@ -328,7 +328,7 @@ class com_Item:
 		if self.use_function:
 			result = self.use_function(self.current_container.owner, self.value)
 			#result = self.use_function(self.container.owner, self.value)
-			#if result == "cancelled":
+			#if result == "canceled":
 			if result is not None:
 				print("use_function failed")
 			else:
@@ -481,6 +481,7 @@ def map_random_walk():
 	print("Placeholder. (map gen)")
 	
 
+
 def map_create():
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
@@ -528,18 +529,81 @@ def map_create():
 
 			else: 			
 				##dig tunnels (from center to center?
-				prev_index = len(list_of_rooms) - 1
-				previous_center = list_of_rooms[prev_index].center
-				#previous_center = list_of_rooms[-1].center
+				#prev_index = len(list_of_rooms) - 1
+				#previous_center = list_of_rooms[prev_index].center
+				previous_center = list_of_rooms[-1].center
 				map_create_tunnels(current_center, previous_center, new_map)
 				#print("idk bro")
 			list_of_rooms.append(new_room)	
+
 	#create FOV map		
 	map_make_fov(new_map)
 	print("map creation finished")
 	#finalize
 	return new_map
+"""
 
+
+def map_create():
+	#initialize empty map, flooded with unwalkable tiles
+	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
+									for x in range (0, constants.MAP_WIDTH)]
+
+	# generate new room
+	list_of_rooms = []
+	num = 0
+	for num in range(constants.MAP_MAX_NUM_ROOMS):
+		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH, 
+										constants.ROOM_MAX_WIDTH)
+		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, 
+										constants.ROOM_MAX_HEIGHT)
+
+		x = libtcod.random_get_int(0, 2, constants.MAP_WIDTH - w - 2)
+
+		y = libtcod.random_get_int(0, 2, constants.MAP_HEIGHT - h - 2)
+
+
+
+		#print(w, h, x, y)
+		#create room
+		new_room = obj_Room((x, y), (w, h))
+
+		failed = False
+
+		#check for interference (overlapping with any others)
+		for other_room in list_of_rooms:
+			#if new_room.intersect(other_room):
+			if other_room.intersect(new_room):
+				failed = True
+				#print("This dumb thing failed.")
+				break
+
+		if not failed:
+			#place room
+			map_create_room(new_map, new_room)
+			current_center = new_room.center
+			center_x, center_y = new_room.center
+
+			#put player in the first room
+			if len(list_of_rooms) == 0:
+				gen_player(current_center)
+				print("Player (supposed to be) spawned.")
+
+			else: 			
+				##dig tunnels (from center to center?
+				#prev_index = len(list_of_rooms) - 1
+				#previous_center = list_of_rooms[prev_index].center
+				previous_center = list_of_rooms[-1].center
+				map_create_tunnels(current_center, previous_center, new_map)
+				#print("idk bro")
+			list_of_rooms.append(new_room)	
+
+	#create FOV map		
+	map_make_fov(new_map)
+	print("map creation finished")
+	#finalize
+	return (new_map, list_of_rooms)
+"""
 
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
@@ -679,8 +743,6 @@ def draw_debug():
 
 def draw_messages():
 	#include 'timer' for clearing message log, later
-
-
 
 	#add last 4 messages to the queue
 	if len(GAME.message_history) <= constants.NUM_MESSAGES:
@@ -872,7 +934,6 @@ def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
 	damage, local_radius, max_r = T_damage_radius_range
 	player_location = (PLAYER.x, PLAYER.y)
-
 
 	#TODO get target tile
 	point_selected = menu_tile_select(coords_origin = player_location, max_range = max_r,
@@ -1364,23 +1425,23 @@ def gen_consumable_potion(coords):
 
 #player
 def gen_player(coords):
-	global PLAYER  #this line was SOMEHOW the linchpin in this entire procgen system as
-	#the whole flipping thing was broken for at least a week without it lulz
+	global PLAYER
 
 	x, y = coords
 	#create the player
 	container_com = com_Container()
 	creature_com = com_Creature("Bob The Guy", 
-									base_attack = 5, base_defense = 2) #player's creature component name
+								base_attack = 5, base_defense = 2) #player's creature component name
 	PLAYER = obj_Actor(x, y, "python",  
 						creature = creature_com,
 						container = container_com,
 						icon = " Я ", icon_color = constants.COLOR_WHITE
 						)
+	PLAYER_SPAWNED = True
 
 	GAME.current_objects.append(PLAYER)
-	return PLAYER
-
+	print("Player Spawn function called.")
+	
 
 #enemies
 def gen_enemy(coords):
@@ -1444,8 +1505,8 @@ def game_main_loop():
 		player_action = game_handle_keys()
 
 		#map_make_fov(incoming_map)
-		if PLAYER:
-			map_calculate_fov()
+		
+		map_calculate_fov()
 
 		if player_action == "QUIT":
 			game_quit = True
@@ -1456,7 +1517,8 @@ def game_main_loop():
 					obj.ai.take_turn()
 			#increment player turn counter for speedrun purposes
 			TURNS_ELAPSED += 1
-			print(str(TURNS_ELAPSED) + " turns have elapsed so far")
+			if settings.DEBUG_PRINT_TURNS == True:
+				print(str(TURNS_ELAPSED) + " turns have elapsed so far")
 		#render the game
 		draw_game()
 
@@ -1569,10 +1631,13 @@ def game_quit_sequence():
 
 #'''initializing the main window and pygame'''
 def game_initialize():
-	global SURFACE_MAIN, GAME, CLOCK, FOV_CALCULATE, PLAYER, ENEMY, TURNS_ELAPSED
+	global SURFACE_MAIN, GAME, CLOCK, FOV_CALCULATE, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_SPAWNED
+
+
+	PLAYER_SPAWNED = False
 
 	pygame.init()
-	print("Init began.")
+	#print("Init began.")
 
 	if constants.PermitKeyHolding == True:
 		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
@@ -1588,16 +1653,21 @@ def game_initialize():
 
 	#create GAME object to track progress
 	GAME = obj_Game()
-	print("Game Object created.")
+	#print("Game Object created.")
 	GAME.current_objects = []
 
-	print("map_create function called.")
+	#print("map_create function called.")
+	
 	GAME.current_map = map_create()
-	print("map_create SUPPOSED to be complete")
+	"""
+	GAME.current_map, GAME.current_rooms = map_create()
+	"""
+
+	#print("map_create SUPPOSED to be complete")
 
 	#player listed last to be rendered on top of enemies
 
-	#PLAYER = gen_player((12,15))
+	
 	#GAME.current_objects.append(PLAYER)
 
 	CLOCK = pygame.time.Clock()
