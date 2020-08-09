@@ -660,14 +660,14 @@ def draw_map(map_to_draw):
 				if map_to_draw[x][y].block_path == True:
 					#draw wall, switch to actor walls instead of hardcoded ones
 					draw_text(
-						SURFACE_MAP, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
+						SURFACE_MAP, text_to_display = "#", font = constants.FONT_RENDER_TEXT, 
 						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 						text_color = constants.COLOR_L_BROWN, back_color = constants.COLOR_BLACK,
 						center = True)
 				else:
 					#draw visible floor tiles
 						draw_text(
-						SURFACE_MAP, text_to_display = " . ", font = constants.FONT_RENDER_TEXT, 
+						SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
 						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
 						center = True)	
@@ -679,14 +679,14 @@ def draw_map(map_to_draw):
 					if map_to_draw[x][y].block_path == True:
 						#draw wall
 						draw_text(
-							SURFACE_MAP, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
+							SURFACE_MAP, text_to_display = "#", font = constants.FONT_RENDER_TEXT, 
 							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 							text_color = constants.COLOR_BROWN, back_color = constants.COLOR_BLACK,
 							center = True)
 					else:
 						#draw explored floor but not visible wall tiles
 						draw_text(
-							SURFACE_MAP, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
+							SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
 							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
 							center = True)

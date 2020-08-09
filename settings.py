@@ -3,9 +3,9 @@
 
 
 #Camera follow speed
-# Must be: 0 < N <= 1
-CAM_LERP_X = .1
-CAM_LERP_Y = .1
+# Must be 0 < N <= 1: 1 snaps to player location instantly, 0 breaks camera
+CAM_LERP_X = .05
+CAM_LERP_Y = .05
 
 
 
