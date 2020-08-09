@@ -687,7 +687,7 @@ def draw_map(map_to_draw):
 						#draw explored floor but not visible wall tiles
 						draw_text(
 							SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
-							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
+							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT) + 16)), 
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
 							center = True)
 
@@ -1179,7 +1179,7 @@ def menu_tile_select(coords_origin = None, max_range = None,
 				if event.button == 1:
 					return(valid_tiles[-1])
 
-		#draw_game()
+		
 			SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
 			SURFACE_MAP.fill(Constants.COLOR_BLACK)
 
