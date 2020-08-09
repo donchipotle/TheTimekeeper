@@ -104,7 +104,7 @@ class obj_Actor:
 
 		if is_visible:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
-				coords = ((self.x * constants.CELL_WIDTH) + 8, (self.y * constants.CELL_HEIGHT) + 16), 
+				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
 				center = True)
 
@@ -168,10 +168,15 @@ class obj_Camera:
 		self.height = constants.CAM_HEIGHT
 		self.x, self.y = (0,0)
 
-	def update(self):
-		self.x = PLAYER.x * constants.CELL_WIDTH + constants.CELL_HALF_WIDTH
-		self.y = PLAYER.y * constants.CELL_HEIGHT + constants.CELL_HALF_HEIGHT
+	def update(self): #include some code to move along with the selection cursor
 
+		target_x = PLAYER.x * constants.CELL_WIDTH + constants.CELL_HALF_WIDTH
+		target_y = PLAYER.y * constants.CELL_HEIGHT + constants.CELL_HALF_HEIGHT
+
+		distance_x, distance_y = self.map_dist((target_x, target_y))
+
+		self.x += int(distance_x * settings.CAM_LERP_X)
+		self.y += int(distance_y * settings.CAM_LERP_Y)
 
 	@property
 	def rectangle(self):
@@ -179,6 +184,42 @@ class obj_Camera:
 		pos_rect.center = (self.x, self.y)
 
 		return pos_rect
+
+	@property 
+	def map_address(self):
+		map_x = self.x / constants.CELL_WIDTH
+		map_y = self.y / constants.CELL_HEIGHT
+		return (map_x, map_y)
+
+	def map_dist(self, coords):
+		new_x, new_y = coords
+		dist_x = new_x - self.x
+		dist_y = new_y - self.y
+
+		return(dist_x, dist_y)
+
+	def cam_dist(self, coords):
+		win_x, win_y = coords
+		dist_x = win_x - (self.width / 2)
+		dist_y = win_y - (self.height / 2)
+
+		return (dist_x, dist_y)
+
+	def win_to_map(self, coords):  #
+		
+		target_x, target_y = coords
+		#convert window coords -> distance from camera
+		cam_d_x, cam_d_y = self.cam_dist((target_x, target_y))
+
+		#distance from cam -> map coord
+
+		map_p_x = self.x + cam_d_x
+		map_p_y = self.y + cam_d_y
+
+		return((map_p_x, map_p_y))
+
+
+
 
 ###############################################################################################################################
 #components
@@ -651,8 +692,25 @@ def map_create_tunnels(coords1, coords2, new_map):
 
 
 def draw_map(map_to_draw):
-	for x in range(0, constants.MAP_WIDTH):
-		for y in range(0,constants.MAP_HEIGHT):
+	#camera visibility culling
+	cam_x, cam_y = CAMERA.map_address
+	display_map_width = constants.CAM_WIDTH / constants.CELL_WIDTH
+	display_map_height = constants.CAM_HEIGHT / constants.CELL_HEIGHT
+
+	render_w_min = int(cam_x - (display_map_width / 2))
+	render_w_max = int(cam_x + (display_map_width / 2))
+	render_h_min = int(cam_y - (display_map_height / 2))
+	render_h_max = int(cam_y + (display_map_height / 2))
+
+	#crudely clamp values
+	if render_w_min < 0: render_w_min = 0
+	if render_h_min < 0: render_h_min = 0
+	if render_w_max > constants.MAP_WIDTH: render_w_max = constants.MAP_WIDTH
+	if render_h_max > constants.MAP_HEIGHT: render_h_max = constants.MAP_HEIGHT
+
+	#loop through every tile that is visible to the camera
+	for x in range(render_w_min, render_w_max):
+		for y in range(render_h_min, render_h_max):
 
 			is_visible = libtcod.map_is_in_fov(FOV_MAP, x, y)
 
@@ -701,13 +759,11 @@ def draw_game():
 	global GAME
 	global SURFACE_MAIN, PLAYER #, GAME.current_map
 
-	#clear the surface
+	#clear the display surface
 	SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
-	SURFACE_MAP.fill(constants.COLOR_DEFAULT_BG)
+	SURFACE_MAP.fill(constants.COLOR_BLACK)
 
 	CAMERA.update()
-
-	displayrectangle = pygame.Rect((0,0),(constants.CAM_WIDTH, constants.CAM_HEIGHT))
 
 	#draw the map
 	draw_map(GAME.current_map)
@@ -718,24 +774,13 @@ def draw_game():
 
 								#these numbers are the starting offset, for left/top padding
 	SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)
-						
-
+					
 
 	#fix at some point idk tho
 	if settings.ENABLE_DEBUG == True:
 		draw_debug()
 
 	draw_messages()
-
-
-	#game functions
-	#add multiple colors for the House
-	#def draw_text(display_surface, text_to_display, font, T_coords, text_color, back_color = None):
-	#this function takes in some text and displays it on the desired surface
-	
-	#draw_text(SURFACE_MAIN, str(int(CLOCK.get_fps())), (0, 0), constants.COLOR_BLACK)
-	#text_x, text_y = T_coords
-	#T_coords = ((constants.TEXT_X_OVERRIDE * 3), (constants.TEXT_Y_OVERRIDE * 6))
 
 def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None, center = False):
     # get both the surface and rectangle of the desired message
@@ -954,10 +999,10 @@ def cast_lightning(caster, T_damage_maxrange):
 def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
 	damage, local_radius, max_r = T_damage_radius_range
-	player_location = (PLAYER.x, PLAYER.y)
+	caster_location = (caster.x, caster.y)
 
 	#TODO get target tile
-	point_selected = menu_tile_select(coords_origin = player_location, max_range = max_r,
+	point_selected = menu_tile_select(coords_origin = caster_location, max_range = max_r,
 		 penetrate_walls = False, 
 		 pierce_creature = False, 
 		 radius = local_radius)
@@ -1012,13 +1057,11 @@ def ranged_attack(caster, ranged_weapon, target, ammo_count):
 #menus
 
 def menu_pause():
-	#this pauses the game and displays a simple message
-	#probably gonna remove because I don't think I really even need this part, but that's for later
 	menu_close = False
 
 	#move this block into the init later
-	window_width = constants.MAP_WIDTH * constants.CELL_WIDTH
-	window_height = constants.MAP_HEIGHT * constants.CELL_HEIGHT
+	window_width = constants.CAM_WIDTH
+	window_height = constants.CAM_HEIGHT
 	
 	menu_text = "PAUSED, press P to return to game or exit."
 	menu_font = constants.FONT_DEBUG_MESSAGE
@@ -1048,8 +1091,8 @@ def menu_inventory():
 	menu_close = False
 
 
-	window_width = constants.MAP_WIDTH * constants.CELL_WIDTH
-	window_height = constants.MAP_HEIGHT * constants.CELL_HEIGHT
+	window_width = constants.CAM_WIDTH
+	window_height = constants.CAM_HEIGHT
 
 	#include different parameters later for teh lulz
 	menu_width = 900
@@ -1163,8 +1206,10 @@ def menu_tile_select(coords_origin = None, max_range = None,
 		events_list = pygame.event.get()
 
 		#mouse map selection
-		map_coord_x = int(mouse_x / constants.CELL_WIDTH)
-		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
+		mapx_pixel, mapy_pixel = CAMERA.win_to_map((mouse_x, mouse_y))
+
+		map_coord_x = int(mapx_pixel / constants.CELL_WIDTH)
+		map_coord_y = int(mapy_pixel / constants.CELL_HEIGHT)
 
 		valid_tiles = []
 
@@ -1195,28 +1240,43 @@ def menu_tile_select(coords_origin = None, max_range = None,
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
 					return(valid_tiles[-1])
-	
-		draw_game()
+
+		#draw_game()
+			SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
+			SURFACE_MAP.fill(Constants.COLOR_BLACK)
+
+			CAMERA.update()
+
+			draw_map(GAME.current_map)
+
 		#draw rect at mouse position over game screen, marking tile targeted
-		for (tile_x, tile_y) in valid_tiles:
-			if (tile_x, tile_y) == valid_tiles[-1]:
-				draw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (tile_x, tile_y), mark = "X")
-			else:
-				draw_tile_rect(tile_color = constants.COLOR_BLACK, coords = (tile_x, tile_y))
+			for (tile_x, tile_y) in valid_tiles:
+				if (tile_x, tile_y) == valid_tiles[-1]:
+					draw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (tile_x, tile_y), mark = "X")
+				else:
+					draw_tile_rect(tile_color = constants.COLOR_BLACK, coords = (tile_x, tile_y))
 
-		#draw theoretical blast radius of AoE spells
-		if radius:
-			area_effect = map_find_radius(valid_tiles[-1], radius)
-			for (tile_x, tile_y) in area_effect:
-				draw_tile_rect(coords = (tile_x, tile_y),
-					tile_color = constants.COLOR_ORANGE,
-					tile_alpha = 150)
+			#draw theoretical blast radius of AoE spells
+			if radius:
+				area_effect = map_find_radius(valid_tiles[-1], radius)
+				for (tile_x, tile_y) in area_effect:
+					draw_tile_rect(coords = (tile_x, tile_y),
+						tile_color = constants.COLOR_ORANGE,
+						tile_alpha = 150)
 
-		#draw rectangle at mouse position
-		draw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (map_coord_x, map_coord_y))
+					#draw rectangle at mouse position
+					#raw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (map_coord_x, map_coord_y))
 
-		pygame.display.flip()
-		CLOCK.tick(constants.GAME_FPS)
+										#these numbers are the starting offset, for left/top padding
+			SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)				
+
+			if settings.ENABLE_DEBUG == True:
+				draw_debug()
+
+			draw_messages()
+			#update display
+			pygame.display.flip()
+			CLOCK.tick(constants.GAME_FPS)
 
 ###############################################################################################################
 #map functions

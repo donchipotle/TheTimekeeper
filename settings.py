@@ -2,8 +2,14 @@
 
 
 
+#Camera follow speed
+# Must be: 0 < N <= 1
+CAM_LERP_X = .1
+CAM_LERP_Y = .1
 
-	###graphics
+
+
+#GRAPHICS
 #toggle rendering ballistics (spells, projectiles, etc.)
 RENDER_BALLISTICS = True
 #ms elapsed before ballistic is cleared
@@ -14,6 +20,11 @@ BALLISTIC_TICK_LOWER = 50
 EXPLOSION_TICK_UPPER = 50
 #ms elapsed before animation ends
 EXPLOSION_TICK_LOWER = 50
+
+
+
+
+
 
 #render every tile with ASCII instead of bitmaps (legacy)
 #RENDER_ASCII = True
@@ -60,12 +71,14 @@ Mod6 = False
 
 	###debug
 
-ENABLE_DEBUG = False
-DISPLAY_FPS = False
+ENABLE_DEBUG = True
+DISPLAY_FPS = True
 
 DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
 DEBUG_PRINT_TURNS = False
+
+
 
 #Inventory
 CLOSE_AFTER_USE = True
