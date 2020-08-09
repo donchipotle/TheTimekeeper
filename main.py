@@ -17,12 +17,6 @@ import random
 
 #import key_binds
 
-#import asset catalogs
-#import environ_cat
-#import actors_cat
-#import misc_cat
-
-
 #structures
 class struc_Tile:
 	def __init__(self, block_path): #add more variables like blocking projectiles, blocking sight, DoT, etc.
@@ -109,8 +103,8 @@ class obj_Actor:
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 
 		if is_visible:
-			draw_text(SURFACE_MAIN, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
-				coords = ((self.x * constants.CELL_WIDTH), (self.y * constants.CELL_HEIGHT)), 
+			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
+				coords = ((self.x * constants.CELL_WIDTH) + 8, (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
 				center = True)
 
@@ -166,6 +160,25 @@ class obj_Room:
 
 		#return objects_intersect
 		return objects_intersect
+
+
+class obj_Camera:
+	def __init__(self):
+		self.width = constants.CAM_WIDTH
+		self.height = constants.CAM_HEIGHT
+		self.x, self.y = (0,0)
+
+	def update(self):
+		self.x = PLAYER.x * constants.CELL_WIDTH + constants.CELL_HALF_WIDTH
+		self.y = PLAYER.y * constants.CELL_HEIGHT + constants.CELL_HALF_HEIGHT
+
+
+	@property
+	def rectangle(self):
+		pos_rect = pygame.Rect((0,0), (constants.CAM_WIDTH, constants.CAM_HEIGHT))
+		pos_rect.center = (self.x, self.y)
+
+		return pos_rect
 
 ###############################################################################################################################
 #components
@@ -480,8 +493,6 @@ def death_monster(monster):
 def map_random_walk():
 	print("Placeholder. (map gen)")
 	
-
-
 def map_create():
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
@@ -542,8 +553,6 @@ def map_create():
 	#finalize
 	return new_map
 """
-
-
 def map_create():
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
@@ -655,14 +664,14 @@ def draw_map(map_to_draw):
 				if map_to_draw[x][y].block_path == True:
 					#draw wall, switch to actor walls instead of hardcoded ones
 					draw_text(
-						SURFACE_MAIN, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
+						SURFACE_MAP, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
 						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 						text_color = constants.COLOR_L_BROWN, back_color = constants.COLOR_BLACK,
 						center = True)
 				else:
 					#draw visible floor tiles
 						draw_text(
-						SURFACE_MAIN, text_to_display = " . ", font = constants.FONT_RENDER_TEXT, 
+						SURFACE_MAP, text_to_display = " . ", font = constants.FONT_RENDER_TEXT, 
 						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
 						center = True)	
@@ -674,14 +683,14 @@ def draw_map(map_to_draw):
 					if map_to_draw[x][y].block_path == True:
 						#draw wall
 						draw_text(
-							SURFACE_MAIN, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
+							SURFACE_MAP, text_to_display = " # ", font = constants.FONT_RENDER_TEXT, 
 							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 							text_color = constants.COLOR_BROWN, back_color = constants.COLOR_BLACK,
 							center = True)
 					else:
 						#draw explored floor but not visible wall tiles
 						draw_text(
-							SURFACE_MAIN, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
+							SURFACE_MAP, text_to_display = " .  ", font = constants.FONT_RENDER_TEXT, 
 							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
 							center = True)
@@ -694,12 +703,23 @@ def draw_game():
 
 	#clear the surface
 	SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
+	SURFACE_MAP.fill(constants.COLOR_DEFAULT_BG)
+
+	CAMERA.update()
+
+	displayrectangle = pygame.Rect((0,0),(constants.CAM_WIDTH, constants.CAM_HEIGHT))
+
 	#draw the map
 	draw_map(GAME.current_map)
 
 	#draw all objects in the game
 	for obj in GAME.current_objects:
 		obj.draw()
+
+								#these numbers are the starting offset, for left/top padding
+	SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)
+						
+
 
 	#fix at some point idk tho
 	if settings.ENABLE_DEBUG == True:
@@ -752,7 +772,8 @@ def draw_messages():
 
 	text_height = helper_text_height(constants.FONT_MESSAGE_TEXT)
 
-	start_y = (((constants.MAP_HEIGHT * constants.CELL_HEIGHT) - (constants.NUM_MESSAGES * text_height)) - 20)
+	start_y = ((constants.CAM_HEIGHT
+				- (constants.NUM_MESSAGES * text_height)) - 20)
 
 	#print(start_y)
     # get both the surface and rectangle of the desired message
@@ -791,7 +812,7 @@ def draw_tile_rect(coords, tile_color = None, tile_alpha = None, mark = None):
 			coords = ((constants.CELL_WIDTH), (constants.CELL_HEIGHT)), 
 			        text_color = constants.COLOR_BLACK, center = True)
 
-	SURFACE_MAIN.blit(new_surface, (new_x + 16, new_y + 16))
+	SURFACE_MAP.blit(new_surface, (new_x + 16, new_y + 16))
 
 #factor into ballistic weapons and spells later, possibly move damage over to this function under 'handle projectiles'
 def draw_projectile(ballistic_x, ballistic_y, projectile_color):
@@ -1522,6 +1543,8 @@ def game_main_loop():
 		#render the game
 		draw_game()
 
+		#update information displays
+
 		#update the display
 		pygame.display.flip()
 
@@ -1631,7 +1654,8 @@ def game_quit_sequence():
 
 #'''initializing the main window and pygame'''
 def game_initialize():
-	global SURFACE_MAIN, GAME, CLOCK, FOV_CALCULATE, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_SPAWNED
+	global SURFACE_MAIN, SURFACE_MAP, GAME, CLOCK, FOV_CALCULATE
+	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_SPAWNED
 
 
 	PLAYER_SPAWNED = False
@@ -1643,12 +1667,20 @@ def game_initialize():
 		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
 
 	#create the rendered window
-	SURFACE_MAIN = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH, 
-											constants.MAP_HEIGHT * constants.CELL_HEIGHT))
+#	SURFACE_MAIN = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH, 
+#											constants.MAP_HEIGHT * constants.CELL_HEIGHT))
+
+	SURFACE_MAIN = pygame.display.set_mode((constants.CAM_WIDTH, constants.CAM_HEIGHT))
+
+	SURFACE_MAP = pygame.Surface((constants.MAP_WIDTH * constants.CELL_WIDTH,
+									constants.MAP_HEIGHT * constants.CELL_HEIGHT))	
 
 	#side panel
 	#SURFACE_SIDE = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH * ( 1.3), 
 	#										constants.MAP_HEIGHT * constants.CELL_HEIGHT))
+
+
+	CAMERA = obj_Camera()
 
 
 	#create GAME object to track progress

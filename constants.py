@@ -3,13 +3,33 @@ import libtcodpy as libtcod
 
 pygame.init()
 
-# game resolution
+#########################################################################################
+#										WARNING!!!!										#
+#																						#
+#	These parameters are probably best left alone. 										#
+#	Toying with them causes bad things to happen. 										#
+#	Do not cause bad things to happen. 													#
+#	Bad things are bad. kthxbye															#
+#										-sincerely, yo boi Big Chug						#
+#																						#
+#########################################################################################
+
+
+
+# screen resolution
 GAME_WIDTH = 1920
 GAME_HEIGHT = 1080
+
+CAM_WIDTH = 1920
+CAM_HEIGHT = 1080
+
 CELL_WIDTH = 32
 CELL_HEIGHT = 32
-CELL_HALF_WIDTH = 16
-CELL_HALF_HEIGHT = 16
+
+CELL_HALF_WIDTH = CELL_WIDTH / 2
+CELL_HALF_HEIGHT = CELL_HEIGHT / 2
+
+
 
 #gameplay
 HARDCORE_MODE = False
@@ -17,15 +37,15 @@ HARDCORE_MODE = False
 	#	inventory actions cost a turn	
 
 #map limitations
-MAP_WIDTH = 55
-MAP_HEIGHT = 30
-MAP_MAX_NUM_ROOMS = 12
+MAP_WIDTH = 80
+MAP_HEIGHT = 80
+MAP_MAX_NUM_ROOMS = 20
 
 #room limitations
-ROOM_MAX_HEIGHT = 6
-ROOM_MIN_HEIGHT = 3
-ROOM_MAX_WIDTH = 5
-ROOM_MIN_WIDTH = 3
+ROOM_MAX_HEIGHT = 10
+ROOM_MIN_HEIGHT = 4
+ROOM_MAX_WIDTH = 15
+ROOM_MIN_WIDTH = 4
 
 #color definitions
 COLOR_BLACK = (0, 0, 0)
