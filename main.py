@@ -161,7 +161,6 @@ class obj_Room:
 		#return objects_intersect
 		return objects_intersect
 
-
 class obj_Camera:
 	def __init__(self):
 		self.width = constants.CAM_WIDTH
@@ -593,67 +592,6 @@ def map_create():
 	print("map creation finished")
 	#finalize
 	return new_map
-"""
-def map_create():
-	#initialize empty map, flooded with unwalkable tiles
-	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
-									for x in range (0, constants.MAP_WIDTH)]
-
-	# generate new room
-	list_of_rooms = []
-	num = 0
-	for num in range(constants.MAP_MAX_NUM_ROOMS):
-		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH, 
-										constants.ROOM_MAX_WIDTH)
-		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, 
-										constants.ROOM_MAX_HEIGHT)
-
-		x = libtcod.random_get_int(0, 2, constants.MAP_WIDTH - w - 2)
-
-		y = libtcod.random_get_int(0, 2, constants.MAP_HEIGHT - h - 2)
-
-
-
-		#print(w, h, x, y)
-		#create room
-		new_room = obj_Room((x, y), (w, h))
-
-		failed = False
-
-		#check for interference (overlapping with any others)
-		for other_room in list_of_rooms:
-			#if new_room.intersect(other_room):
-			if other_room.intersect(new_room):
-				failed = True
-				#print("This dumb thing failed.")
-				break
-
-		if not failed:
-			#place room
-			map_create_room(new_map, new_room)
-			current_center = new_room.center
-			center_x, center_y = new_room.center
-
-			#put player in the first room
-			if len(list_of_rooms) == 0:
-				gen_player(current_center)
-				print("Player (supposed to be) spawned.")
-
-			else: 			
-				##dig tunnels (from center to center?
-				#prev_index = len(list_of_rooms) - 1
-				#previous_center = list_of_rooms[prev_index].center
-				previous_center = list_of_rooms[-1].center
-				map_create_tunnels(current_center, previous_center, new_map)
-				#print("idk bro")
-			list_of_rooms.append(new_room)	
-
-	#create FOV map		
-	map_make_fov(new_map)
-	print("map creation finished")
-	#finalize
-	return (new_map, list_of_rooms)
-"""
 
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
@@ -1770,7 +1708,7 @@ def game_initialize():
 
 	#map_make_fov(incoming_map)
 
-	GAME.current_map = map_create()
+	#GAME.current_map = map_create()
 	GAME.message_history = []
 
 if __name__ == '__main__':
