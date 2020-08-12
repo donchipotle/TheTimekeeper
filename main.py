@@ -2,7 +2,9 @@
 import pygame
 import tcod as libtcod
 import math
-
+#import cpickle as pickle
+import pickle
+import gzip
 #import tcod
 
 #necessary game files
@@ -146,10 +148,7 @@ class obj_Game:
 
 		FOV_CALCULATE = True
 
-		self.maps_previous.append((PLAYER.x, PLAYER.y, 
-				self.current_map, 
-				self.current_rooms, 
-				self.current_objects))
+		self.maps_previous.append((PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects))
 
 
 		if len(self.maps_next) == 0:   #means that next map has not been created yet
@@ -160,22 +159,23 @@ class obj_Game:
 			self.current_map, self.current_rooms = map_create()
 			map_place_objects(self.current_rooms)
 		else:
-			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_previous[-1]
+			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_next[-1]
 
 			map_make_fov(self.current_map)
 			FOV_CALCULATE = True
 
 			del self.maps_next[-1]
 
+	
+
 	def transition_previous(self):
 		global FOV_CALCULATE
-
 
 		if len(self.maps_previous) != 0:
 			self.maps_next.append((PLAYER.x, PLAYER.y, 
 					self.current_map, 
 					self.current_rooms, 
-						self.current_objects))
+					self.current_objects))
 
 			#load everything in
 			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_previous[-1]
@@ -184,6 +184,8 @@ class obj_Game:
 			FOV_CALCULATE = True
 
 			del self.maps_previous[-1]
+
+
 
 
 
@@ -578,6 +580,7 @@ def death_monster(monster):
 		game_message(monster.creature.name_instance + " is dead!", constants.COLOR_GRAY)
 		monster.creature = None
 		monster.ai = None
+		monster.icon = settings.consumable_icon
 		#determine what to leave behind
 	else:
 		#print("Nice try. " + monster.creature.name_instance + " is invulnerable.")
@@ -1607,7 +1610,7 @@ def game_main_loop():
 		map_calculate_fov()
 
 		if player_action == "QUIT":
-			game_quit = True
+			game_quit_sequence()
 
 		if player_action != "no-action":
 			for obj in GAME.current_objects:
@@ -1627,9 +1630,6 @@ def game_main_loop():
 
 		#tick the clock
 		CLOCK.tick(constants.GAME_FPS)
-
-	#quit the game
-	game_quit_sequence()
 
 #########################################################################################################
 	#input updates 
@@ -1702,12 +1702,13 @@ def game_handle_keys():
 					if settings.Mod2 == False:
 						return "no-action"
 						#break
-
+				#temporarily changed to quit the game
 				if event.key == pygame.K_q:
-					map_tile_query()
+					#map_tile_query()
 					if settings.Mod2 == False:
 						return "no-action"
 						#break
+
 
 				#key L, turn on tile selection. change later as needed
 				if event.key == pygame.K_l:
@@ -1718,8 +1719,10 @@ def game_handle_keys():
 					#cast_confusion()
 					#cast_fireball(PLAYER, 2)
 
+
 				if event.key == pygame.K_k:
 					GAME.transition_previous()
+
 
 				FOV_CALCULATE = True
 				return "player-moved"
@@ -1737,14 +1740,36 @@ def game_new():
 	map_place_objects(GAME.current_rooms)
 
 def game_quit_sequence():
+	game_save()
 	pygame.quit()
 	pygame.font.quit()
 	exit()
+
+def game_save():
+	if settings.SAVE_COMPRESSION:
+		with gzip.open('savedata\savegame', 'wb') as file:
+			pickle.dump([GAME, PLAYER], file)
+	else:
+		with open('savedata\savegame', 'wb') as file:
+			pickle.dump([GAME, PLAYER], file)
+
+def game_load():
+	global GAME, PLAYER
+	if settings.SAVE_COMPRESSION == True:
+		with gzip.open('savedata\savegame', 'rb') as file:
+			GAME, PLAYER = pickle.load(file)
+	else:
+		with open('savedata\savegame', 'rb') as file:
+			GAME, PLAYER = pickle.load(file)
+
+	map_make_fov(GAME.current_map)
+
 
 #'''initializing the main window and pygame'''
 def game_initialize():
 	global SURFACE_MAIN, SURFACE_MAP, CLOCK, FOV_CALCULATE, GAME
 	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_SPAWNED
+	global DUNGEON_DEPTH
 
 	PLAYER_SPAWNED = False
 
@@ -1776,7 +1801,14 @@ def game_initialize():
 	FOV_CALCULATE = True
 	TURNS_ELAPSED = 0
 	#GAME.message_history = []
-	game_new()
+
+	try:
+		game_load()
+
+	except:
+		game_new()
+
+	DUNGEON_DEPTH = 0 
 
 if __name__ == '__main__':
 	game_initialize()

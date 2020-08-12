@@ -22,6 +22,9 @@ EXPLOSION_TICK_UPPER = 50
 EXPLOSION_TICK_LOWER = 50
 
 
+#use GZip to compress save files
+SAVE_COMPRESSION = True
+
 
 
 
@@ -52,6 +55,7 @@ guard_icon = "и"
 human_icon = "@"
 ammo_icon = "ю"
 liquid_icon = "~"
+consumable_icon = "%"
 
 	###difficulty modifiers, see modifiers.txt for descriptions
 
