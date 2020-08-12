@@ -10,7 +10,7 @@ CAM_LERP_Y = .05
 
 
 #GRAPHICS
-#toggle rendering ballistics (spells, projectiles, etc.)
+#toggle rendering ballistics (spells, projectiles, etc.), currently broken by camera refactor
 RENDER_BALLISTICS = True
 #ms elapsed before ballistic is cleared
 BALLISTIC_TICK_UPPER = 50
@@ -51,6 +51,7 @@ chest_icon = "д"
 guard_icon = "и"
 human_icon = "@"
 ammo_icon = "ю"
+liquid_icon = "~"
 
 	###difficulty modifiers, see modifiers.txt for descriptions
 

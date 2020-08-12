@@ -34,7 +34,13 @@ CELL_HALF_HEIGHT = CELL_HEIGHT / 2
 #gameplay
 HARDCORE_MODE = False
 #HC changes are:
-	#	inventory actions cost a turn	
+	#	inventory actions cost a turn
+
+
+
+#spawns
+items_per_room = 3
+enemies_per_room = 3
 
 #map limitations
 MAP_WIDTH = 80

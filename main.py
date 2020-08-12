@@ -136,6 +136,58 @@ class obj_Game:
 		#self.current_map = map_create()
 		self.message_history = []
 		self.current_objects = []
+		self.maps_previous = []
+		self.maps_next = []
+		self.current_map, self.current_rooms = map_create()
+
+
+	def transition_next(self):
+		global FOV_CALCULATE
+
+		FOV_CALCULATE = True
+
+		self.maps_previous.append((PLAYER.x, PLAYER.y, 
+				self.current_map, 
+				self.current_rooms, 
+				self.current_objects))
+
+
+		if len(self.maps_next) == 0:   #means that next map has not been created yet
+			#save literally everything
+
+			self.current_objects = [PLAYER] 
+
+			self.current_map, self.current_rooms = map_create()
+			map_place_objects(self.current_rooms)
+		else:
+			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_previous[-1]
+
+			map_make_fov(self.current_map)
+			FOV_CALCULATE = True
+
+			del self.maps_next[-1]
+
+	def transition_previous(self):
+		global FOV_CALCULATE
+
+
+		if len(self.maps_previous) != 0:
+			self.maps_next.append((PLAYER.x, PLAYER.y, 
+					self.current_map, 
+					self.current_rooms, 
+						self.current_objects))
+
+			#load everything in
+			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_previous[-1]
+
+			map_make_fov(self.current_map)
+			FOV_CALCULATE = True
+
+			del self.maps_previous[-1]
+
+
+
+	
 
 	#this is a rectangle that lives on the map
 class obj_Room:
@@ -333,6 +385,7 @@ class com_Item:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", use_function = None, value = None, slot = None):
 		self.weight = weight
 		self.volume = volume
+	
 		self.name = name
 		self.value = value
 		self.use_function = use_function
@@ -346,7 +399,9 @@ class com_Item:
 
 			else:
 				print("Picked up.")
-				game_message("Picked up " + self.name + ".")
+				if self.name:
+					game_message("Picked up " + self.name + ".")
+
 				print("item picked up is " + self.name)
 				actor.container.inventory.append(self.owner)
 				GAME.current_objects.remove(self.owner)
@@ -532,6 +587,8 @@ def death_monster(monster):
 #map functions
 def map_random_walk():
 	print("Placeholder. (map gen)")
+
+
 	
 def map_create():
 	#initialize empty map, flooded with unwalkable tiles
@@ -574,24 +631,39 @@ def map_create():
 			center_x, center_y = new_room.center
 
 			#put player in the first room
-			if len(list_of_rooms) == 0:
-				gen_player(current_center)
-				print("Player (supposed to be) spawned.")
-
-			else: 			
-				##dig tunnels (from center to center?
-				#prev_index = len(list_of_rooms) - 1
-				#previous_center = list_of_rooms[prev_index].center
+			if len(list_of_rooms) != 0:
 				previous_center = list_of_rooms[-1].center
+				##dig tunnels (from center to center?
 				map_create_tunnels(current_center, previous_center, new_map)
-				#print("idk bro")
+
 			list_of_rooms.append(new_room)	
 
 	#create FOV map		
 	map_make_fov(new_map)
 	print("map creation finished")
 	#finalize
-	return new_map
+
+
+	return (new_map, list_of_rooms)
+
+def map_place_objects(room_list):
+	for room in room_list:
+		if room == room_list[0]: 
+			PLAYER.x, PLAYER.y = room.center
+			#gen_player(room_list[0].center)
+
+		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
+		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
+		gen_item((x,y))
+		
+		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
+		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
+		gen_enemy((x,y))
+
+	#	x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
+	#	y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
+	#	gen_enemy((x,y))
+		
 
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
@@ -627,7 +699,6 @@ def map_create_tunnels(coords1, coords2, new_map):
 			new_map[int(x1)][int(y1)].block_path = False
 		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
 			new_map[int(x)][int(y1)].block_path = False
-
 
 def draw_map(map_to_draw):
 	#camera visibility culling
@@ -1181,7 +1252,7 @@ def menu_tile_select(coords_origin = None, max_range = None,
 
 		
 			SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
-			SURFACE_MAP.fill(Constants.COLOR_BLACK)
+			SURFACE_MAP.fill(constants.COLOR_BLACK)
 
 			CAMERA.update()
 
@@ -1348,17 +1419,17 @@ def map_tile_query():
 
 #items
 #use better solution later
-def gen_item(coords): #random scrolls
+def gen_item(coords):
 	global GAME
 
-	random_num = helper_dice(6, 0)
+	random_num = helper_dice(7, 0)
 	if random_num == 1: new_item = gen_scroll_lightning(coords)
 	elif random_num == 2: new_item = gen_scroll_fireball(coords)
 	elif random_num == 3:  new_item = gen_scroll_confusion(coords)
 	elif random_num == 4:  new_item = gen_weapon_sword(coords)
 	elif random_num == 5:  new_item = gen_armor_leather(coords)
 	elif random_num == 6:  new_item = gen_weapon_sword(coords)
-	#elif random_num == 6:  new_item = gen_consumable_potion(coords)
+	elif random_num == 7:  new_item = gen_armor_helmet(coords)
 	
 	GAME.current_objects.insert(0, new_item)
 	#GAME.current_objects.append(new_item)
@@ -1406,7 +1477,7 @@ def gen_weapon_sword(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(attack_bonus = 18, defense_bonus = 1, slot = "Main Hand")
+	equipment_com = com_Equipment(attack_bonus = 18, defense_bonus = 1, slot = "Main Hand") #, name = "a plain longsword")
 
 	return_object = obj_Actor(x, y, "Longsword",
 					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
@@ -1417,22 +1488,34 @@ def gen_weapon_pickaxe(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(attack_bonus = 4, defense_bonus = 1, slot = "Main Hand")
+	equipment_com = com_Equipment(attack_bonus = 4, defense_bonus = 1, slot = "Main Hand") #, name = "a sturdy pickaxe")
 
 	return_object = obj_Actor(x, y, "Pickaxer",
 					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
 					equipment = equipment_com)
 	return return_object
 
+#, name = ""
 def gen_armor_leather(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(defense_bonus = 4, slot = "Armor")
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Armor", name = "a suit of leather armor")
 
 	return_object = obj_Actor(x, y, "Leather Armor",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					equipment = equipment_com)
+					 equipment = equipment_com)
+	return return_object
+
+def gen_armor_helmet(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Helmet", name = "a rusty Temryavite helmet") 
+
+	return_object = obj_Actor(x, y, "Temryavite Helm",
+					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
+					 equipment = equipment_com)
 	return return_object
 
 def gen_consumable_potion(coords):
@@ -1461,7 +1544,6 @@ def gen_player(coords):
 	GAME.current_objects.append(PLAYER)
 	print("Player Spawn function called.")
 	
-
 #enemies
 def gen_enemy(coords):
 	global GAME
@@ -1469,12 +1551,8 @@ def gen_enemy(coords):
 	random_num = helper_dice(100, 0)
 	if random_num  <= 30 : new_enemy = gen_nightcrawler_greater(coords)
 	else:					 new_enemy = gen_nightcrawler_lesser(coords)
-	#elif random_num >= 31 : new_enemy = gen_nightcrawler_lesser(coords)
-
-	#elif random_num == 6:  new_item = gen_consumable_potion(coords)
 	
-	
-	GAME.current_objects.insert(-1, new_enemy)
+	GAME.current_objects.insert(0, new_enemy)
 
 def gen_nightcrawler_lesser(coords):
 	x, y = coords
@@ -1487,12 +1565,13 @@ def gen_nightcrawler_lesser(coords):
 	) 
 	ai_com = ai_Chase()
 							#name of item when picked up
-	ENEMY = obj_Actor(20, 19, "Lesser Nightcrawler carcass",
+	ENEMY = obj_Actor(x, y, "Lesser Nightcrawler carcass",
 		creature = creature_com, ai = ai_com, item = item_com,
 		icon = " ж ", icon_color = constants.COLOR_GRAY)
 	return ENEMY
 
 def gen_nightcrawler_greater(coords):
+	x, y = coords
 	item_com = com_Item(value = 5, use_function = cast_heal, name = "Greater Nightcrawler carcass")								#name of enemy when alive
 	creature_com = com_Creature("Greater Nightcrawler", death_function = death_monster,
 								hp = 15,
@@ -1502,7 +1581,7 @@ def gen_nightcrawler_greater(coords):
 	#the crab's creature name
 	ai_com = ai_Chase()
 							#name of item when picked up
-	ENEMY = obj_Actor(10, 15, "Greater Nightcrawler carcass", 
+	ENEMY = obj_Actor(x, y, "Greater Nightcrawler carcass", 
 		creature = creature_com, ai = ai_com, item = item_com, icon = "Ж", icon_color = constants.COLOR_GRAY)
 
 	return ENEMY
@@ -1632,11 +1711,15 @@ def game_handle_keys():
 
 				#key L, turn on tile selection. change later as needed
 				if event.key == pygame.K_l:
-					print("A useless function, for the time being.")
+					GAME.transition_next()
+					#print("A useless function, for the time being.")
 					#menu_tile_select()
 					#cast_lightning(9)
 					#cast_confusion()
 					#cast_fireball(PLAYER, 2)
+
+				if event.key == pygame.K_k:
+					GAME.transition_previous()
 
 				FOV_CALCULATE = True
 				return "player-moved"
@@ -1645,6 +1728,14 @@ def game_handle_keys():
 def game_message(game_msg, msg_color = constants.COLOR_WHITE):
 	GAME.message_history.append((game_msg, msg_color))
 
+def game_new():
+	global GAME
+
+	#start a new game and map, and player with nonsense coords to be placed elsewhere
+	gen_player((0,0))
+	GAME.current_map, GAME.current_rooms = map_create()
+	map_place_objects(GAME.current_rooms)
+
 def game_quit_sequence():
 	pygame.quit()
 	pygame.font.quit()
@@ -1652,9 +1743,8 @@ def game_quit_sequence():
 
 #'''initializing the main window and pygame'''
 def game_initialize():
-	global SURFACE_MAIN, SURFACE_MAP, GAME, CLOCK, FOV_CALCULATE
+	global SURFACE_MAIN, SURFACE_MAP, CLOCK, FOV_CALCULATE, GAME
 	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_SPAWNED
-
 
 	PLAYER_SPAWNED = False
 
@@ -1665,11 +1755,7 @@ def game_initialize():
 		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
 
 	#create the rendered window
-#	SURFACE_MAIN = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH, 
-#											constants.MAP_HEIGHT * constants.CELL_HEIGHT))
-
 	SURFACE_MAIN = pygame.display.set_mode((constants.CAM_WIDTH, constants.CAM_HEIGHT))
-
 	SURFACE_MAP = pygame.Surface((constants.MAP_WIDTH * constants.CELL_WIDTH,
 									constants.MAP_HEIGHT * constants.CELL_HEIGHT))	
 
@@ -1677,39 +1763,20 @@ def game_initialize():
 	#SURFACE_SIDE = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH * ( 1.3), 
 	#										constants.MAP_HEIGHT * constants.CELL_HEIGHT))
 
-
 	CAMERA = obj_Camera()
-
 
 	#create GAME object to track progress
 	GAME = obj_Game()
-	#print("Game Object created.")
-	GAME.current_objects = []
-
-	#print("map_create function called.")
+	#GAME.current_objects = []
 	
-	GAME.current_map = map_create()
-	"""
-	GAME.current_map, GAME.current_rooms = map_create()
-	"""
 
-	#print("map_create SUPPOSED to be complete")
-
-	#player listed last to be rendered on top of enemies
-
-	
-	#GAME.current_objects.append(PLAYER)
 
 	CLOCK = pygame.time.Clock()
 
 	FOV_CALCULATE = True
-
 	TURNS_ELAPSED = 0
-
-	#map_make_fov(incoming_map)
-
-	#GAME.current_map = map_create()
-	GAME.message_history = []
+	#GAME.message_history = []
+	game_new()
 
 if __name__ == '__main__':
 	game_initialize()
