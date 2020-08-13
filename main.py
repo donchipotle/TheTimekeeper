@@ -1167,7 +1167,6 @@ def menu_inventory():
 				#print(event.button) #gets the id of button clicked, returns int
 				#if (event.button == 1 or 2 or 3):
 				if (event.button == 1):
-
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
 						#PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
@@ -1175,7 +1174,20 @@ def menu_inventory():
 						
 						if settings.CLOSE_AFTER_USE == True: menu_close
 
+			if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+				if len(PLAYER.container.inventory) > 0:
+					#check if item is equipment, and, if so, unequip it
+					try:
+						PLAYER.container.inventory[mouse_line_selection].equipment.unequip()
+					except:
+						print("Meh.")
 
+					#drop item
+					PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
+					if settings.Mod2 == False:
+						return "no-action"
+					else:
+						return "player-moved"
 					
 		#draw every line in the list
 		for line, (name) in enumerate(print_list):
@@ -1190,10 +1202,8 @@ def menu_inventory():
 					menu_text_font,
 					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
 
-
 		#render game 
 		draw_game()
-
 
 		#display menu
 		SURFACE_MAIN.blit(local_inventory_surface, (int(menu_x), int(menu_y)))
@@ -1425,7 +1435,7 @@ def map_tile_query():
 def gen_item(coords):
 	global GAME
 
-	random_num = helper_dice(7, 0)
+	random_num = helper_dice(9, 0)
 	if random_num == 1: new_item = gen_scroll_lightning(coords)
 	elif random_num == 2: new_item = gen_scroll_fireball(coords)
 	elif random_num == 3:  new_item = gen_scroll_confusion(coords)
@@ -1433,6 +1443,8 @@ def gen_item(coords):
 	elif random_num == 5:  new_item = gen_armor_leather(coords)
 	elif random_num == 6:  new_item = gen_weapon_sword(coords)
 	elif random_num == 7:  new_item = gen_armor_helmet(coords)
+	elif random_num == 8:  new_item = gen_armor_shirt(coords)
+	elif random_num == 9:  new_item = gen_armor_boots(coords)
 	
 	GAME.current_objects.insert(0, new_item)
 	#GAME.current_objects.append(new_item)
@@ -1518,6 +1530,29 @@ def gen_armor_helmet(coords):
 
 	return_object = obj_Actor(x, y, "Temryavite Helm",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
+					 equipment = equipment_com)
+	return return_object
+
+def gen_armor_shirt(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Shirt", name = "a Guiding Star tunic.") 
+
+	return_object = obj_Actor(x, y, "Guiding Star tunic",
+					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
+					 equipment = equipment_com)
+	return return_object
+
+
+def gen_armor_boots(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Boots", name = "a pair of muddy combat boots.") 
+
+	return_object = obj_Actor(x, y, "Combat Boots",
+					icon = settings.armor_icon, icon_color = constants.COLOR_L_BROWN,
 					 equipment = equipment_com)
 	return return_object
 
@@ -1685,13 +1720,8 @@ def game_handle_keys():
 								return "no-action"
 								
 
-				if event.key == pygame.K_d:
-					if len(PLAYER.container.inventory) > 0:
-						PLAYER.container.inventory[-1].item.drop(PLAYER.x, PLAYER.y)
-						if settings.Mod2 == False:
-							return "no-action"
-							
 
+							
 				#open (and later toggle) inventory menu
 				if event.key == pygame.K_p:
 					menu_pause()
@@ -1745,7 +1775,7 @@ def game_quit_sequence():
 	pygame.font.quit()
 	exit()
 
-def game_save():
+def game_save():		#add stuff for distributed builds that checks/adds a savegame folder
 	if settings.SAVE_COMPRESSION:
 		with gzip.open('savedata\savegame', 'wb') as file:
 			pickle.dump([GAME, PLAYER], file)
