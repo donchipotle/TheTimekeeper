@@ -49,7 +49,9 @@ class obj_Actor:
 		icon = "x", 
 		icon_color = constants.COLOR_WHITE,
 		equipment = None,
-		interact_function = None
+		interact_function = None,
+
+		stairs = None
 		):
 
 		#map addresses, later to be converted to pixel address
@@ -88,6 +90,11 @@ class obj_Actor:
 
 			self.item = com_Item()
 			self.item.owner = self
+
+		self.stairs = stairs
+		if self.stairs:
+			self.stairs.owner = self
+
 
 	@property
 	def display_name(self):
@@ -417,7 +424,7 @@ class com_Item:
 		self.owner.x = new_x
 		self.owner.y = new_y
 
-		#game_message("Item dropped.")
+		game_message(self.name + " dropped.")
 
 
 		#drop the item
@@ -485,6 +492,24 @@ class com_Equipment:
 		self.equipped = False
 		#game_message(self.item.equipment.slot + " is now empty.")
 		game_message("Unequipped.")
+
+class com_Stairs:
+	def __init__(self, downwards = True):
+		self.downwards = downwards
+	#include parameter for pre-selected nextmap/previous map for premade areas
+	#include parameter for prompting the player before moving
+	#something about doors?
+
+	def use(self):
+		if self.downwards:
+			GAME.transition_next()
+			game_message("You descend the staircase.")
+
+		else:
+			GAME.transition_previous()
+			game_message("You ascend the staircase.")
+
+
 
 
 ######################################################################################################################
@@ -602,7 +627,7 @@ def map_create():
 	list_of_rooms = []
 	num = 0
 	for num in range(constants.MAP_MAX_NUM_ROOMS):
-		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH, 
+		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH,  
 										constants.ROOM_MAX_WIDTH)
 		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, 
 										constants.ROOM_MAX_HEIGHT)
@@ -650,10 +675,25 @@ def map_create():
 	return (new_map, list_of_rooms)
 
 def map_place_objects(room_list):
+	top_level = (len(GAME.maps_previous) == 0)
+
 	for room in room_list:
-		if room == room_list[0]: 
+		first_room = (room ==  room_list[0])
+		last_room = (room == room_list[-1])
+
+		#put the player in the first room
+		if first_room: 
 			PLAYER.x, PLAYER.y = room.center
-			#gen_player(room_list[0].center)
+
+		#put player right on top of the stairs leading up and out of the dungeon
+		if first_room and not top_level: 
+			gen_stairs((PLAYER.x, PLAYER.y), downwards = False)
+
+		if last_room: gen_stairs(room.center, downwards = True)
+
+
+
+
 
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
@@ -1172,7 +1212,7 @@ def menu_inventory():
 						#PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
 						PLAYER.container.inventory[mouse_line_selection].item.use()
 						
-						if settings.CLOSE_AFTER_USE == True: menu_close
+						#if settings.CLOSE_AFTER_USE == True: menu_close
 
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
 				if len(PLAYER.container.inventory) > 0:
@@ -1182,7 +1222,7 @@ def menu_inventory():
 					except:
 						print("Meh.")
 
-					#drop item
+					#drop selected item
 					PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
 					if settings.Mod2 == False:
 						return "no-action"
@@ -1624,6 +1664,19 @@ def gen_nightcrawler_greater(coords):
 
 	return ENEMY
 
+#special
+def gen_stairs(coords, downwards):
+	x, y = coords
+	if downwards:
+		stairs_com = com_Stairs()
+		stairs = obj_Actor(x, y, "A staircase leading down.", stairs = stairs_com, icon = settings.stairs_up_icon) #constants.COLOR_WHITE)
+	else:
+		stairs_com = com_Stairs(downwards)
+		stairs = obj_Actor(x, y, "A staircase leading up.", stairs = stairs_com, icon = settings.stairs_down_icon)
+
+	GAME.current_objects.append(stairs)
+
+
 ################################################################################################################
 
 #Main game loop, on tick
@@ -1673,6 +1726,14 @@ def game_main_loop():
 
 def game_handle_keys():
 	global FOV_CALCULATE
+
+	keys_list = pygame.key.get_pressed()
+
+	#check for mod key (shift)
+	MOD_KEY = (keys_list[pygame.K_RSHIFT] or 
+			   keys_list[pygame.K_LSHIFT])
+
+
 	events_list = pygame.event.get()
 	for event in events_list:
 		if event.type == pygame.QUIT:
@@ -1741,17 +1802,25 @@ def game_handle_keys():
 
 
 				#key L, turn on tile selection. change later as needed
-				if event.key == pygame.K_l:
-					GAME.transition_next()
-					#print("A useless function, for the time being.")
-					#menu_tile_select()
-					#cast_lightning(9)
-					#cast_confusion()
-					#cast_fireball(PLAYER, 2)
+				if MOD_KEY and event.key == pygame.K_PERIOD:
+					#reuse this kind of thing later 		
+					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
+					for obj in list_of_objects:
+						if obj.stairs:
+							obj.stairs.use()
 
 
-				if event.key == pygame.K_k:
-					GAME.transition_previous()
+#				if event.key == pygame.K_LESS:
+#					GAME.transition_previous()
+
+
+#				keys = pygame.key.get_pressed()
+#				if keys[pygame.K_LSHIFT] and keys[pygame.K_LEFT]:
+					#check if player is on stairs
+   
+
+ #  				keys = pygame.key.get_pressed()
+#				if keys[pygame.K_LSHIFT] and keys[pygame.K_LEFT]:
 
 
 				FOV_CALCULATE = True

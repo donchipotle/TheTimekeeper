@@ -56,6 +56,9 @@ human_icon = "@"
 ammo_icon = "ю"
 liquid_icon = "~"
 consumable_icon = "%"
+stairs_up_icon = ">"
+stairs_down_icon = "<"
+
 
 	###difficulty modifiers, see modifiers.txt for descriptions
 
