@@ -136,8 +136,17 @@ class obj_Actor:
 		delta_x = int(round(delta_x / distance))
 		delta_y = int(round(delta_y/distance))
 
-		#check later if this actually works or not
-		#idk I'm actually pretty drunk right now so my judgment is probably off by a bit
+		self.creature.move(delta_x, delta_y)
+
+	def move_away(self, other):
+		
+		delta_x = self.x - other.x 
+		delta_y = self.y - other.y 
+		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
+
+		delta_x = int(round(delta_x / distance))
+		delta_y = int(round(delta_y/distance))
+
 		self.creature.move(delta_x, delta_y)
 			
 class obj_Game:
@@ -319,15 +328,16 @@ class com_Creature:
 		#possibly move this statement into loop above
 		if target:
 
-			self.attack(target, 3)
+			self.attack(target)
 
 		if not tile_is_wall and target is None:
 			self.owner.x += dx
 			self.owner.y += dy
 
-	def attack(self, target, damage):
+	def attack(self, target):
 
 		damage_dealt = self.power - target.creature.defense
+		print(damage_dealt)
 
 		if (damage_dealt < 0):
 			game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
@@ -537,17 +547,25 @@ class ai_Confuse:
 
 class ai_Chase:
 	#a basic ai script which chases and tries to harm the player
-	#refactor later with target seleciton
+	#refactor later with target selection
 	def take_turn(self):
 		monster = self.owner
 
 		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
 			#move towards the player if far away (out of weapon reach)
 			
+# move towards the player if far away
 			if monster.distance_to(PLAYER) >= 2:
 				self.owner.move_towards(PLAYER)
+			# if close enough, attack player
 			elif PLAYER.creature.current_hp > 0:
-				monster.creature.attack(PLAYER, 3)
+				monster.creature.attack(PLAYER) # monster.creature.power)
+
+class ai_Flee:
+	def take_turn(self):
+		monster = self.owner
+		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
+			self.owner.move_away(PLAYER)
 
 #fire ranged until entering melee range. sustain fire at all times
 #class ai_Ranged_Assault:
@@ -557,9 +575,6 @@ class ai_Chase:
 #class ai_Ranged_Fall_Back:
 #	print("Placeholder.")
 
-#run from target
-#class ai_Retreat:
-#	print("Placeholder.")
 
 #cast offensive spell
 #class ai_Offensive_Spell:
@@ -569,21 +584,21 @@ class ai_Chase:
 #class ai_Crowd_Control:
 #	print("Placeholder.")
 
-#follow ally, idling when too close
-#class ai_ally_follow:
-#	print("Placeholder.")
-#	def_take_turn(self):
-#		monster = self.owner
+#follow ally, idling when too close. edit later to include attacking enemies
+class ai_ally_follow:
+	print("Placeholder.")
+	def take_turn(self):
+		monster = self.owner
+		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
 
-#		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
-		#move towards the player if far away (out of weapon reach)
-			
-#			if monster.distance_to(PLAYER) >= 3:
-#				self.owner.move_towards(PLAYER)
-		#maybe add in a script to wander in circles around the player
-#			elif:
-#				return
+			if monster.distance_to(PLAYER) >= 5:
+				self.owner.move_towards(PLAYER)
+			else:
+				self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			#move towards the player if far away (out of weapon reach)
 
+
+ 
 
 class com_AI:
 	def take_turn(self):
@@ -998,18 +1013,18 @@ def helper_dice(upper_bound, bias):
 ###############################################################################################################
 #magic
 
-def cast_heal(target, value):
-	if target.creature.current_hp == target.creature.max_hp:
-		game_message(target.creature.name_instance + " is already at full health.")
+def cast_heal(caster, value):
+	if caster.creature.current_hp == caster.creature.max_hp:
+		game_message(caster.creature.name_instance + " is already at full health.")
 		return "cancelled"
 
 	else:
-		game_message(target.creature.name_instance + " the " + target.name_object + " healed for " + str(value) + " health.")
-		target.creature.heal(value)
+		game_message(caster.creature.name_instance + " the " + caster.name_object + " healed for " + str(value) + " health.")
+		caster.creature.heal(value)
 
-		if target.creature.current_hp >= target.creature.max_hp:
-			game_message(target.creature.name_instance + " is now at full health.")
-		print(target.creature.current_hp)
+		if caster.creature.current_hp >= caster.creature.max_hp:
+			game_message(caster.creature.name_instance + " is now at full health.")
+		print(caster.creature.current_hp)
 		
 	return None
 
@@ -1627,8 +1642,9 @@ def gen_enemy(coords):
 	global GAME
 
 	random_num = helper_dice(100, 0)
-	if random_num  <= 30 : new_enemy = gen_nightcrawler_greater(coords)
-	else:					 new_enemy = gen_nightcrawler_lesser(coords)
+	if random_num  <= 30 : 					new_enemy = gen_nightcrawler_greater(coords)
+	elif random_num <= 80 :					new_enemy = gen_nightcrawler_lesser(coords)
+	else:									new_enemy = gen_rabbit(coords)
 	
 	GAME.current_objects.insert(0, new_enemy)
 
@@ -1645,7 +1661,7 @@ def gen_nightcrawler_lesser(coords):
 							#name of item when picked up
 	ENEMY = obj_Actor(x, y, "Lesser Nightcrawler carcass",
 		creature = creature_com, ai = ai_com, item = item_com,
-		icon = " ж ", icon_color = constants.COLOR_GRAY)
+		icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY)
 	return ENEMY
 
 def gen_nightcrawler_greater(coords):
@@ -1660,9 +1676,26 @@ def gen_nightcrawler_greater(coords):
 	ai_com = ai_Chase()
 							#name of item when picked up
 	ENEMY = obj_Actor(x, y, "Greater Nightcrawler carcass", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = "Ж", icon_color = constants.COLOR_GRAY)
+		creature = creature_com, ai = ai_com, item = item_com, icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY)
 
 	return ENEMY
+
+def gen_rabbit(coords):
+	x, y = coords
+	item_com = com_Item(value = 4, use_function = cast_heal, name = "Rabbit carcass")								#name of enemy when alive
+	creature_com = com_Creature("Rabbit", death_function = death_monster,
+								hp = 3,
+								base_attack = 0,
+								base_defense = 1)
+	
+	#the crab's creature name
+	ai_com = ai_Flee()
+							#name of item when picked up
+	ENEMY = obj_Actor(x, y, "Rabbit carcass", 
+		creature = creature_com, ai = ai_com, item = item_com, icon = settings.game_animal_icon, icon_color = constants.COLOR_L_BROWN)
+
+	return ENEMY
+
 
 #special
 def gen_stairs(coords, downwards):

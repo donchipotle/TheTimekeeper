@@ -50,14 +50,22 @@ armor_icon = "]"
 food_icon = "ф"
 potion_icon = "ї"
 door_icon = "+"
-chest_icon = "д"
+chest_icon = "П"
 guard_icon = "и"
-human_icon = "@"
 ammo_icon = "ю"
 liquid_icon = "~"
+
+human_icon = "@"
+player_icon = "Я"
+game_animal_icon = "Ч"
+eldritch_icon = "Ж"
+draconic_icon = "Д"
+
+
 consumable_icon = "%"
 stairs_up_icon = ">"
 stairs_down_icon = "<"
+
 
 
 	###difficulty modifiers, see modifiers.txt for descriptions
