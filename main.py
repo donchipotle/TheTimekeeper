@@ -1690,6 +1690,7 @@ def gen_rabbit(coords):
 	
 	#the crab's creature name
 	ai_com = ai_Flee()
+	#ai_com = ai_ally_follow()
 							#name of item when picked up
 	ENEMY = obj_Actor(x, y, "Rabbit carcass", 
 		creature = creature_com, ai = ai_com, item = item_com, icon = settings.game_animal_icon, icon_color = constants.COLOR_L_BROWN)
