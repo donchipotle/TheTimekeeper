@@ -537,10 +537,9 @@ class ai_Chase:
 	#refactor later with target selection
 	def take_turn(self):
 		monster = self.owner
-
 		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
 			#move towards the player if far away (out of weapon reach)		
-# move towards the player if far away
+			# move towards the player if far away
 			if monster.distance_to(PLAYER) >= 2:
 				self.owner.move_towards(PLAYER)
 			# if close enough, attack player
@@ -1100,7 +1099,6 @@ def ranged_attack(caster, ranged_weapon, target, ammo_count):
 
 ################################################################################
 #UI stuff
-
 class ui_Button:
 	def __init__(self, surface, button_text, size, center_coords,
 					color_box_hovered = constants.COLOR_BLUE, 
@@ -1162,7 +1160,6 @@ class ui_Button:
 def menu_main():
 	game_initialize()
 	#print("Init main menu.")
-
 	#draw title
 	button_y = constants.CAM_HEIGHT * (3 / 5)
 	button_x = constants.CAM_WIDTH / 2
@@ -1287,6 +1284,9 @@ def menu_inventory():
 			if delta_x > 0 and delta_y > 0:
 				print(delta_x, delta_y)
 
+					#create buttons for the right side of the menu
+		
+
 		for event in events_list:
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_i:
@@ -1314,10 +1314,12 @@ def menu_inventory():
 
 					#drop selected item
 					PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
-					if settings.Mod2 == False:
+					if settings.CLOSE_AFTER_DROP:
 						return "no-action"
-					else:
-						return "player-moved"
+					#if settings.Mod2 == False:
+					#	return "no-action"
+					#else:
+					#	return "player-moved"
 					
 		#draw every line in the list
 		for line, (name) in enumerate(print_list):
@@ -1332,14 +1334,14 @@ def menu_inventory():
 					menu_text_font,
 					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
 
-
-			#create buttons for the right side of the menu
 		button_height = 80
 		button_width = 100
 		equipment_button = ui_Button(local_inventory_surface, 
 								"Equipment", 
-								(button_height, button_width),
-								(1000, 800))
+								(1000, 1000),
+								(100, 100)
+								)
+
 
 		#render game 
 		draw_game()
@@ -1564,10 +1566,8 @@ def map_tile_query():
 ##########################################################################################################
 #procedural generators
 
-
 #note - possibly include 'special function' in items?
 #to allow additional behaviors in items such as pickaxes
-
 
 #items
 #use better solution later
@@ -1780,7 +1780,6 @@ def gen_rabbit(coords):
 
 	return ENEMY
 
-
 #special
 def gen_stairs(coords, downwards):
 	x, y = coords
@@ -1792,7 +1791,6 @@ def gen_stairs(coords, downwards):
 		stairs = obj_Actor(x, y, "A staircase leading up.", stairs = stairs_com, icon = settings.stairs_down_icon)
 
 	GAME.current_objects.append(stairs)
-
 
 ################################################################################################################
 
@@ -1925,11 +1923,8 @@ def game_handle_keys():
 					for obj in list_of_objects:
 						if obj.stairs:
 							obj.stairs.use()
-
-
 #				if event.key == pygame.K_LESS:
 #					GAME.transition_previous()
-
 
 #				keys = pygame.key.get_pressed()
 #				if keys[pygame.K_LSHIFT] and keys[pygame.K_LEFT]:
@@ -1962,17 +1957,18 @@ def game_quit_sequence():
 	exit()
 
 def game_save():		#add stuff for distributed builds that checks/adds a savegame folder
-
 	if PLAYER:  #if the player is created (and not still in menu), save
+		#filename = 'savedata/' + (PLAYER.creature.name_instance) + '.'+ 'savegame'
 		if settings.SAVE_COMPRESSION:
 			with gzip.open('savedata\savegame', 'wb') as file:
 				pickle.dump([GAME, PLAYER], file)
 		else:
-			with open('savedata\savegame', 'wb') as file:
+			with open('savedata\savegame', 'wb') as file:  
 				pickle.dump([GAME, PLAYER], file)
 
 def game_load():
 	global GAME, PLAYER
+	#'savedata\savegame'
 	if settings.SAVE_COMPRESSION == True:
 		with gzip.open('savedata\savegame', 'rb') as file:
 			GAME, PLAYER = pickle.load(file)
@@ -1983,7 +1979,6 @@ def game_load():
 	map_make_fov(GAME.current_map)
 
 def game_start():
-
 	try:
 		game_load()
 

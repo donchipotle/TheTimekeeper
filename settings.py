@@ -26,6 +26,10 @@ EXPLOSION_TICK_LOWER = 50
 SAVE_COMPRESSION = True
 
 
+#quit inv menu after dropping item
+CLOSE_MENU_AFTER_DROP = False
+#Inventory
+CLOSE_AFTER_USE = True
 
 
 
@@ -88,7 +92,7 @@ Mod6 = False
 	###debug
 
 ENABLE_DEBUG = True
-DISPLAY_FPS = True
+DISPLAY_FPS = False
 
 DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
@@ -97,5 +101,3 @@ DEBUG_MOUSE_IN_INVENTORY = False
 
 
 
-#Inventory
-CLOSE_AFTER_USE = True
