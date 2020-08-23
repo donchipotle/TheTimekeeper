@@ -158,7 +158,6 @@ class obj_Game:
 		self.maps_next = []
 		self.current_map, self.current_rooms = map_create()
 
-
 	def transition_next(self):
 		global FOV_CALCULATE
 
@@ -182,8 +181,6 @@ class obj_Game:
 
 			del self.maps_next[-1]
 
-	
-
 	def transition_previous(self):
 		global FOV_CALCULATE
 
@@ -200,12 +197,6 @@ class obj_Game:
 			FOV_CALCULATE = True
 
 			del self.maps_previous[-1]
-
-
-
-
-
-	
 
 	#this is a rectangle that lives on the map
 class obj_Room:
@@ -286,8 +277,6 @@ class obj_Camera:
 		map_p_y = self.y + cam_d_y
 
 		return((map_p_x, map_p_y))
-
-
 
 
 ###############################################################################################################################
@@ -466,6 +455,7 @@ class com_Equipment:
 	def __init__(self, attack_bonus = None, defense_bonus = None, slot = None, name = None):
 		self.attack_bonus = attack_bonus
 		self.defense_bonus = defense_bonus
+		self.name = name
 
 		self.slot = slot
 		self.equipped = False
@@ -519,9 +509,6 @@ class com_Stairs:
 			GAME.transition_previous()
 			game_message("You ascend the staircase.")
 
-
-
-
 ######################################################################################################################
 #AI scripts
 	#execute once per turn
@@ -552,8 +539,7 @@ class ai_Chase:
 		monster = self.owner
 
 		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
-			#move towards the player if far away (out of weapon reach)
-			
+			#move towards the player if far away (out of weapon reach)		
 # move towards the player if far away
 			if monster.distance_to(PLAYER) >= 2:
 				self.owner.move_towards(PLAYER)
@@ -597,9 +583,6 @@ class ai_ally_follow:
 				self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
 			#move towards the player if far away (out of weapon reach)
 
-
- 
-
 class com_AI:
 	def take_turn(self):
 		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
@@ -631,8 +614,6 @@ def death_monster(monster):
 def map_random_walk():
 	print("Placeholder. (map gen)")
 
-
-	
 def map_create():
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
@@ -722,7 +703,6 @@ def map_place_objects(room_list):
 	#	y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
 	#	gen_enemy((x,y))
 		
-
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
 		for y in range(new_room.y1, new_room.y2):
@@ -1009,7 +989,6 @@ def helper_dice(upper_bound, bias):
 	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
 	return dice_roll
 
-
 ###############################################################################################################
 #magic
 
@@ -1119,9 +1098,113 @@ def ranged_attack(caster, ranged_weapon, target, ammo_count):
 	if (ammo_count > 0 and target and ranged_weapon):
 		print("Ranged attack placeholder..")
 
+################################################################################
+#UI stuff
+
+class ui_Button:
+	def __init__(self, surface, button_text, size, center_coords,
+					color_box_hovered = constants.COLOR_BLUE, 
+					color_box_default = constants.COLOR_L_BLUE,
+					color_text_hovered = constants.COLOR_BLACK,
+					color_text_default = constants.COLOR_BLACK):
+		self.surface = surface
+		self.button_text = button_text
+		self.size = size
+		self.center_coords = center_coords
+
+		self.c_box_ho = color_box_hovered
+		self.c_box_default = color_box_default
+		self.c_text_ho = color_text_hovered
+		self.c_text_default = color_text_default
+		self.current_c_box = color_box_default
+		self.current_c_text = color_text_default
+
+		self.rect = pygame.Rect((0, 0), size)
+		self.rect.center = center_coords
+
+	def update(self, player_input):
+		local_events, local_mousepos = player_input
+		mouse_x, mouse_y = local_mousepos
+
+		mouse_clicked = False
+
+		mouse_over = 	(mouse_x >= self.rect.left and 
+						mouse_x <= self.rect.right and
+						mouse_y >= self.rect.top and 
+						mouse_y <= self.rect.bottom)
+
+		for event in local_events:
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				if event.button == 1: mouse_clicked = True
+
+		if mouse_over:  #change colors and potentially accept mouse input
+			self.current_c_box = self.c_box_ho
+			self.current_c_text = self.c_text_ho
+			if mouse_clicked:
+				return True
+		else:	#reset
+			self.current_c_box = self.c_box_default
+			self.current_c_text = self.c_text_default
+
+	def draw(self):
+		pygame.draw.rect(self.surface, self.current_c_box, self.rect)
+
+		draw_text(self.surface, 
+			self.button_text, 
+			constants.FONT_MESSAGE_TEXT, 
+			self.center_coords,
+			self.current_c_text, 
+			center = True)
 
 ###############################################################################################################
 #menus
+
+def menu_main():
+	game_initialize()
+	#print("Init main menu.")
+
+	#draw title
+	button_y = constants.CAM_HEIGHT * (3 / 5)
+	button_x = constants.CAM_WIDTH / 2
+
+	title_y = constants.CAM_HEIGHT / 3
+	title_text = "The Timekeeper"
+
+
+	menu_running = True
+	test_button = ui_Button(SURFACE_MAIN, 
+					"Start Game", 
+					(200, 200),
+					(button_x, button_y)
+		)
+
+	while menu_running:
+		list_of_events = pygame.event.get()
+		mouse_position = pygame.mouse.get_pos()
+
+		game_input = (list_of_events, mouse_position)
+
+		#handle menu events
+		for event in list_of_events:
+			if event.type == pygame.QUIT:
+				game_quit_sequence()
+
+		#button updates
+		if test_button.update(game_input):
+			game_start()
+
+
+
+		#draw menu
+		SURFACE_MAIN.fill(constants.COLOR_BLACK)   #clear
+
+		draw_text(SURFACE_MAIN, title_text, constants.FONT_CURSOR_TEXT,
+					(button_x, title_y), constants.COLOR_WHITE, constants.COLOR_BLACK, center = True)
+
+		test_button.draw()
+
+		#update surfaces
+		pygame.display.update()
 
 def menu_pause():
 	menu_close = False
@@ -1157,7 +1240,6 @@ def menu_pause():
 def menu_inventory():
 	menu_close = False
 
-
 	window_width = constants.CAM_WIDTH
 	window_height = constants.CAM_HEIGHT
 
@@ -1167,9 +1249,7 @@ def menu_inventory():
 	menu_x = (window_width / 2) - (menu_width / 2)
 	menu_y = (window_height / 2) - (menu_height / 2)
 
-
 	menu_text_font = constants.FONT_MESSAGE_TEXT
-
 	menu_text_height = helper_text_height(menu_text_font)
 
 	#local_inventory_surface = pygame.Surface((menu_width, menu_height))
@@ -1179,7 +1259,6 @@ def menu_inventory():
 		#clear the menu by wiping it black
 		local_inventory_surface.fill(constants.COLOR_BLACK)
 
-		#print_list = [obj.name_object for obj in PLAYER.container.inventory]
 		print_list = [obj.display_name for obj in PLAYER.container.inventory]
 
 		#register changes
@@ -1197,16 +1276,12 @@ def menu_inventory():
 						   delta_x < menu_width and
 						   delta_y < menu_height)
 
-
 		#replace conversation -> int function later
 		mouse_line_selection = int(delta_y / menu_text_height)
 
-		#if mouse_in_window == True:
-			#temporarily commented out
-
-			#print(mouse_line_selection)
-
-
+		if settings.DEBUG_MOUSE_IN_INVENTORY:
+			if mouse_in_window == True:
+				print(mouse_line_selection)
 
 		if settings.DEBUG_MOUSE_DELTA == True:
 			if delta_x > 0 and delta_y > 0:
@@ -1256,6 +1331,15 @@ def menu_inventory():
 					name,
 					menu_text_font,
 					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
+
+
+			#create buttons for the right side of the menu
+		button_height = 80
+		button_width = 100
+		equipment_button = ui_Button(local_inventory_surface, 
+								"Equipment", 
+								(button_height, button_width),
+								(1000, 800))
 
 		#render game 
 		draw_game()
@@ -1510,7 +1594,7 @@ def gen_scroll_lightning(coords):
 	damage = helper_dice(5, 6)
 	m_range = 8
 
-	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range))#not going to worry about weight or volume yet
+	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range), name = "Scroll of Lightning")#not going to worry about weight or volume yet
 
 	return_object =obj_Actor(x, y, "Scroll of Lightning", item = item_com, 
 							icon = settings.scroll_icon, icon_color = constants.COLOR_WHITE)
@@ -1524,7 +1608,7 @@ def gen_scroll_fireball(coords):
 	local_radius = 2
 	max_r = 9
 
-	item_com = com_Item(use_function = cast_fireball, value = (damage, local_radius, max_r))#not going to worry about weight or volume yet
+	item_com = com_Item(use_function = cast_fireball, value = (damage, local_radius, max_r), name = "Scroll of Fireball")#not going to worry about weight or volume yet
 
 	return_object =obj_Actor(x, y, "Scroll of Fireball", item = item_com, 
 							icon = settings.scroll_icon, icon_color = constants.COLOR_ORANGE)
@@ -1536,7 +1620,7 @@ def gen_scroll_confusion(coords):
 
 	effect_duration = helper_dice(3, 3)
 
-	item_com = com_Item(use_function = cast_confusion, value = (effect_duration))#not going to worry about weight or volume yet
+	item_com = com_Item(use_function = cast_confusion, value = (effect_duration), name = "Scroll of Confusion")#not going to worry about weight or volume yet
 
 	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, 
 							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
@@ -1547,7 +1631,7 @@ def gen_weapon_sword(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(attack_bonus = 18, defense_bonus = 1, slot = "Main Hand") #, name = "a plain longsword")
+	equipment_com = com_Equipment(attack_bonus = 18, defense_bonus = 1, slot = "Main Hand", name = "Longsword") #, name = "a plain longsword")
 
 	return_object = obj_Actor(x, y, "Longsword",
 					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
@@ -1558,9 +1642,9 @@ def gen_weapon_pickaxe(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(attack_bonus = 4, defense_bonus = 1, slot = "Main Hand") #, name = "a sturdy pickaxe")
+	equipment_com = com_Equipment(attack_bonus = 4, defense_bonus = 1, slot = "Main Hand", name = "a sturdy pickaxe")
 
-	return_object = obj_Actor(x, y, "Pickaxer",
+	return_object = obj_Actor(x, y, "Pickaxe",
 					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
 					equipment = equipment_com)
 	return return_object
@@ -1574,14 +1658,14 @@ def gen_armor_leather(coords):
 
 	return_object = obj_Actor(x, y, "Leather Armor",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com)
+					 equipment = equipment_com) #, name_object = "TURRRRTTTLLLESSSSSS!!!!")
 	return return_object
 
 def gen_armor_helmet(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(defense_bonus = 4, slot = "Helmet", name = "a rusty Temryavite helmet") 
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Helmet", name = "an ancient Temryavite helmet") 
 
 	return_object = obj_Actor(x, y, "Temryavite Helm",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
@@ -1598,7 +1682,6 @@ def gen_armor_shirt(coords):
 					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
 					 equipment = equipment_com)
 	return return_object
-
 
 def gen_armor_boots(coords):
 	x, y = coords
@@ -1879,12 +1962,14 @@ def game_quit_sequence():
 	exit()
 
 def game_save():		#add stuff for distributed builds that checks/adds a savegame folder
-	if settings.SAVE_COMPRESSION:
-		with gzip.open('savedata\savegame', 'wb') as file:
-			pickle.dump([GAME, PLAYER], file)
-	else:
-		with open('savedata\savegame', 'wb') as file:
-			pickle.dump([GAME, PLAYER], file)
+
+	if PLAYER:  #if the player is created (and not still in menu), save
+		if settings.SAVE_COMPRESSION:
+			with gzip.open('savedata\savegame', 'wb') as file:
+				pickle.dump([GAME, PLAYER], file)
+		else:
+			with open('savedata\savegame', 'wb') as file:
+				pickle.dump([GAME, PLAYER], file)
 
 def game_load():
 	global GAME, PLAYER
@@ -1897,6 +1982,15 @@ def game_load():
 
 	map_make_fov(GAME.current_map)
 
+def game_start():
+
+	try:
+		game_load()
+
+	except:
+		game_new()
+
+	game_main_loop()
 
 #'''initializing the main window and pygame'''
 def game_initialize():
@@ -1935,14 +2029,9 @@ def game_initialize():
 	TURNS_ELAPSED = 0
 	#GAME.message_history = []
 
-	try:
-		game_load()
-
-	except:
-		game_new()
 
 	DUNGEON_DEPTH = 0 
 
 if __name__ == '__main__':
-	game_initialize()
-	game_main_loop()	
+	menu_main()
+	#game_main_loop()	

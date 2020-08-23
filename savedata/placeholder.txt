@@ -1,0 +1,3 @@
+This file is a temporary measure to ensure that the /savedata/ folder
+is created in distributions of the .git repository. May be removed 
+at a later date.
