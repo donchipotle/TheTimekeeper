@@ -5,13 +5,13 @@ import math
 #import cpickle as pickle
 import pickle
 import gzip
+import pygame_textinput
 #import tcod
 
 #necessary game files
 import constants
 import settings
 #import toolbox
-
 
 #for dice rolls, move when that function is moved too
 import random
@@ -988,6 +988,21 @@ def helper_dice(upper_bound, bias):
 	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
 	return dice_roll
 
+def helper_text_prompt():
+	print("Placeholder so this dumb thing doesn't cause an error just by existing.")
+
+	
+	
+	#message = pygame_textinput.TextInput()
+	print(message)
+	#draw rect in desired area of the screen with blinking cursor
+
+
+	#convert player text to string
+
+
+	#return string to function that called it
+
 ###############################################################################################################
 #magic
 
@@ -1093,14 +1108,14 @@ def cast_confusion(caster, effect_duration):
 			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
 			#print(target.creature.name_instance + " is confused.")		
 #print("Ranged attack placeholder..")
-def ranged_attack(caster, ranged_weapon, target, ammo_count):
+def fire_projectile(source, ranged_weapon, target, ammo_count):
 	if (ammo_count > 0 and target and ranged_weapon):
 		print("Ranged attack placeholder..")
 
 ################################################################################
 #UI stuff
 class ui_Button:
-	def __init__(self, surface, button_text, size, center_coords,
+	def __init__(self, surface, button_text, size, center_coords, font = constants.FONT_MESSAGE_TEXT,
 					color_box_hovered = constants.COLOR_BLUE, 
 					color_box_default = constants.COLOR_L_BLUE,
 					color_text_hovered = constants.COLOR_BLACK,
@@ -1119,6 +1134,8 @@ class ui_Button:
 
 		self.rect = pygame.Rect((0, 0), size)
 		self.rect.center = center_coords
+
+		self.font = font
 
 	def update(self, player_input):
 		local_events, local_mousepos = player_input
@@ -1172,7 +1189,8 @@ def menu_main():
 	test_button = ui_Button(SURFACE_MAIN, 
 					"Start Game", 
 					(200, 200),
-					(button_x, button_y)
+					(button_x, button_y),
+					font = constants.FONT_TITLE_SCREEN2
 		)
 
 	while menu_running:
@@ -1193,10 +1211,15 @@ def menu_main():
 
 
 		#draw menu
-		SURFACE_MAIN.fill(constants.COLOR_BLACK)   #clear
 
-		draw_text(SURFACE_MAIN, title_text, constants.FONT_CURSOR_TEXT,
-					(button_x, title_y), constants.COLOR_WHITE, constants.COLOR_BLACK, center = True)
+		if settings.DRAW_MENU_BACKGROUND and settings.MAIN_MENU_BG_IMAGE: 
+			SURFACE_MAIN.blit(settings.MAIN_MENU_BG_IMAGE, (0,0))
+		else:SURFACE_MAIN.fill(constants.COLOR_BLACK)   
+
+		#clear
+		draw_text(SURFACE_MAIN, title_text, constants.FONT_TITLE_SCREEN1,
+					(button_x, title_y), constants.COLOR_WHITE, #constants.COLOR_BLACK, 
+					center = True)
 
 		test_button.draw()
 
@@ -1330,8 +1353,7 @@ def menu_inventory():
 					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
 			else:
 				draw_text(local_inventory_surface,
-					name,
-					menu_text_font,
+					name, menu_text_font,
 					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
 
 		button_height = 80
@@ -1855,6 +1877,8 @@ def game_handle_keys():
 			return "QUIT"	
 
 		#TODO - activities like picking up items cost a turn on hardcore mode
+
+
 		if event.type == pygame.KEYDOWN:
 				#arrow bindings, probably redundant
 				if event.key == pygame.K_UP:
@@ -1865,7 +1889,7 @@ def game_handle_keys():
 					PLAYER.creature.move(-1, 0)
 				if event.key == pygame.K_RIGHT:
 					PLAYER.creature.move(1, 0)
-				#numpad bindings
+				#numpad bindings, move into a separate 'direction' function that returns a method
 				if event.key == pygame.K_KP1:
 					PLAYER.creature.move(-1, 1)
 				if event.key == pygame.K_KP2:
@@ -1900,7 +1924,8 @@ def game_handle_keys():
 							
 				#open (and later toggle) inventory menu
 				if event.key == pygame.K_p:
-					menu_pause()
+					#menu_pause()
+					helper_text_prompt()
 
 
 				if event.key == pygame.K_i:
@@ -1914,6 +1939,9 @@ def game_handle_keys():
 					if settings.Mod2 == False:
 						return "no-action"
 						#break
+
+				#fire projectile, by default throwing
+			#	if event.key == pygame.K_f:
 
 
 				#key L, turn on tile selection. change later as needed

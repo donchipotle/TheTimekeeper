@@ -1,5 +1,8 @@
 This are external assets or inspirations from other creators.
 
+
+INSPIRATIONS: 
+
 Gameplay and design are strongly influenced by the Hacklikes/Roguelikes Omega and NetHack, 
 though I hope, without the former's inventory system and the latter's keyboard-smashing, 
 gut-wrenching, Halo's LASO's one-upping difficulty.
@@ -18,14 +21,19 @@ cryptid.
 
 
 
+DIRECT CREDITS:
 
-Pocket watch 3d model by evilvoland on cgtrader
+Credit to Nur Solikh on Dafont for the Rose Flinch font. 
+https://www.dafont.com/rose-flinch.font
 
+Credit to George Hodan for the background image, "stars-in-the-night-sky.jpg," accessed on
+8/24/20.
+https://www.publicdomainpictures.net/en/view-image.php?image=67167&picture=stars-in-the-night-sky
 
-Rose Flinch font
+Credit to Nearoo on Github for the pygame_textinput module for handling input prompts.
+https://github.com/Nearoo/pygame-text-input
 
-
-Massive shoutout to The Terrible Programmer on YouTube, whose Python tutorial series helped 
-immensely, as well as to commenters and other resources who aided in debugging things like  
+Massive shoutout to The Terrible Programmer on YouTube, whose Python tutorial series guided 
+me through, as well as to commenters and other resources who aided in debugging things like  
 deprecation issues. Since I'm a moron who isn't fit for programming even a Hello World, 
 none of this would have been possible without them.

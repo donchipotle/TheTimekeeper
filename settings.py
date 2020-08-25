@@ -1,4 +1,4 @@
-
+import pygame
 
 
 
@@ -10,6 +10,10 @@ CAM_LERP_Y = .05
 
 
 #GRAPHICS
+
+#draw background image
+DRAW_MENU_BACKGROUND = True
+
 #toggle rendering ballistics (spells, projectiles, etc.), currently broken by camera refactor
 RENDER_BALLISTICS = True
 #ms elapsed before ballistic is cleared
@@ -27,7 +31,7 @@ SAVE_COMPRESSION = True
 
 
 #quit inv menu after dropping item
-CLOSE_MENU_AFTER_DROP = False
+CLOSE_AFTER_DROP = False
 #Inventory
 CLOSE_AFTER_USE = True
 
@@ -69,6 +73,7 @@ draconic_icon = "Д"
 consumable_icon = "%"
 stairs_up_icon = ">"
 stairs_down_icon = "<"
+projectile_icon = "*"
 
 
 
@@ -98,6 +103,9 @@ DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
 DEBUG_PRINT_TURNS = False
 DEBUG_MOUSE_IN_INVENTORY = False
+
+#background image for the main menu _ optionally remove
+MAIN_MENU_BG_IMAGE = pygame.image.load("stars-in-the-night-sky.jpg")
 
 
 
