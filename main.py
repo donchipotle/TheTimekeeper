@@ -5,7 +5,6 @@ import math
 #import cpickle as pickle
 import pickle
 import gzip
-import pygame_textinput
 #import tcod
 
 #necessary game files
@@ -989,13 +988,63 @@ def helper_dice(upper_bound, bias):
 	return dice_roll
 
 def helper_text_prompt():
-	print("Placeholder so this dumb thing doesn't cause an error just by existing.")
-
-	
-	
-	#message = pygame_textinput.TextInput()
-	print(message)
+	global CLOCK, SURFACE_MAIN
+	print("I like turtles.")
 	#draw rect in desired area of the screen with blinking cursor
+
+	prompt_close = False
+	user_text = ""
+
+	input_rect = pygame.Rect(200, 200, 140, 32)
+	
+	while not prompt_close:
+		#get keypresses and stuff
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+
+			if event.type == pygame.KEYDOWN:		
+				if event.key == pygame.K_ESCAPE:
+					prompt_close = False
+					user_text = ""
+					return user_text
+					
+				if event.key == pygame.K_RETURN:
+					prompt_close = False
+					return user_text
+					
+				if event.key == pygame.K_BACKSPACE:
+					user_text = user_text[:-1]
+
+				elif user_text != pygame.K_RETURN:
+					user_text += event.unicode
+
+
+		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
+						constants.PROMPT_BORDER_THICKNESS)
+
+		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
+					constants.TEXT_AA, constants.COLOR_WHITE)
+		
+		#draw_game()
+
+		#display menu
+		SURFACE_MAIN.blit(text_surface, 
+			(input_rect.x + constants.PROMPT_OFFSET_X,
+			input_rect.y + constants.PROMPT_OFFSET_Y)
+			)
+
+		#dynamic scaling of textbox
+		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
+							text_surface.get_width() + constants.PROMPT_OFFSET_X
+							)
+
+		pygame.display.flip()
+		CLOCK.tick(constants.GAME_FPS)
+			#pygame.display.update()
+
+
+
 
 
 	#convert player text to string
@@ -1003,6 +1052,8 @@ def helper_text_prompt():
 
 	#return string to function that called it
 
+def helper_ynq_prompt(): #prompt the player to select Yes, No or Quit
+	print("Placeholder.")
 ###############################################################################################################
 #magic
 
@@ -1925,7 +1976,8 @@ def game_handle_keys():
 				#open (and later toggle) inventory menu
 				if event.key == pygame.K_p:
 					#menu_pause()
-					helper_text_prompt()
+					test = helper_text_prompt()
+					print(test)
 
 
 				if event.key == pygame.K_i:
