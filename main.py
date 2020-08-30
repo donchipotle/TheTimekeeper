@@ -43,6 +43,7 @@ class obj_Actor:
 		container = None, 
 		item = None, 
 		description = "No description for this actor.", 
+		state = None,
 
 		num_turns = 0, 
 		icon = "x", 
@@ -98,6 +99,10 @@ class obj_Actor:
 		self.stairs = stairs
 		if self.stairs:
 			self.stairs.owner = self
+
+
+
+		self.state = state
 
 
 
@@ -614,6 +619,57 @@ def death_monster(monster):
 	else:
 		#print("Nice try. " + monster.creature.name_instance + " is invulnerable.")
 		game_message("Nice try. " + monster.creature.name_instance + " is invulnerable.", constants.COLOR_GRAY)
+
+
+def death_player(player):
+	player.state = "STATUS_DEAD"
+	SURFACE_MAIN.fill(constants.COLOR_BLACK)
+	x = (constants.CAM_WIDTH/2)
+	y = (constants.CAM_HEIGHT/2)
+
+	screen_open = True
+
+	while screen_open:
+		if settings.Mod9: 
+			draw_text(SURFACE_MAIN, "Yinz done goofed. Go back to Cleveland, ya nebby jagoff",
+				constants.FONT_TITLE_SCREEN1,
+				(x, y),
+				constants.COLOR_YINZER, center = True)
+
+			draw_text(SURFACE_MAIN, "Press any key to return to the main menu.",
+					constants.FONT_TITLE_SCREEN2,
+					(x, y + 75),
+					constants.COLOR_YINZER, center = True)
+
+
+
+		else: 
+			draw_text(SURFACE_MAIN, "bro u ded. thats not healthy",
+				constants.FONT_TITLE_SCREEN1,
+				(x, y),
+				constants.COLOR_WHITE, center = True)
+
+			draw_text(SURFACE_MAIN, "Press any key to return to the main menu.",
+				constants.FONT_TITLE_SCREEN2,
+				(x, y + 75),
+				constants.COLOR_WHITE, center = True)
+
+			
+			
+			
+
+
+		for event in pygame.event.get():
+			if event.type == pygame.KEYDOWN:
+				screen_open = False
+
+
+		pygame.display.update()
+	
+	#pygame.time.wait(5000)
+
+
+
 
 ###########################################################################################################################
 #map functions
@@ -1857,7 +1913,9 @@ def gen_player(coords):
 	#create the player
 	container_com = com_Container()
 	creature_com = com_Creature(PLAYER_NAME,
-								base_attack = 8, base_defense = 2) #player's creature component name
+								base_attack = 8, base_defense = 2, #player's creature component name
+								death_function = death_player
+								)
 	PLAYER = obj_Actor(x, y, "python",  
 						creature = creature_com,
 						container = container_com,
@@ -1972,6 +2030,9 @@ def game_main_loop():
 			TURNS_ELAPSED += 1
 			if settings.DEBUG_PRINT_TURNS == True:
 				print(str(TURNS_ELAPSED) + " turns have elapsed so far")
+
+		if PLAYER.state == "STATUS_DEAD":
+			game_quit = True
 		#render the game
 		draw_game()
 

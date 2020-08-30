@@ -91,6 +91,15 @@ Mod4 = False
 Mod5 = False
 #YOU DONE GOOFED
 Mod6 = False
+#WHERE'S THE ZIPPER?
+Mod7 = False
+#ARACHNOPHOBIA
+Mod8 = False
+#STEEL CITY, REPRESENT!
+Mod9 = False
+#
+Mod10 = False
+
 
 
 
