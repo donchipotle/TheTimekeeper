@@ -50,7 +50,10 @@ class obj_Actor:
 		equipment = None,
 		interact_function = None,
 
-		stairs = None
+		stairs = None,
+
+		static = False,		# player can remember this actor's location, i.e. walls and stairs
+		discovered = False
 		):
 
 		#map addresses, later to be converted to pixel address
@@ -62,6 +65,8 @@ class obj_Actor:
 
 		self.icon = icon
 		self.icon_color = icon_color
+
+		self.static = static
 
 		#replace sprite with letter/character, primary color and background color
 
@@ -95,6 +100,8 @@ class obj_Actor:
 			self.stairs.owner = self
 
 
+
+
 	@property
 	def display_name(self):
 		if self.creature:
@@ -110,14 +117,14 @@ class obj_Actor:
 		#is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 
-		if is_visible:
+		if is_visible or self.static:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
 				center = True)
+				
 
 			#SURFACE_MAIN.blit(self.sprite, (self.x*constants.CELL_WIDTH, self.y*constants.CELL_HEIGHT))
-			
 		#else 
 		#takes in difference of x and difference of y
 
@@ -495,6 +502,7 @@ class com_Equipment:
 class com_Stairs:
 	def __init__(self, downwards = True):
 		self.downwards = downwards
+		static = True
 	#include parameter for pre-selected nextmap/previous map for premade areas
 	#include parameter for prompting the player before moving
 	#something about doors?
@@ -987,7 +995,7 @@ def helper_dice(upper_bound, bias):
 	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
 	return dice_roll
 
-def helper_text_prompt():
+def helper_text_prompt(background_fill = True, message = "", player_can_exit = True):
 	global CLOCK, SURFACE_MAIN
 	print("I like turtles.")
 	#draw rect in desired area of the screen with blinking cursor
@@ -995,9 +1003,15 @@ def helper_text_prompt():
 	prompt_close = False
 	user_text = ""
 
-	input_rect = pygame.Rect(200, 200, 140, 32)
+
+	
+	question_rect = pygame.Rect(200, 200, 140, 32)		#where the question is posed
+	input_rect = pygame.Rect(200, 200, 140, 32)			#where the player's input is displayed
 	
 	while not prompt_close:
+		if background_fill:		#blot out entire background for the duration of the prompt
+			SURFACE_MAIN.fill(constants.COLOR_BLACK)
+
 		#get keypresses and stuff
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -1018,15 +1032,23 @@ def helper_text_prompt():
 
 				elif user_text != pygame.K_RETURN:
 					user_text += event.unicode
+		#rect that displays the question the player is posed
+		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, question_rect,
+						constants.PROMPT_BORDER_THICKNESS)
+
+		question_surface = constants.FONT_MESSAGE_TEXT.render(message,
+						constants.TEXT_AA, constants.COLOR_WHITE)
+
+		question_rect.w = max(constants.PROMPT_DEFAULT_WIDTH, question_surface.get_width() + constants.PROMPT_OFFSET_X)
 
 
+		#rect that displays the player's input
 		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
 						constants.PROMPT_BORDER_THICKNESS)
 
 		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
 					constants.TEXT_AA, constants.COLOR_WHITE)
 		
-		#draw_game()
 
 		#display menu
 		SURFACE_MAIN.blit(text_surface, 
@@ -1063,7 +1085,8 @@ def cast_heal(caster, value):
 		return "cancelled"
 
 	else:
-		game_message(caster.creature.name_instance + " the " + caster.name_object + " healed for " + str(value) + " health.")
+		#game_message(caster.creature.name_instance + " the " + caster.name_object + " healed for " + str(value) + " health.")
+		game_message(caster.creature.name_instance + " healed for " + str(value) + " health.")
 		caster.creature.heal(value)
 
 		if caster.creature.current_hp >= caster.creature.max_hp:
@@ -1167,8 +1190,8 @@ def fire_projectile(source, ranged_weapon, target, ammo_count):
 #UI stuff
 class ui_Button:
 	def __init__(self, surface, button_text, size, center_coords, font = constants.FONT_MESSAGE_TEXT,
-					color_box_hovered = constants.COLOR_BLUE, 
-					color_box_default = constants.COLOR_L_BLUE,
+					color_box_hovered = constants.COLOR_GRAY, 
+					color_box_default = constants.COLOR_L_GRAY,
 					color_text_hovered = constants.COLOR_BLACK,
 					color_text_default = constants.COLOR_BLACK):
 		self.surface = surface
@@ -1229,20 +1252,34 @@ def menu_main():
 	game_initialize()
 	#print("Init main menu.")
 	#draw title
-	button_y = constants.CAM_HEIGHT * (3 / 5)
-	button_x = constants.CAM_WIDTH / 2
+	button_y = constants.CAM_HEIGHT * (2 / 5)
+	button_x = constants.CAM_WIDTH / 3
+
+	button_offset = 100
 
 	title_y = constants.CAM_HEIGHT / 3
+	title_x = constants.CAM_WIDTH / 2
 	title_text = "The Timekeeper"
 
-
 	menu_running = True
-	test_button = ui_Button(SURFACE_MAIN, 
-					"Start Game", 
-					(200, 200),
+
+	new_game_button = ui_Button(SURFACE_MAIN, 
+					"Begin your journey...", 
+					(600, 75),
 					(button_x, button_y),
-					font = constants.FONT_TITLE_SCREEN2
-		)
+					font = constants.FONT_TITLE_SCREEN2)
+
+	continue_game_button = ui_Button(SURFACE_MAIN, 
+					"Continue your journey...", 
+					(600, 75),
+					(button_x, button_y + button_offset),
+					font = constants.FONT_TITLE_SCREEN2)
+
+	exit_game_button = ui_Button(SURFACE_MAIN, 
+					"Quit to desktop.", 
+					(600, 75),
+					(button_x, button_y + (button_offset * 2)),
+					font = constants.FONT_TITLE_SCREEN2)
 
 	while menu_running:
 		list_of_events = pygame.event.get()
@@ -1256,10 +1293,20 @@ def menu_main():
 				game_quit_sequence()
 
 		#button updates
-		if test_button.update(game_input):
-			game_start()
+		if new_game_button.update(game_input):
+			game_new()
+			game_main_loop()
+			game_initialize()
 
+		if continue_game_button.update(game_input): #TODO: remove the 'game new' and disable the button if there's no savefile
+			try:
+				game_load()
+			except:
+				game_new()
+			game_main_loop()
 
+		if exit_game_button.update(game_input):
+			game_quit_sequence()
 
 		#draw menu
 
@@ -1269,10 +1316,12 @@ def menu_main():
 
 		#clear
 		draw_text(SURFACE_MAIN, title_text, constants.FONT_TITLE_SCREEN1,
-					(button_x, title_y), constants.COLOR_WHITE, #constants.COLOR_BLACK, 
+					(title_x, title_y), constants.COLOR_WHITE, #constants.COLOR_BLACK, 
 					center = True)
 
-		test_button.draw()
+		new_game_button.draw()
+		continue_game_button.draw()
+		exit_game_button.draw()
 
 		#update surfaces
 		pygame.display.update()
@@ -1647,7 +1696,7 @@ def map_tile_query():
 def gen_item(coords):
 	global GAME
 
-	random_num = helper_dice(9, 0)
+	random_num = helper_dice(11, 0)
 	if random_num == 1: new_item = gen_scroll_lightning(coords)
 	elif random_num == 2: new_item = gen_scroll_fireball(coords)
 	elif random_num == 3:  new_item = gen_scroll_confusion(coords)
@@ -1657,6 +1706,9 @@ def gen_item(coords):
 	elif random_num == 7:  new_item = gen_armor_helmet(coords)
 	elif random_num == 8:  new_item = gen_armor_shirt(coords)
 	elif random_num == 9:  new_item = gen_armor_boots(coords)
+	elif random_num == 10: new_item = gen_armor_gloves(coords)
+	elif random_num == 11: new_item = gen_armor_chainmail(coords)
+
 	
 	GAME.current_objects.insert(0, new_item)
 	#GAME.current_objects.append(new_item)
@@ -1767,6 +1819,28 @@ def gen_armor_boots(coords):
 					 equipment = equipment_com)
 	return return_object
 
+def gen_armor_chainmail(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Chainmail", name = "a light") 
+
+	return_object = obj_Actor(x, y, "Ars Enchantica Chainmail",
+					icon = settings.armor_icon, icon_color = constants.COLOR_L_GRAY,
+					 equipment = equipment_com)
+	return return_object
+
+def gen_armor_gloves(coords):
+	x, y = coords
+
+	#bonus = libtcod.random_get_int(0, 1 , 2)
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Gloves", name = "a weathered pair of standard-issue, legionaire glvoes.") 
+
+	return_object = obj_Actor(x, y, "Pax Magisteria gloves",
+					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
+					 equipment = equipment_com)
+	return return_object
+
 def gen_consumable_potion(coords):
 	x, y = coords
 	item_com = com_Item(value = 5)
@@ -1776,13 +1850,14 @@ def gen_consumable_potion(coords):
 
 #player
 def gen_player(coords):
-	global PLAYER
+	global PLAYER, PLAYER_NAME
 
+	print("Player name is " + PLAYER_NAME)
 	x, y = coords
 	#create the player
 	container_com = com_Container()
-	creature_com = com_Creature("Bob The Guy", 
-								base_attack = 5, base_defense = 2) #player's creature component name
+	creature_com = com_Creature(PLAYER_NAME,
+								base_attack = 8, base_defense = 2) #player's creature component name
 	PLAYER = obj_Actor(x, y, "python",  
 						creature = creature_com,
 						container = container_com,
@@ -1856,6 +1931,7 @@ def gen_rabbit(coords):
 #special
 def gen_stairs(coords, downwards):
 	x, y = coords
+	static = True
 	if downwards:
 		stairs_com = com_Stairs()
 		stairs = obj_Actor(x, y, "A staircase leading down.", stairs = stairs_com, icon = settings.stairs_up_icon) #constants.COLOR_WHITE)
@@ -2023,10 +2099,18 @@ def game_message(game_msg, msg_color = constants.COLOR_WHITE):
 	GAME.message_history.append((game_msg, msg_color))
 
 def game_new():
-	global GAME
-
+	global GAME, PLAYER_NAME
 	#start a new game and map, and player with nonsense coords to be placed elsewhere
+
+	PLAYER_NAME = helper_text_prompt(True)
 	gen_player((0,0))
+
+	#loop to prompt the player for a name, and later, other stats
+	
+	PLAYER.creature.name = PLAYER_NAME
+	print ("Player.creature.name is = " + PLAYER.creature.name)
+
+
 	GAME.current_map, GAME.current_rooms = map_create()
 	map_place_objects(GAME.current_rooms)
 
@@ -2058,25 +2142,19 @@ def game_load():
 
 	map_make_fov(GAME.current_map)
 
-def game_start():
-	try:
-		game_load()
-
-	except:
-		game_new()
-
-	game_main_loop()
 
 #'''initializing the main window and pygame'''
 def game_initialize():
 	global SURFACE_MAIN, SURFACE_MAP, CLOCK, FOV_CALCULATE, GAME
-	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_SPAWNED
+	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_NAME
 	global DUNGEON_DEPTH
 
-	PLAYER_SPAWNED = False
+	
 
 	pygame.init()
 	#print("Init began.")
+
+	PLAYER_NAME = "Bob the Guy"
 
 	if constants.PermitKeyHolding == True:
 		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
