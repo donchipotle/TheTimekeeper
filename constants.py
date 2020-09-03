@@ -42,10 +42,13 @@ HARDCORE_MODE = False
 items_per_room = 3
 enemies_per_room = 3
 
+
 #map limitations
 MAP_WIDTH = 80
 MAP_HEIGHT = 80
 MAP_MAX_NUM_ROOMS = 20
+
+MAP_NUM_LEVELS = 2 #max depth of dungeon
 
 #room limitations
 ROOM_MAX_HEIGHT = 10

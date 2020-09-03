@@ -5,6 +5,8 @@ import math
 #import cpickle as pickle
 import pickle
 import gzip
+import datetime
+import os.path
 #import tcod
 
 #necessary game files
@@ -34,8 +36,7 @@ class struc_Tile:
 #class struc_Assets:
 #objects
 class obj_Actor:
-	def __init__(self, x, y,
-
+	def __init__(self, x, y, 
 		name_object,
 		creature = None, 
 		ai = None, 
@@ -50,10 +51,9 @@ class obj_Actor:
 		icon_color = constants.COLOR_WHITE,
 		equipment = None,
 		interact_function = None,
-
 		stairs = None,
-
-		static = False,		# player can remember this actor's location, i.e. walls and stairs
+		exitportal = None,
+		static = False,		
 		discovered = False
 		):
 
@@ -99,6 +99,10 @@ class obj_Actor:
 		self.stairs = stairs
 		if self.stairs:
 			self.stairs.owner = self
+
+		self.exitportal = exitportal
+		if self.exitportal:
+			self.exitportal.owner = self
 
 
 
@@ -381,10 +385,13 @@ class com_Creature:
 		return total_defense
 
 class com_Container:
-	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = []):
+	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
 		self.inventory = inventory
 		self.max_volume = volume
-		#self.volume = max_volume
+		if inventory: self.inventory = inventory
+		else: self.inventory = []
+		
+
 
 		#names of everything in inventory
 		#get volume within container
@@ -420,6 +427,8 @@ class com_Item:
 				print("Picked up.")
 				if self.name:
 					game_message("Picked up " + self.name + ".")
+				elif self.name_object:
+					game_message("Picked up " + self.name_object + ".")
 
 				print("item picked up is " + self.name)
 				actor.container.inventory.append(self.owner)
@@ -451,7 +460,6 @@ class com_Item:
 		#else: 
 		#	print("Equipment's not working. Typical.")
 		
-
 		if self.use_function:
 			result = self.use_function(self.current_container.owner, self.value)
 			#result = self.use_function(self.container.owner, self.value)
@@ -467,6 +475,7 @@ class com_Equipment:
 		self.attack_bonus = attack_bonus
 		self.defense_bonus = defense_bonus
 		self.name = name
+
 
 		self.slot = slot
 		self.equipped = False
@@ -513,6 +522,7 @@ class com_Stairs:
 	#something about doors?
 
 	def use(self):
+		print("Stairs.use called")
 		if self.downwards:
 			GAME.transition_next()
 			game_message("You descend the staircase.")
@@ -520,6 +530,89 @@ class com_Stairs:
 		else:
 			GAME.transition_previous()
 			game_message("You ascend the staircase.")
+
+class com_Exit_Portal:			#temporary - likely will not be used later
+	def __init__(self):
+		self.open_icon = settings.portal_icon
+		self.closed_icon = settings.door_closed_icon
+		self.color = constants.COLOR_YINZER
+
+	def update(self):
+		#flag initialization
+
+		found_mcguffin = False
+
+		#check conditions
+		portal_open = self.owner.state == "OPEN"
+		for obj in PLAYER.container.inventory:
+			if obj.name_object is "The McGuffin":	#if the player has the mcguffin 
+				found_mcguffin = True 	#shouldn't this be under the player? idk
+
+		if found_mcguffin and not portal_open: #if lamp found but portal not yet open
+			self.owner.state = "OPEN"
+			self.owner.icon = settings.door_open_icon
+			print("Portal open")
+
+		if not found_mcguffin and portal_open: #if lamp found but portal not yet open
+			self.owner.state = "CLOSED"
+			self.owner.icon = settings.door_closed_icon
+			print("Portal closed")
+
+	def use(self):
+		print("Using portal or something idk")
+		#if self.owner.state == "OPEN":
+		game_message("You won!")
+		PLAYER.state = "STATUS_WIN"
+		SURFACE_MAIN.fill(constants.COLOR_BLACK)
+		x = (constants.CAM_WIDTH/2)
+		y = (constants.CAM_HEIGHT/2)
+
+		screen_open = True
+
+		while screen_open:
+			if settings.Mod9: 
+				draw_text(SURFACE_MAIN, "I owe yinz an Arn Ciddy and some pierogies. Good job.",
+						constants.FONT_TITLE_SCREEN1,
+						(x, y),
+						constants.COLOR_YINZER, center = True)
+
+				draw_text(SURFACE_MAIN, "Press F to return to the main menu.",
+							constants.FONT_TITLE_SCREEN2,
+							(x, y + 75),
+							constants.COLOR_YINZER, center = True)
+
+			else: 
+				draw_text(SURFACE_MAIN, "You won. Congratulations.",
+						constants.FONT_TITLE_SCREEN1,
+						(x, y),
+						constants.COLOR_WHITE, center = True)
+
+				draw_text(SURFACE_MAIN, "Press F to return to the main menu.",
+						constants.FONT_TITLE_SCREEN2,
+						(x, y + 75),
+						constants.COLOR_WHITE, center = True)
+
+
+			for event in pygame.event.get():
+					if event.type == pygame.KEYDOWN:
+						screen_open = False
+
+
+			pygame.display.update()
+			pygame.time.wait(1000)
+
+			if settings.GEN_LEGACY_FILE:
+				filename = (PLAYER.creature.name_instance +"_winner" + "." 
+							+ datetime.date.today().strftime("%Y%B%d") #get the date 
+							+ ".txt") 	
+
+			if os.path.isfile(filename):
+				#legacy file
+				legacy_file = open(filename, 'a+')
+
+				for message, color in GAME.message_history:
+					legacy_file.write(message + "\n")
+		pygame.display.update()
 
 ######################################################################################################################
 #AI scripts
@@ -620,7 +713,6 @@ def death_monster(monster):
 		#print("Nice try. " + monster.creature.name_instance + " is invulnerable.")
 		game_message("Nice try. " + monster.creature.name_instance + " is invulnerable.", constants.COLOR_GRAY)
 
-
 def death_player(player):
 	player.state = "STATUS_DEAD"
 	SURFACE_MAIN.fill(constants.COLOR_BLACK)
@@ -631,32 +723,27 @@ def death_player(player):
 
 	while screen_open:
 		if settings.Mod9: 
-			draw_text(SURFACE_MAIN, "Yinz done goofed. Go back to Cleveland, ya nebby jagoff",
+			draw_text(SURFACE_MAIN, "Yinz done goofed. Go back to Cleveland, ya jagoff",
 				constants.FONT_TITLE_SCREEN1,
 				(x, y),
 				constants.COLOR_YINZER, center = True)
 
-			draw_text(SURFACE_MAIN, "Press any key to return to the main menu.",
+			draw_text(SURFACE_MAIN, "Press F to return to the main menu.",
 					constants.FONT_TITLE_SCREEN2,
 					(x, y + 75),
 					constants.COLOR_YINZER, center = True)
 
 
-
 		else: 
-			draw_text(SURFACE_MAIN, "bro u ded. thats not healthy",
+			draw_text(SURFACE_MAIN, "You have died.",
 				constants.FONT_TITLE_SCREEN1,
 				(x, y),
 				constants.COLOR_WHITE, center = True)
 
-			draw_text(SURFACE_MAIN, "Press any key to return to the main menu.",
+			draw_text(SURFACE_MAIN, "Press F to return to the main menu.",
 				constants.FONT_TITLE_SCREEN2,
 				(x, y + 75),
 				constants.COLOR_WHITE, center = True)
-
-			
-			
-			
 
 
 		for event in pygame.event.get():
@@ -665,13 +752,20 @@ def death_player(player):
 
 
 		pygame.display.update()
-	
-	#pygame.time.wait(5000)
+	pygame.time.wait(1000)
 
+	if settings.GEN_LEGACY_FILE:
+		filename = (PLAYER.creature.name_instance +"_legacy" + "." 
+					+ datetime.date.today().strftime("%Y%B%d") #get the date 
+					+ ".txt") 	
 
+		#legacy file
+		legacy_file = open(filename, 'a+')
 
+		for message, color in GAME.message_history:
+			legacy_file.write(message + "\n")
 
-###########################################################################################################################
+###############################################################################################################
 #map functions
 def map_random_walk():
 	print("Placeholder. (map gen)")
@@ -733,26 +827,32 @@ def map_create():
 	return (new_map, list_of_rooms)
 
 def map_place_objects(room_list):
+
+	current_level = len(GAME.maps_previous) + 1
+
 	top_level = (len(GAME.maps_previous) == 0)
+	#top level = (current_level == 1)
+	final_level = (current_level == constants.MAP_NUM_LEVELS)
 
 	for room in room_list:
 		first_room = (room ==  room_list[0])
 		last_room = (room == room_list[-1])
 
 		#put the player in the first room
-		if first_room: 
-			PLAYER.x, PLAYER.y = room.center
+		if first_room: PLAYER.x, PLAYER.y = room.center
 
-		#put player right on top of the stairs leading up and out of the dungeon
+		if first_room and top_level: gen_portal(room.center)
+
 		if first_room and not top_level: 
 			gen_stairs((PLAYER.x, PLAYER.y), downwards = False)
 
-		if last_room: gen_stairs(room.center, downwards = True)
+		if last_room:
+			if final_level: 
+				gen_mcguffin(room.center)
+			else: 
+				gen_stairs(room.center, downwards = True) #downward stairs 
 
-
-
-
-
+		#generated items and enemies
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
 		gen_item((x,y))
@@ -862,8 +962,128 @@ def draw_map(map_to_draw):
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
 							center = True)
 
-#drawing functions
+def map_make_fov(incoming_map):
+	global FOV_MAP
 
+	#OV_MAP  = libtcod.map_new(constants.MAP_WIDTH, constants.MAP_HEIGHT)
+	FOV_MAP = libtcod.map_new(constants.MAP_WIDTH, constants.MAP_HEIGHT)
+
+	for y in range(constants.MAP_HEIGHT):
+		for x in range(constants.MAP_WIDTH):
+			libtcod.map_set_properties(FOV_MAP, x, y, 
+				not incoming_map[x][y].block_path, not incoming_map[x][y].block_path)
+
+def map_calculate_fov():
+	global FOV_CALCULATE, PLAYER
+	#global FOV_MAP
+	#map_make_fov(incoming_map)
+
+	if FOV_CALCULATE:
+		FOV_CALCULATE = False
+		libtcod.map_compute_fov(FOV_MAP, 
+								PLAYER.x, PLAYER.y, 
+								constants.TORCH_RADIUS, constants.FOV_LIGHT_WALLS, 
+								constants.FOV_ALGO)
+
+def map_objects_at_coords(coords_x, coords_y):
+	object_options = [obj for obj in GAME.current_objects 
+	if obj.x == coords_x and obj.y ==coords_y]
+
+	return object_options
+
+def map_check_for_creatures(x, y, exclude_object = None):
+	target = None
+	if exclude_object:
+		#check objectlist to find creature at that location that isn't excluded
+		#include check to determine if hostile or not
+		for object in GAME.current_objects:
+			if (object is not exclude_object and 										
+				object.x == x and 
+				object.y == y and 		
+				object.creature):												
+					target = object					
+			if target:
+				return target
+	else:
+		#check objectlist to find any creature at that location ???
+		for object in GAME.current_objects:
+			if (
+			#ability to attack thin air? 										
+				object.x == x and 
+				object.y == y and 		
+				object.creature):												
+					target = object				
+			if target:
+				return target	
+
+def map_find_line(startcoords, endcoords):
+	#converts beginning/end point tuples (X, Y) into list of tiles between
+	(start_x, start_y) = startcoords
+	
+	(end_x, end_y) = endcoords
+
+	libtcod.line_init(start_x, start_y, end_x, end_y)
+
+	calc_x, calc_y = libtcod.line_step()
+
+	coord_list = []
+
+	if (start_x == end_x) and (start_y == end_y):
+		print("Spell targeting self.")
+		return[(start_x, start_y)]
+
+	while (not calc_x is None):
+		coord_list.append((calc_x, calc_y))
+
+		calc_x, calc_y = libtcod.line_step()
+	return coord_list
+
+def map_find_radius(coords, radius):
+	center_x, center_y = coords
+
+	tile_list = []
+
+	#define the bounds of the spell blast radius
+	start_x = center_x - radius
+	end_x = center_x + radius + 1
+	start_y = center_y - radius
+	end_y = center_y + radius + 1
+
+	#two dimensional iterator
+	for x in range((start_x), (end_x)):
+		for y in range((start_y), (end_y)):
+			tile_list.append((x, y))
+	return tile_list
+
+def map_tile_query():
+	print("Map tile query initialized.")
+	menu_close = False
+
+	while not menu_close:
+		player_location = (PLAYER.x, PLAYER.y)
+
+		#get mouse postion
+		mouse_x, mouse_y = pygame.mouse.get_pos()
+
+		#get button clicks
+		events_list = pygame.event.get()
+
+		#mouse map selection
+		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
+		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
+
+		draw_tile_rect((mouse_x, mouse_y))
+
+		menu_tile_select(penetrate_walls = True)
+	
+		#get map coords on  LMB
+		for event in events_list:
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_q:
+						menu_close = True
+						print("Map tile query terminated.")
+
+#drawing functions
 def draw_game():
 	global GAME
 	global SURFACE_MAIN, PLAYER #, GAME.current_map
@@ -1152,12 +1372,9 @@ def cast_heal(caster, value):
 	return None
 
 def cast_lightning(caster, T_damage_maxrange):
-
 	damage, m_range = T_damage_maxrange
-
 	#damage = helper_dice(5, 6)
 	#m_range = 6
-
 	player_location = (PLAYER.x, PLAYER.y)
 
 	# prompt player for a tile
@@ -1190,7 +1407,6 @@ def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
 	damage, local_radius, max_r = T_damage_radius_range
 	caster_location = (caster.x, caster.y)
-
 	#TODO get target tile
 	point_selected = menu_tile_select(coords_origin = caster_location, max_range = max_r,
 		 penetrate_walls = False, 
@@ -1203,7 +1419,6 @@ def cast_fireball(caster, T_damage_radius_range):
 		tiles_to_damage = map_find_radius(point_selected, local_radius)
 		creature_hit = False
 
-	
 		#damage all creatures in tiles
 		for (x, y) in tiles_to_damage:
 			#add visual feedback to fireball, maybe even adding a trail to its destination later
@@ -1360,6 +1575,7 @@ def menu_main():
 			except:
 				game_new()
 			game_main_loop()
+			game_initialize()
 
 		if exit_game_button.update(game_input):
 			game_quit_sequence()
@@ -1619,128 +1835,7 @@ def menu_tile_select(coords_origin = None, max_range = None,
 			pygame.display.flip()
 			CLOCK.tick(constants.GAME_FPS)
 
-###############################################################################################################
-#map functions
-def map_make_fov(incoming_map):
-	global FOV_MAP
 
-	#OV_MAP  = libtcod.map_new(constants.MAP_WIDTH, constants.MAP_HEIGHT)
-	FOV_MAP = libtcod.map_new(constants.MAP_WIDTH, constants.MAP_HEIGHT)
-
-	for y in range(constants.MAP_HEIGHT):
-		for x in range(constants.MAP_WIDTH):
-			libtcod.map_set_properties(FOV_MAP, x, y, 
-				not incoming_map[x][y].block_path, not incoming_map[x][y].block_path)
-
-def map_calculate_fov():
-	global FOV_CALCULATE, PLAYER
-	#global FOV_MAP
-	#map_make_fov(incoming_map)
-
-	if FOV_CALCULATE:
-		FOV_CALCULATE = False
-		libtcod.map_compute_fov(FOV_MAP, 
-								PLAYER.x, PLAYER.y, 
-								constants.TORCH_RADIUS, constants.FOV_LIGHT_WALLS, 
-								constants.FOV_ALGO)
-
-def map_objects_at_coords(coords_x, coords_y):
-	object_options = [obj for obj in GAME.current_objects 
-	if obj.x == coords_x and obj.y ==coords_y]
-
-	return object_options
-
-def map_check_for_creatures(x, y, exclude_object = None):
-	target = None
-	if exclude_object:
-		#check objectlist to find creature at that location that isn't excluded
-		#include check to determine if hostile or not
-		for object in GAME.current_objects:
-			if (object is not exclude_object and 										
-				object.x == x and 
-				object.y == y and 		
-				object.creature):												
-					target = object					
-			if target:
-				return target
-	else:
-		#check objectlist to find any creature at that location ???
-		for object in GAME.current_objects:
-			if (
-			#ability to attack thin air? 										
-				object.x == x and 
-				object.y == y and 		
-				object.creature):												
-					target = object				
-			if target:
-				return target	
-
-def map_find_line(startcoords, endcoords):
-	#converts beginning/end point tuples (X, Y) into list of tiles between
-	(start_x, start_y) = startcoords
-	
-	(end_x, end_y) = endcoords
-
-	libtcod.line_init(start_x, start_y, end_x, end_y)
-
-	calc_x, calc_y = libtcod.line_step()
-
-	coord_list = []
-
-	if (start_x == end_x) and (start_y == end_y):
-		print("Spell targeting self.")
-		return[(start_x, start_y)]
-
-	while (not calc_x is None):
-		coord_list.append((calc_x, calc_y))
-
-		calc_x, calc_y = libtcod.line_step()
-	return coord_list
-
-def map_find_radius(coords, radius):
-	center_x, center_y = coords
-
-	tile_list = []
-
-	#define the bounds of the spell blast radius
-	start_x = center_x - radius
-	end_x = center_x + radius + 1
-	start_y = center_y - radius
-	end_y = center_y + radius + 1
-
-	#two dimensional iterator
-	for x in range((start_x), (end_x)):
-		for y in range((start_y), (end_y)):
-			tile_list.append((x, y))
-	return tile_list
-
-def map_tile_query():
-	print("Map tile query initialized.")
-	menu_close = False
-
-	while not menu_close:
-		player_location = (PLAYER.x, PLAYER.y)
-
-		#get mouse postion
-		mouse_x, mouse_y = pygame.mouse.get_pos()
-
-		#get button clicks
-		events_list = pygame.event.get()
-
-		#mouse map selection
-		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
-		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
-
-		draw_tile_rect((mouse_x, mouse_y))
-
-		menu_tile_select(penetrate_walls = True)
-	
-		#get map coords on  LMB
-		for event in events_list:
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_q:
-						menu_close = True
-						print("Map tile query terminated.")
 ##########################################################################################################
 #procedural generators
 
@@ -1848,16 +1943,20 @@ def gen_armor_helmet(coords):
 	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Helmet", name = "an ancient Temryavite helmet") 
 
+	item_com = com_Item(value = 3, use_function = cast_heal, name = "an ancient Temryavite helmet") 
+
 	return_object = obj_Actor(x, y, "Temryavite Helm",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com)
+					 equipment = equipment_com, item = item_com)
 	return return_object
 
 def gen_armor_shirt(coords):
 	x, y = coords
 
 	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(defense_bonus = 4, slot = "Shirt", name = "a Guiding Star tunic.") 
+	equipment_com = com_Equipment(defense_bonus = 4, slot = "Shirt", name = "a bleached Guiding Star tunic.") 
+
+	item_com = com_Item(value = 3, use_function = cast_heal, name = "a bleached Guiding Star tunic.")
 
 	return_object = obj_Actor(x, y, "Guiding Star tunic",
 					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
@@ -1913,7 +2012,7 @@ def gen_player(coords):
 	#create the player
 	container_com = com_Container()
 	creature_com = com_Creature(PLAYER_NAME,
-								base_attack = 8, base_defense = 2, #player's creature component name
+								base_attack = 8, base_defense = 3, #player's creature component name
 								death_function = death_player
 								)
 	PLAYER = obj_Actor(x, y, "python",  
@@ -1999,40 +2098,57 @@ def gen_stairs(coords, downwards):
 
 	GAME.current_objects.append(stairs)
 
+def gen_portal(coords):
+	x, y = coords
+	portalcomponent = com_Exit_Portal()
+	portal = obj_Actor(x, y, "Exit Portal",
+						exitportal = portalcomponent, icon = settings.door_closed_icon)
+
+	GAME.current_objects.append(portal)
+
+def gen_mcguffin(coords):
+	x, y = coords
+
+	item_com = com_Item()
+
+	return_object = obj_Actor(x, y, "McGuffin", icon = settings.misc_icon, icon_color = constants.COLOR_YINZER, item = item_com)
+
+	#return return_object
+	GAME.current_objects.append(return_object)
+
+
 ################################################################################################################
 
 #Main game loop, on tick
 def game_main_loop():
 	global TURNS_ELAPSED, PLAYER
-
 	game_quit = False
-
 	player_action = "no-action"
 
 	while not game_quit:
 		#player input
-		
-		#player_action = key_binds.game_handle_keys()
 		player_action = game_handle_keys()
 
-		#map_make_fov(incoming_map)
-		
 		map_calculate_fov()
 
 		if player_action == "QUIT":
 			game_quit_sequence()
-
-		if player_action != "no-action":
-			for obj in GAME.current_objects:
-				if obj.ai: # != None:
+		
+		for obj in GAME.current_objects:
+			if obj.ai: 
+				if player_action != "no-action":
 					obj.ai.take_turn()
+			if obj.exitportal:
+				obj.exitportal.update()
+
 			#increment player turn counter for speedrun purposes
 			TURNS_ELAPSED += 1
 			if settings.DEBUG_PRINT_TURNS == True:
 				print(str(TURNS_ELAPSED) + " turns have elapsed so far")
 
-		if PLAYER.state == "STATUS_DEAD":
+		if (PLAYER.state == "STATUS_DEAD" or PLAYER.state == "STATUS_WIN"):	#either ending condition
 			game_quit = True
+
 		#render the game
 		draw_game()
 
@@ -2053,19 +2169,16 @@ def game_handle_keys():
 	global FOV_CALCULATE
 
 	keys_list = pygame.key.get_pressed()
-
-	#check for mod key (shift)
-	MOD_KEY = (keys_list[pygame.K_RSHIFT] or 
-			   keys_list[pygame.K_LSHIFT])
-
-
 	events_list = pygame.event.get()
+	
+	
+	#check for mod key (shift)
+	MOD_KEY = (keys_list[pygame.K_RSHIFT] or keys_list[pygame.K_LSHIFT])
+	
 	for event in events_list:
 		if event.type == pygame.QUIT:
 			return "QUIT"	
-
 		#TODO - activities like picking up items cost a turn on hardcore mode
-
 
 		if event.type == pygame.KEYDOWN:
 				#arrow bindings, probably redundant
@@ -2086,8 +2199,7 @@ def game_handle_keys():
 					PLAYER.creature.move(1, 1)
 				if event.key == pygame.K_KP4:
 					PLAYER.creature.move(-1, 0)
-				#this one does literally nothing, just kinda sitting here till I feel like using it
-				if event.key == pygame.K_KP5:
+				if event.key == pygame.K_KP5: #this one does literally nothing, just kinda sitting here till I feel like using it
 					PLAYER.creature.move(0, 0)
 				if event.key == pygame.K_KP6:
 					PLAYER.creature.move(1, 0)
@@ -2106,12 +2218,10 @@ def game_handle_keys():
 							obj.item.pick_up(PLAYER)
 							if settings.Mod2 == False:
 								return "no-action"
-								
-
-
 							
 				#open (and later toggle) inventory menu
 				if event.key == pygame.K_p:
+					print("Test key triggered.")
 					#menu_pause()
 					test = helper_text_prompt()
 					print(test)
@@ -2130,30 +2240,27 @@ def game_handle_keys():
 						#break
 
 				#fire projectile, by default throwing
-			#	if event.key == pygame.K_f:
+				if event.key == pygame.K_f:
+					print("Hi")
 
+				FOV_CALCULATE = True
+				
 
 				#key L, turn on tile selection. change later as needed
 				if MOD_KEY and event.key == pygame.K_PERIOD:
+					print("Stair/portal key pressed")
 					#reuse this kind of thing later 		
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
 					for obj in list_of_objects:
 						if obj.stairs:
 							obj.stairs.use()
-#				if event.key == pygame.K_LESS:
-#					GAME.transition_previous()
+							print("Using stairs.")
+						if obj.exitportal:
+							print("Using portal. I think.")
+							obj.exitportal.use()
 
-#				keys = pygame.key.get_pressed()
-#				if keys[pygame.K_LSHIFT] and keys[pygame.K_LEFT]:
-					#check if player is on stairs
-   
-
- #  				keys = pygame.key.get_pressed()
-#				if keys[pygame.K_LSHIFT] and keys[pygame.K_LEFT]:
-
-
-				FOV_CALCULATE = True
 				return "player-moved"
+
 	return "no-action"
 
 def game_message(game_msg, msg_color = constants.COLOR_WHITE):
@@ -2163,14 +2270,11 @@ def game_new():
 	global GAME, PLAYER_NAME
 	#start a new game and map, and player with nonsense coords to be placed elsewhere
 
-	PLAYER_NAME = helper_text_prompt(True)
+	PLAYER_NAME = helper_text_prompt(True)	#prompt the player for a name
 	gen_player((0,0))
-
-	#loop to prompt the player for a name, and later, other stats
 	
 	PLAYER.creature.name = PLAYER_NAME
 	print ("Player.creature.name is = " + PLAYER.creature.name)
-
 
 	GAME.current_map, GAME.current_rooms = map_create()
 	map_place_objects(GAME.current_rooms)
@@ -2202,7 +2306,6 @@ def game_load():
 			GAME, PLAYER = pickle.load(file)
 
 	map_make_fov(GAME.current_map)
-
 
 #'''initializing the main window and pygame'''
 def game_initialize():
