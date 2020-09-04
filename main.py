@@ -12,6 +12,8 @@ import os.path
 #necessary game files
 import constants
 import settings
+import helpers
+import state
 #import toolbox
 
 #for dice rolls, move when that function is moved too
@@ -900,67 +902,6 @@ def map_create_tunnels(coords1, coords2, new_map):
 		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
 			new_map[int(x)][int(y1)].block_path = False
 
-def draw_map(map_to_draw):
-	#camera visibility culling
-	cam_x, cam_y = CAMERA.map_address
-	display_map_width = constants.CAM_WIDTH / constants.CELL_WIDTH
-	display_map_height = constants.CAM_HEIGHT / constants.CELL_HEIGHT
-
-	render_w_min = int(cam_x - (display_map_width / 2))
-	render_w_max = int(cam_x + (display_map_width / 2))
-	render_h_min = int(cam_y - (display_map_height / 2))
-	render_h_max = int(cam_y + (display_map_height / 2))
-
-	#crudely clamp values
-	if render_w_min < 0: render_w_min = 0
-	if render_h_min < 0: render_h_min = 0
-	if render_w_max > constants.MAP_WIDTH: render_w_max = constants.MAP_WIDTH
-	if render_h_max > constants.MAP_HEIGHT: render_h_max = constants.MAP_HEIGHT
-
-	#loop through every tile that is visible to the camera
-	for x in range(render_w_min, render_w_max):
-		for y in range(render_h_min, render_h_max):
-
-			is_visible = libtcod.map_is_in_fov(FOV_MAP, x, y)
-
-			#tiles that are currently visible
-			if is_visible:
-				map_to_draw[x][y].explored = True
-
-					#draw visible wall tiles
-				if map_to_draw[x][y].block_path == True:
-					#draw wall, switch to actor walls instead of hardcoded ones
-					draw_text(
-						SURFACE_MAP, text_to_display = "#", font = constants.FONT_RENDER_TEXT, 
-						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
-						text_color = constants.COLOR_L_BROWN, back_color = constants.COLOR_BLACK,
-						center = True)
-				else:
-					#draw visible floor tiles
-						draw_text(
-						SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
-						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
-						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
-						center = True)	
-
-			#tiles that have already been rendered but are no longer visible
-			else:
-				#draw explored but not visible wall tiles
-				if map_to_draw[x][y].explored:
-					if map_to_draw[x][y].block_path == True:
-						#draw wall
-						draw_text(
-							SURFACE_MAP, text_to_display = "#", font = constants.FONT_RENDER_TEXT, 
-							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
-							text_color = constants.COLOR_BROWN, back_color = constants.COLOR_BLACK,
-							center = True)
-					else:
-						#draw explored floor but not visible wall tiles
-						draw_text(
-							SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
-							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT) + 16)), 
-							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
-							center = True)
 
 def map_make_fov(incoming_map):
 	global FOV_MAP
@@ -1124,7 +1065,7 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
     # draw the text onto the display surface.
 
     display_surface.blit(text_surf, text_rect)
-    #SURFACE_MAIN.blit(local_inventory_surface, (menu_x, menu_y))
+   
 
 def draw_debug():
 	if settings.DISPLAY_FPS :
@@ -1233,125 +1174,72 @@ def draw_explosion(radius, blast_x, blast_y, color):
 
 	#draw_game()
 
+
+def draw_map(map_to_draw):
+	#camera visibility culling
+	cam_x, cam_y = CAMERA.map_address
+	display_map_width = constants.CAM_WIDTH / constants.CELL_WIDTH
+	display_map_height = constants.CAM_HEIGHT / constants.CELL_HEIGHT
+
+	render_w_min = int(cam_x - (display_map_width / 2))
+	render_w_max = int(cam_x + (display_map_width / 2))
+	render_h_min = int(cam_y - (display_map_height / 2))
+	render_h_max = int(cam_y + (display_map_height / 2))
+
+	#crudely clamp values
+	if render_w_min < 0: render_w_min = 0
+	if render_h_min < 0: render_h_min = 0
+	if render_w_max > constants.MAP_WIDTH: render_w_max = constants.MAP_WIDTH
+	if render_h_max > constants.MAP_HEIGHT: render_h_max = constants.MAP_HEIGHT
+
+	#loop through every tile that is visible to the camera
+	for x in range(render_w_min, render_w_max):
+		for y in range(render_h_min, render_h_max):
+
+			is_visible = libtcod.map_is_in_fov(FOV_MAP, x, y)
+
+			#tiles that are currently visible
+			if is_visible:
+				map_to_draw[x][y].explored = True
+
+					#draw visible wall tiles
+				if map_to_draw[x][y].block_path == True:
+					#draw wall, switch to actor walls instead of hardcoded ones
+					draw_text(
+						SURFACE_MAP, text_to_display = "#", font = constants.FONT_RENDER_TEXT, 
+						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
+						text_color = constants.COLOR_L_BROWN, back_color = constants.COLOR_BLACK,
+						center = True)
+				else:
+					#draw visible floor tiles
+						draw_text(
+						SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
+						coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
+						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
+						center = True)	
+
+			#tiles that have already been rendered but are no longer visible
+			else:
+				#draw explored but not visible wall tiles
+				if map_to_draw[x][y].explored:
+					if map_to_draw[x][y].block_path == True:
+						#draw wall
+						draw_text(
+							SURFACE_MAP, text_to_display = "#", font = constants.FONT_RENDER_TEXT, 
+							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT)+ 16)), 
+							text_color = constants.COLOR_BROWN, back_color = constants.COLOR_BLACK,
+							center = True)
+					else:
+						#draw explored floor but not visible wall tiles
+						draw_text(
+							SURFACE_MAP, text_to_display = ".", font = constants.FONT_RENDER_TEXT, 
+							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT) + 16)), 
+							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
+							center = True)
+
 ###############################################################################################################
 #helper functions
 
-def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
-    # if there is a background color, render with that.
-    if incoming_bg:
-        Text_surface = incoming_font.render(incoming_text,
-                                            False,
-                                            incoming_color,
-                                            incoming_bg)
-
-    else:  # otherwise, render without a background.
-        Text_surface = incoming_font.render(incoming_text,
-                                            False,
-                                            incoming_color)
-
-    return Text_surface, Text_surface.get_rect()
-
-def helper_text_height(font):
-	#font_object = font.render('a', False, (0, 0, 0))
-	#font_rect = font_object.get_rect()
-	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
-
-	#print(font_rect.height)
-	return font_rect.height
-
-def helper_text_width(font):
-	#font_object = font.render('a', False, (0, 0, 0))
-	#font_rect = font_object.get_rect()
-	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
-
-	#print(font_rect.width)
-	return font_rect.width
-
-def helper_dice(upper_bound, bias):
-	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
-	return dice_roll
-
-def helper_text_prompt(background_fill = True, message = "", player_can_exit = True):
-	global CLOCK, SURFACE_MAIN
-	print("I like turtles.")
-	#draw rect in desired area of the screen with blinking cursor
-
-	prompt_close = False
-	user_text = ""
-
-
-	
-	question_rect = pygame.Rect(200, 200, 140, 32)		#where the question is posed
-	input_rect = pygame.Rect(200, 200, 140, 32)			#where the player's input is displayed
-	
-	while not prompt_close:
-		if background_fill:		#blot out entire background for the duration of the prompt
-			SURFACE_MAIN.fill(constants.COLOR_BLACK)
-
-		#get keypresses and stuff
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
-
-			if event.type == pygame.KEYDOWN:		
-				if event.key == pygame.K_ESCAPE:
-					prompt_close = False
-					user_text = ""
-					return user_text
-					
-				if event.key == pygame.K_RETURN:
-					prompt_close = False
-					return user_text
-					
-				if event.key == pygame.K_BACKSPACE:
-					user_text = user_text[:-1]
-
-				elif user_text != pygame.K_RETURN:
-					user_text += event.unicode
-		#rect that displays the question the player is posed
-		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, question_rect,
-						constants.PROMPT_BORDER_THICKNESS)
-
-		question_surface = constants.FONT_MESSAGE_TEXT.render(message,
-						constants.TEXT_AA, constants.COLOR_WHITE)
-
-		question_rect.w = max(constants.PROMPT_DEFAULT_WIDTH, question_surface.get_width() + constants.PROMPT_OFFSET_X)
-
-
-		#rect that displays the player's input
-		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
-						constants.PROMPT_BORDER_THICKNESS)
-
-		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
-					constants.TEXT_AA, constants.COLOR_WHITE)
-		
-
-		#display menu
-		SURFACE_MAIN.blit(text_surface, 
-			(input_rect.x + constants.PROMPT_OFFSET_X,
-			input_rect.y + constants.PROMPT_OFFSET_Y)
-			)
-
-		#dynamic scaling of textbox
-		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
-							text_surface.get_width() + constants.PROMPT_OFFSET_X
-							)
-
-		pygame.display.flip()
-		CLOCK.tick(constants.GAME_FPS)
-			#pygame.display.update()
-
-
-
-
-
-	#convert player text to string
-
-
-	#return string to function that called it
-
-def helper_ynq_prompt(): #prompt the player to select Yes, No or Quit
-	print("Placeholder.")
 ###############################################################################################################
 #magic
 
@@ -1516,6 +1404,123 @@ class ui_Button:
 			self.current_c_text, 
 			center = True)
 
+
+
+#helpers 
+def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
+    # if there is a background color, render with that.
+    if incoming_bg:
+        Text_surface = incoming_font.render(incoming_text,
+                                            False,
+                                            incoming_color,
+                                            incoming_bg)
+
+    else:  # otherwise, render without a background.
+        Text_surface = incoming_font.render(incoming_text,
+                                            False,
+                                            incoming_color)
+
+    return Text_surface, Text_surface.get_rect()
+
+def helper_text_height(font):
+	#font_object = font.render('a', False, (0, 0, 0))
+	#font_rect = font_object.get_rect()
+	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
+
+	#print(font_rect.height)
+	return font_rect.height
+
+def helper_text_width(font):
+	#font_object = font.render('a', False, (0, 0, 0))
+	#font_rect = font_object.get_rect()
+	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
+
+	#print(font_rect.width)
+	return font_rect.width
+
+def helper_dice(upper_bound, bias):
+	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
+	return dice_roll
+
+def helper_text_prompt(background_fill = True, message = "", player_can_exit = True):
+	global CLOCK, SURFACE_MAIN
+	print("I like turtles.")
+	#draw rect in desired area of the screen with blinking cursor
+
+	prompt_close = False
+	user_text = ""
+
+	question_rect = pygame.Rect(200, 200, 140, 32)		#where the question is posed
+	input_rect = pygame.Rect(200, 200, 140, 32)			#where the player's input is displayed
+	
+	while not prompt_close:
+		if background_fill:		#blot out entire background for the duration of the prompt
+			SURFACE_MAIN.fill(constants.COLOR_BLACK)
+
+		#get keypresses and stuff
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+
+			if event.type == pygame.KEYDOWN:		
+				if event.key == pygame.K_ESCAPE:
+					prompt_close = False
+					user_text = ""
+					return user_text
+					
+				if event.key == pygame.K_RETURN:
+					prompt_close = False
+					return user_text
+					
+				if event.key == pygame.K_BACKSPACE:
+					user_text = user_text[:-1]
+
+				elif user_text != pygame.K_RETURN:
+					user_text += event.unicode
+		#rect that displays the question the player is posed
+		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, question_rect,
+						constants.PROMPT_BORDER_THICKNESS)
+
+		question_surface = constants.FONT_MESSAGE_TEXT.render(message,
+						constants.TEXT_AA, constants.COLOR_WHITE)
+
+		question_rect.w = max(constants.PROMPT_DEFAULT_WIDTH, question_surface.get_width() + constants.PROMPT_OFFSET_X)
+
+
+		#rect that displays the player's input
+		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
+						constants.PROMPT_BORDER_THICKNESS)
+
+		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
+					constants.TEXT_AA, constants.COLOR_WHITE)
+		
+
+		#display menu
+		SURFACE_MAIN.blit(text_surface, 
+			(input_rect.x + constants.PROMPT_OFFSET_X,
+			input_rect.y + constants.PROMPT_OFFSET_Y)
+			)
+
+		#dynamic scaling of textbox
+		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
+							text_surface.get_width() + constants.PROMPT_OFFSET_X
+							)
+
+		pygame.display.flip()
+		CLOCK.tick(constants.GAME_FPS)
+			#pygame.display.update()
+
+
+
+
+
+	#convert player text to string
+
+
+	#return string to function that called it
+
+def ynq_prompt(): #prompt the player to select Yes, No or Quit
+	print("Placeholder.")
 ###############################################################################################################
 #menus
 
