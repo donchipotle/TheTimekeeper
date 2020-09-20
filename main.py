@@ -18,9 +18,8 @@ import state
 
 #for dice rolls, move when that function is moved too
 import random
-
-
-#import key_binds
+#for generating random crap for map keys
+import string
 
 #structures
 class struc_Tile:
@@ -35,8 +34,22 @@ class struc_Tile:
 		#used for comparing verticality - difference in elevation affects ranged weapon damage and maybe later sight
 		self.elevation = 0
 
-#class struc_Assets:
-#objects
+class struc_Map:
+	def __init__(self, 
+		player_X = 0, player_Y = 0, 
+		current_key = "", 
+		map_tiles = [],
+		map_rooms = [],
+		map_objects = []):
+
+		self.player_X = player_X
+		self.player_Y = player_Y
+		self.current_key = current_key
+		self.map_tiles = map_tiles
+		self.map_rooms = map_rooms
+		self.map_objects = map_objects
+#(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
+
 class obj_Actor:
 	def __init__(self, x, y, 
 		name_object,
@@ -56,14 +69,16 @@ class obj_Actor:
 		stairs = None,
 		exitportal = None,
 		static = False,		
-		discovered = False
+		discovered = False,
+		exit_point = False
+
 		):
 
 		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
 		self.name_object = name_object
-		self.IsInvulnerable = False
+		self.is_invulnerable = False
 		self.description = description
 
 		self.icon = icon
@@ -106,9 +121,11 @@ class obj_Actor:
 		if self.exitportal:
 			self.exitportal.owner = self
 
+		self.state = state   		#potentially legacy
 
-
-		self.state = state
+		self.exit_point = exit_point
+		if self.exit_point:
+			self.exit_point.owner = self
 
 
 
@@ -125,8 +142,8 @@ class obj_Actor:
 				return self.name_object
 
 	def draw(self):
-		#is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
+		#is_visible = libtcod.map.compute_fov(FOV_MAP, self.x, self.y)
 
 		if is_visible or self.static:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
@@ -171,9 +188,13 @@ class obj_Game:
 		#self.current_map = map_create()
 		self.message_history = []
 		self.current_objects = []
-		self.maps_previous = []
-		self.maps_next = []
+		self.maps_previous = []			#legacy
+		self.maps_next = []				#legacy
 		self.current_map, self.current_rooms = map_create()
+		self.existing_maps =  {}      #list used for new map loading system, maybe use dicts later
+		self.first_map = True
+		self.this_map_key = ""
+		self.new_key = ""
 
 	def transition_next(self):
 		global FOV_CALCULATE
@@ -181,7 +202,6 @@ class obj_Game:
 		FOV_CALCULATE = True
 
 		self.maps_previous.append((PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects))
-
 
 		if len(self.maps_next) == 0:   #means that next map has not been created yet
 			#save literally everything
@@ -214,6 +234,74 @@ class obj_Game:
 			FOV_CALCULATE = True
 
 			del self.maps_previous[-1]
+
+	def transition(self):
+		global FOV_CALCULATE
+		GAME.first_map = False	#bool to start spawning 'up' staircases, when this function is called, automatically false
+
+		list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)	#get exit point the player is standing on
+		for obj in list_of_objects:
+			if obj.exit_point:
+			#if the exit point leads to another map, load the map
+				if obj.exit_point.next_map_key != "": 
+					print("This exit point's key is " + obj.exit_point.next_map_key)
+				
+					#(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.existing_maps[obj.exit_point.next_map_key]
+					(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.existing_maps[obj.exit_point.next_map_key]
+
+				else:						#if the exit point has no key, create a new map and key, then load it
+					##################################################################################################
+					#create new key for the map to unload and new map
+					GAME.current_key = helper_gen_random_key(settings.MAP_KEY_LENGTH)		
+					GAME.new_key = helper_gen_random_key(settings.MAP_KEY_LENGTH)
+
+					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
+					#set the exit point key to point to the new map
+					for obj in list_of_objects:	
+						if obj.exit_point: obj.exit_point.next_map_key = GAME.new_key 
+						print("Exit point set to the new map.")
+						break
+							
+
+					#save current map to self.existing_maps
+					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
+					#self.existing_maps.update(map_to_save = str(GAME.current_key))		#save current map to dict
+					
+					#self.existing_maps.update({'map': map_to_save, 'map_key' : GAME.current_key})
+
+					#if self.existing_maps[GAME.current_key]:
+					#	self.existing_maps.update({map_to_save : GAME.current_key})
+					#else:
+					self.existing_maps[GAME.current_key] = map_to_save
+					print("Saved first map at key " + GAME.current_key)
+
+					#create new map with that key
+					self.current_objects = [PLAYER] 
+					self.current_map, self.current_rooms = map_create()
+					map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
+
+					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
+					#set the first exit point in the new map to point back to the old one
+					for obj in list_of_objects:	
+						if obj.exit_point: 
+							obj.exit_point.next_map_key = GAME.current_key
+							print("Exit point set to previous map.")
+					
+					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
+			
+					#self.existing_maps.update({'map': map_to_save, 'map_key' : GAME.new_key})
+					self.existing_maps[GAME.new_key] = map_to_save
+
+					print("Saved second map at key " + GAME.new_key)
+
+					print("Number of maps saved is " + str(len(GAME.existing_maps)))
+					
+
+					
+		map_make_fov(self.current_map)
+		FOV_CALCULATE = True
+
+
 
 	#this is a rectangle that lives on the map
 class obj_Room:
@@ -547,7 +635,7 @@ class com_Exit_Portal:			#temporary - likely will not be used later
 		#check conditions
 		portal_open = self.owner.state == "OPEN"
 		for obj in PLAYER.container.inventory:
-			if obj.name_object is "The McGuffin":	#if the player has the mcguffin 
+			if obj.name_object == "The McGuffin":	#if the player has the mcguffin 
 				found_mcguffin = True 	#shouldn't this be under the player? idk
 
 		if found_mcguffin and not portal_open: #if lamp found but portal not yet open
@@ -615,6 +703,16 @@ class com_Exit_Portal:			#temporary - likely will not be used later
 				for message, color in GAME.message_history:
 					legacy_file.write(message + "\n")
 		pygame.display.update()
+
+class com_Exit_Point:
+	def __init__(self, require_input, next_map_key = "", static = True):
+		self.require_input = require_input,
+		self.next_map_key = next_map_key
+		self.static = True
+
+	def use(self):
+		print("Placeholder USE.")
+		GAME.transition()
 
 ######################################################################################################################
 #AI scripts
@@ -702,7 +800,7 @@ class ai_Player:
 		return
 
 def death_monster(monster):
-	if monster.IsInvulnerable != True:
+	if monster.is_invulnerable != True:
 		#on death, most monsters stop moving
 		#print (monster.creature.name_instance + " is killed!")
 		
@@ -773,6 +871,7 @@ def map_random_walk():
 	print("Placeholder. (map gen)")
 
 def map_create():
+	global GAME
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
 									for x in range (0, constants.MAP_WIDTH)]
@@ -790,9 +889,6 @@ def map_create():
 
 		y = libtcod.random_get_int(0, 2, constants.MAP_HEIGHT - h - 2)
 
-
-
-		#print(w, h, x, y)
 		#create room
 		new_room = obj_Room((x, y), (w, h))
 
@@ -820,15 +916,27 @@ def map_create():
 
 			list_of_rooms.append(new_room)	
 
+
+	#GAME.existing_maps[map_key]
+
 	#create FOV map		
 	map_make_fov(new_map)
 	print("map creation finished")
 	#finalize
-
+	
+	#GAME.existing_maps.update(new_key, new_map)
 
 	return (new_map, list_of_rooms)
 
-def map_place_objects(room_list):
+def map_create_special():
+		#create map flooded with walkable tiles
+		new_map = [[struc_Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
+									for x in range (0, constants.MAP_WIDTH)]
+		map_make_fov(new_map)
+
+		return (new_map, list_of_rooms)
+
+def map_place_objects(room_list, is_first_map = None):
 
 	current_level = len(GAME.maps_previous) + 1
 
@@ -838,21 +946,26 @@ def map_place_objects(room_list):
 
 	for room in room_list:
 		first_room = (room ==  room_list[0])
+		second_room = (room ==  room_list[1])
 		last_room = (room == room_list[-1])
 
 		#put the player in the first room
 		if first_room: PLAYER.x, PLAYER.y = room.center
 
-		if first_room and top_level: gen_portal(room.center)
+		#if first_room and top_level: gen_portal(room.center)
 
-		if first_room and not top_level: 
-			gen_stairs((PLAYER.x, PLAYER.y), downwards = False)
+		if first_room: 
+			if is_first_map == False:
+				gen_exit_point_stairs(room.center, downwards = False)	#create stairs back up to last map
+			#create exitpoint 
+		if second_room:
+			gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
 
 		if last_room:
+			gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
 			if final_level: 
 				gen_mcguffin(room.center)
-			else: 
-				gen_stairs(room.center, downwards = True) #downward stairs 
+			
 
 		#generated items and enemies
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
@@ -863,9 +976,7 @@ def map_place_objects(room_list):
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
 		gen_enemy((x,y))
 
-	#	x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
-	#	y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
-	#	gen_enemy((x,y))
+
 		
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
@@ -902,12 +1013,9 @@ def map_create_tunnels(coords1, coords2, new_map):
 		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
 			new_map[int(x)][int(y1)].block_path = False
 
-
 def map_make_fov(incoming_map):
 	global FOV_MAP
-
-	#OV_MAP  = libtcod.map_new(constants.MAP_WIDTH, constants.MAP_HEIGHT)
-	FOV_MAP = libtcod.map_new(constants.MAP_WIDTH, constants.MAP_HEIGHT)
+	FOV_MAP = libtcod.map.Map(constants.MAP_WIDTH, constants.MAP_HEIGHT)
 
 	for y in range(constants.MAP_HEIGHT):
 		for x in range(constants.MAP_WIDTH):
@@ -1066,7 +1174,6 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
 
     display_surface.blit(text_surf, text_rect)
    
-
 def draw_debug():
 	if settings.DISPLAY_FPS :
 	    draw_text(SURFACE_MAIN,
@@ -1173,7 +1280,6 @@ def draw_explosion(radius, blast_x, blast_y, color):
 
 
 	#draw_game()
-
 
 def draw_map(map_to_draw):
 	#camera visibility culling
@@ -1404,8 +1510,6 @@ class ui_Button:
 			self.current_c_text, 
 			center = True)
 
-
-
 #helpers 
 def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
     # if there is a background color, render with that.
@@ -1446,7 +1550,6 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 	global CLOCK, SURFACE_MAIN
 	print("I like turtles.")
 	#draw rect in desired area of the screen with blinking cursor
-
 	prompt_close = False
 	user_text = ""
 
@@ -1493,7 +1596,6 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 
 		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
 					constants.TEXT_AA, constants.COLOR_WHITE)
-		
 
 		#display menu
 		SURFACE_MAIN.blit(text_surface, 
@@ -1503,21 +1605,15 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 
 		#dynamic scaling of textbox
 		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
-							text_surface.get_width() + constants.PROMPT_OFFSET_X
-							)
+							text_surface.get_width() + constants.PROMPT_OFFSET_X)
 
 		pygame.display.flip()
 		CLOCK.tick(constants.GAME_FPS)
-			#pygame.display.update()
 
-
-
-
-
-	#convert player text to string
-
-
-	#return string to function that called it
+def helper_gen_random_key(length):
+	letters = string.ascii_lowercase
+	result_str = ''.join(random.choice(letters) for i in range(length))
+	return result_str
 
 def ynq_prompt(): #prompt the player to select Yes, No or Quit
 	print("Placeholder.")
@@ -1526,6 +1622,10 @@ def ynq_prompt(): #prompt the player to select Yes, No or Quit
 
 def menu_main():
 	game_initialize()
+
+	#create GAME object to track progress
+	GAME = obj_Game()
+
 	#print("Init main menu.")
 	#draw title
 	button_y = constants.CAM_HEIGHT * (2 / 5)
@@ -1877,7 +1977,7 @@ def gen_scroll_lightning(coords):
 
 	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range), name = "Scroll of Lightning")#not going to worry about weight or volume yet
 
-	return_object =obj_Actor(x, y, "Scroll of Lightning", item = item_com, 
+	return_object = obj_Actor(x, y, "Scroll of Lightning", item = item_com, 
 							icon = settings.scroll_icon, icon_color = constants.COLOR_WHITE)
 
 	return return_object
@@ -2011,13 +2111,11 @@ def gen_consumable_potion(coords):
 #player
 def gen_player(coords):
 	global PLAYER, PLAYER_NAME
-
-	print("Player name is " + PLAYER_NAME)
 	x, y = coords
 	#create the player
 	container_com = com_Container()
 	creature_com = com_Creature(PLAYER_NAME,
-								base_attack = 8, base_defense = 3, #player's creature component name
+								base_attack = 8, base_defense = 3, hp = 100, #player's creature component name
 								death_function = death_player
 								)
 	PLAYER = obj_Actor(x, y, "python",  
@@ -2028,7 +2126,7 @@ def gen_player(coords):
 	PLAYER_SPAWNED = True
 
 	GAME.current_objects.append(PLAYER)
-	print("Player Spawn function called.")
+	
 	
 #enemies
 def gen_enemy(coords):
@@ -2103,6 +2201,17 @@ def gen_stairs(coords, downwards):
 
 	GAME.current_objects.append(stairs)
 
+def gen_exit_point_stairs(coords, downwards):
+	x, y = coords
+	static = True
+	exit_point_com = com_Exit_Point(require_input = True)
+	if downwards:
+		ep_stairs = obj_Actor(x, y, "A staircase leading down.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
+	else:
+		ep_stairs = obj_Actor(x, y, "A staircase leading up.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
+
+	GAME.current_objects.append(ep_stairs)
+
 def gen_portal(coords):
 	x, y = coords
 	portalcomponent = com_Exit_Portal()
@@ -2120,7 +2229,6 @@ def gen_mcguffin(coords):
 
 	#return return_object
 	GAME.current_objects.append(return_object)
-
 
 ################################################################################################################
 
@@ -2176,7 +2284,6 @@ def game_handle_keys():
 	keys_list = pygame.key.get_pressed()
 	events_list = pygame.event.get()
 	
-	
 	#check for mod key (shift)
 	MOD_KEY = (keys_list[pygame.K_RSHIFT] or keys_list[pygame.K_LSHIFT])
 	
@@ -2231,7 +2338,6 @@ def game_handle_keys():
 					test = helper_text_prompt()
 					print(test)
 
-
 				if event.key == pygame.K_i:
 					menu_inventory()
 					if settings.Mod2 == False:
@@ -2250,7 +2356,6 @@ def game_handle_keys():
 
 				FOV_CALCULATE = True
 				
-
 				#key L, turn on tile selection. change later as needed
 				if MOD_KEY and event.key == pygame.K_PERIOD:
 					print("Stair/portal key pressed")
@@ -2259,10 +2364,14 @@ def game_handle_keys():
 					for obj in list_of_objects:
 						if obj.stairs:
 							obj.stairs.use()
+
 							print("Using stairs.")
 						if obj.exitportal:
 							print("Using portal. I think.")
 							obj.exitportal.use()
+						#add in thing about exit points or whatever
+						if obj.exit_point:
+							obj.exit_point.use()
 
 				return "player-moved"
 
@@ -2318,10 +2427,7 @@ def game_initialize():
 	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_NAME
 	global DUNGEON_DEPTH
 
-	
-
 	pygame.init()
-	#print("Init began.")
 
 	PLAYER_NAME = "Bob the Guy"
 
@@ -2341,19 +2447,15 @@ def game_initialize():
 
 	#create GAME object to track progress
 	GAME = obj_Game()
-	#GAME.current_objects = []
 	
-
-
 	CLOCK = pygame.time.Clock()
 
 	FOV_CALCULATE = True
 	TURNS_ELAPSED = 0
-	#GAME.message_history = []
 
 
 	DUNGEON_DEPTH = 0 
 
 if __name__ == '__main__':
 	menu_main()
-	#game_main_loop()	
+	

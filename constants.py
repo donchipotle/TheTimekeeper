@@ -14,8 +14,6 @@ pygame.init()
 #																						#
 #########################################################################################
 
-
-
 # screen resolution
 GAME_WIDTH = 1920
 GAME_HEIGHT = 1080
@@ -29,31 +27,20 @@ CELL_HEIGHT = 32
 CELL_HALF_WIDTH = CELL_WIDTH / 2
 CELL_HALF_HEIGHT = CELL_HEIGHT / 2
 
-
-
-#gameplay
-HARDCORE_MODE = False
-#HC changes are:
-	#	inventory actions cost a turn
-
-
-
 #spawns
 items_per_room = 3
 enemies_per_room = 3
 
-
 #map limitations
-MAP_WIDTH = 80
-MAP_HEIGHT = 80
+MAP_WIDTH = 60
+MAP_HEIGHT = 60
 MAP_MAX_NUM_ROOMS = 20
-
 MAP_NUM_LEVELS = 2 #max depth of dungeon
 
 #room limitations
 ROOM_MAX_HEIGHT = 10
 ROOM_MIN_HEIGHT = 4
-ROOM_MAX_WIDTH = 15
+ROOM_MAX_WIDTH = 12
 ROOM_MIN_WIDTH = 4
 
 #color definitions
@@ -70,10 +57,7 @@ COLOR_BROWN = (139,69,19)
 COLOR_L_BROWN = (205,133,63)
 COLOR_YINZER = (212, 175, 55)
 
-#game color palette
 COLOR_DEFAULT_BG = COLOR_GRAY
-
-#items
 
 #FOV settings, multiple options to consider
 FOV_ALGO = libtcod.FOV_SHADOW 
@@ -85,7 +69,6 @@ TORCH_RADIUS = 18
 #font for rendering the entire screen
 #FONT_RENDER_TEXT = pygame.font.Font('fonts/Montserrat-Regular.ttf', 35)
 FONT_RENDER_TEXT = pygame.font.Font('fonts/Azoft Sans.otf', 35)
-
 
 FONT_TITLE_SCREEN1 = pygame.font.Font('fonts/Lekton-Regular.ttf', 70)
 FONT_TITLE_SCREEN2 = pygame.font.Font('fonts/Lekton-Regular.ttf', 40)
@@ -109,11 +92,8 @@ TEXT_X_OVERRIDE = 10
 TEXT_Y_OVERRIDE = 10
 TEXT_HEIGHT = 10
 
-
-
 #text prompts
 PROMPT_BORDER_THICKNESS = 4
 PROMPT_OFFSET_X = 1
 PROMPT_OFFSET_Y = 1
 PROMPT_DEFAULT_WIDTH = 150
-
