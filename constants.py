@@ -46,6 +46,7 @@ ROOM_MIN_WIDTH = 4
 #color definitions
 COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
+COLOR_D_GRAY = (20, 20, 20)
 COLOR_GRAY = (100, 100, 100)
 COLOR_L_GRAY = (192, 192, 192)
 COLOR_RED = (255, 0, 0)
@@ -57,7 +58,9 @@ COLOR_BROWN = (139,69,19)
 COLOR_L_BROWN = (205,133,63)
 COLOR_YINZER = (212, 175, 55)
 
-COLOR_DEFAULT_BG = COLOR_GRAY
+#Window background
+COLOR_DEFAULT_BG = COLOR_D_GRAY
+
 
 #FOV settings, multiple options to consider
 FOV_ALGO = libtcod.FOV_SHADOW 
@@ -73,7 +76,8 @@ FONT_RENDER_TEXT = pygame.font.Font('fonts/Azoft Sans.otf', 35)
 FONT_TITLE_SCREEN1 = pygame.font.Font('fonts/Lekton-Regular.ttf', 70)
 FONT_TITLE_SCREEN2 = pygame.font.Font('fonts/Lekton-Regular.ttf', 40)
 FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
-FONT_CURSOR_TEXT = pygame.font.Font('fonts/RoseFlinch.ttf', CELL_HEIGHT)
+FONT_STATS = pygame.font.Font('fonts/Lekton-Regular.ttf', 40)
+FONT_CURSOR_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', CELL_HEIGHT)
 FONT_MESSAGE_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 35)
 FONT_INVENTORY_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 20)
 

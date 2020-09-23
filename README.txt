@@ -24,3 +24,5 @@ file. It is worth noting that the camera speed may be
 adjusted if you want to snap to the player's spawn 
 location.
 
+	Future and in-progress work will be posted in 
+the project's official Trello at 

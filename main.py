@@ -13,7 +13,6 @@ import os.path
 import constants
 import settings
 import helpers
-import state
 #import toolbox
 
 #for dice rolls, move when that function is moved too
@@ -126,9 +125,6 @@ class obj_Actor:
 		self.exit_point = exit_point
 		if self.exit_point:
 			self.exit_point.owner = self
-
-
-
 
 	@property
 	def display_name(self):
@@ -260,18 +256,12 @@ class obj_Game:
 					for obj in list_of_objects:	
 						if obj.exit_point: obj.exit_point.next_map_key = GAME.new_key 
 						print("Exit point set to the new map.")
-						break
+						#break
 							
 
 					#save current map to self.existing_maps
 					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
-					#self.existing_maps.update(map_to_save = str(GAME.current_key))		#save current map to dict
-					
-					#self.existing_maps.update({'map': map_to_save, 'map_key' : GAME.current_key})
 
-					#if self.existing_maps[GAME.current_key]:
-					#	self.existing_maps.update({map_to_save : GAME.current_key})
-					#else:
 					self.existing_maps[GAME.current_key] = map_to_save
 					print("Saved first map at key " + GAME.current_key)
 
@@ -390,7 +380,7 @@ class obj_Camera:
 class com_Creature:
 	def __init__(self, name_instance, 
 		hp = 10, base_attack = 5, base_defense = 5, 
-		death_function = None, money = 0, gender = 0, base_xp = 15):
+		death_function = None, money = 0, gender = 0, base_xp = 1, xp_on_death = 10):
 		self.name_instance = name_instance
 		self.max_hp = hp
 		self.current_hp = hp
@@ -398,19 +388,23 @@ class com_Creature:
 		self.death_function = death_function
 		self.gender = gender
 		self.base_xp = base_xp
+		self.xp_on_death = xp_on_death
 		self.base_attack = base_attack
 		self.base_defense = base_defense
+		self.current_xp = base_xp
 
 		#add new damage types and stuff later
-	def take_damage(self, damage):
+	def take_damage(self, damage_received, attacker):
 		#game_message(self.name_instance +  "'s health is " + str(self.hp) + "/" + str(self.maxhp), constants.COLOR_RED)
-		self.current_hp -= damage
+		self.current_hp -= damage_received
 		#print (self.name_instance + "'s health is " + str(self.hp) + "/" + str(self.maxhp))
 
 		#possibly change later to include the name of the attacker
 		if self.current_hp <= 0:
 			if self.death_function is not None:
 				self.death_function(self.owner)
+				if attacker == PLAYER:
+					PLAYER.creature.current_xp += self.xp_on_death
 
 		#else:
 			#print (self.name_instance + "'s health is " + str(self.hp) + "/" + str(self.maxhp))
@@ -421,7 +415,7 @@ class com_Creature:
 
 		#possibly move this statement into loop above
 		if target:
-
+			#prompt to check for hostility
 			self.attack(target)
 
 		if not tile_is_wall and target is None:
@@ -438,7 +432,7 @@ class com_Creature:
 
 		else:
 			game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
-			target.creature.take_damage(damage_dealt)
+			target.creature.take_damage(damage_dealt, attacker = self.owner)
 
 	def heal(self, value):
 		self.current_hp += value
@@ -566,13 +560,10 @@ class com_Equipment:
 		self.defense_bonus = defense_bonus
 		self.name = name
 
-
 		self.slot = slot
 		self.equipped = False
 
-
 	def toggle_equip(self):
-		print("Equip toggle function called.")
 		if self.equipped:
 			self.unequip()
 
@@ -580,28 +571,18 @@ class com_Equipment:
 			self.equip()
 
 	def equip(self):
-		#toggle self.equipped
-
-	
 		all_equipped_items = self.owner.item.current_container.equipped_items
 		
-
 		for item in all_equipped_items:
-			#if item.equipment.slot and (item.equipment.slot != self.slot):
 			if item.equipment.slot and (item.equipment.slot == self.slot):
 				game_message(self.slot + " is already occupied.", constants.COLOR_RED)
-					#ynaq prompt?
+					#ynaq prompt to replace?
 				return
 		self.equipped = True
-		print("Equipped successfully")
 		game_message("Equipped in " + (str(self.slot)) + ".")
-			
-	#toggle self.equipped
+
 	def unequip(self):
-		print("Unequip function called.")	
 		self.equipped = False
-		#game_message(self.item.equipment.slot + " is now empty.")
-		game_message("Unequipped.")
 
 class com_Stairs:
 	def __init__(self, downwards = True):
@@ -711,7 +692,6 @@ class com_Exit_Point:
 		self.static = True
 
 	def use(self):
-		print("Placeholder USE.")
 		GAME.transition()
 
 ######################################################################################################################
@@ -937,7 +917,6 @@ def map_create_special():
 		return (new_map, list_of_rooms)
 
 def map_place_objects(room_list, is_first_map = None):
-
 	current_level = len(GAME.maps_previous) + 1
 
 	top_level = (len(GAME.maps_previous) == 0)
@@ -958,15 +937,14 @@ def map_place_objects(room_list, is_first_map = None):
 			if is_first_map == False:
 				gen_exit_point_stairs(room.center, downwards = False)	#create stairs back up to last map
 			#create exitpoint 
-		if second_room:
-			gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
+		#if second_room:
+			#gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
 
 		if last_room:
 			gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
 			if final_level: 
 				gen_mcguffin(room.center)
 			
-
 		#generated items and enemies
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
@@ -974,9 +952,7 @@ def map_place_objects(room_list, is_first_map = None):
 		
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
-		gen_enemy((x,y))
-
-
+		gen_creature((x,y))
 		
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
@@ -1135,11 +1111,13 @@ def map_tile_query():
 #drawing functions
 def draw_game():
 	global GAME
-	global SURFACE_MAIN, PLAYER #, GAME.current_map
+	global SURFACE_MAIN, PLAYER, SURFACE_WINDOW, SURFACE_BOTTOM_PANEL
 
 	#clear the display surface
+	SURFACE_WINDOW.fill(constants.COLOR_D_GRAY)
 	SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
 	SURFACE_MAP.fill(constants.COLOR_BLACK)
+	SURFACE_BOTTOM_PANEL.fill(constants.COLOR_BLACK)
 
 	CAMERA.update()
 
@@ -1150,7 +1128,7 @@ def draw_game():
 	for obj in GAME.current_objects:
 		obj.draw()
 
-								#these numbers are the starting offset, for left/top padding
+									#these numbers are the starting offset, for left/top padding
 	SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)
 					
 
@@ -1159,6 +1137,7 @@ def draw_game():
 		draw_debug()
 
 	draw_messages()
+	draw_stat_panel()
 
 def draw_text(display_surface, text_to_display, font, coords, text_color, back_color = None, center = False):
     # get both the surface and rectangle of the desired message
@@ -1183,6 +1162,20 @@ def draw_debug():
               constants.COLOR_WHITE,
               constants.COLOR_BLACK)
 
+def draw_stat_panel():
+	global SURFACE_BOTTOM_PANEL, PLAYER
+	start_y = ((constants.CAM_HEIGHT + 20) * .85)
+
+	stats = ("Health = " + str(PLAYER.creature.current_hp) + "/" + str(PLAYER.creature.max_hp) + 
+			", Magic = 100/100" + "XP/LVL = 1/" + str(PLAYER.creature.current_xp))
+	text_height = 0
+
+	draw_text(SURFACE_BOTTOM_PANEL, 
+		stats, 
+		constants.FONT_STATS, 
+		(20, start_y + (text_height)), 
+		constants.COLOR_WHITE, constants.COLOR_BLACK)
+
 def draw_messages():
 	#include 'timer' for clearing message log, later
 
@@ -1195,7 +1188,7 @@ def draw_messages():
 	text_height = helper_text_height(constants.FONT_MESSAGE_TEXT)
 
 	start_y = ((constants.CAM_HEIGHT
-				- (constants.NUM_MESSAGES * text_height)) - 20)
+				- (constants.NUM_MESSAGES * text_height)) - 20) * .85
 
 	#print(start_y)
     # get both the surface and rectangle of the desired message
@@ -1218,8 +1211,8 @@ def draw_tile_rect(coords, tile_color = None, tile_alpha = None, mark = None):
 	if tile_alpha: local_alpha = tile_alpha
 	else: local_alpha = 150
 
-	new_x = x * constants.CELL_WIDTH
-	new_y = y * constants.CELL_HEIGHT
+	new_x = x * constants.CELL_WIDTH - 16
+	new_y = y * constants.CELL_HEIGHT  -16
 
 	new_surface = pygame.Surface((constants.CELL_WIDTH, constants.CELL_HEIGHT))
 
@@ -1231,7 +1224,7 @@ def draw_tile_rect(coords, tile_color = None, tile_alpha = None, mark = None):
 	if mark:
 		#move the centering calculation elsewhere to prevent unnecessary calculations
 		draw_text(new_surface, mark, font = constants.FONT_CURSOR_TEXT, 
-			coords = ((constants.CELL_WIDTH), (constants.CELL_HEIGHT)), 
+			coords = ((constants.CELL_WIDTH - 16), (constants.CELL_HEIGHT - 16)), 
 			        text_color = constants.COLOR_BLACK, center = True)
 
 	SURFACE_MAP.blit(new_surface, (new_x + 16, new_y + 16))
@@ -1284,8 +1277,8 @@ def draw_explosion(radius, blast_x, blast_y, color):
 def draw_map(map_to_draw):
 	#camera visibility culling
 	cam_x, cam_y = CAMERA.map_address
-	display_map_width = constants.CAM_WIDTH / constants.CELL_WIDTH
-	display_map_height = constants.CAM_HEIGHT / constants.CELL_HEIGHT
+	display_map_width = int(constants.CAM_WIDTH / constants.CELL_WIDTH * 1)
+	display_map_height = int(constants.CAM_HEIGHT / constants.CELL_HEIGHT * .7)
 
 	render_w_min = int(cam_x - (display_map_width / 2))
 	render_w_max = int(cam_x + (display_map_width / 2))
@@ -1385,17 +1378,16 @@ def cast_lightning(caster, T_damage_maxrange):
 				draw_projectile(x, y, constants.COLOR_L_BLUE)
 			target = map_check_for_creatures(x, y)
 			if target: # and i != 0:
-				game_message("The Mariner casts Alenko-Kharyalov Effect.")
+				game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
 				#check if spell uselessly hits wall
-				#if (target.x, target.y)  
-				target.creature.take_damage(damage)
+				target.creature.take_damage(damage, attacker = caster)
 
 				game_message("You smell ozone.")
 
 				#if target.creature.name_instance:
 				#	game_message(target.creature.name_instance + " takes " + str(damage) + " damage.")
 		return "no-action"
-	#later, render effect on each tile in sequence
+	
 
 def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
@@ -1420,7 +1412,7 @@ def cast_fireball(caster, T_damage_radius_range):
 
 			creature_to_damage = map_check_for_creatures(x, y)
 			if creature_to_damage: 
-				creature_to_damage.creature.take_damage(damage)
+				creature_to_damage.creature.take_damage(damage, attacker = caster)
 				
 				if creature_to_damage is not PLAYER:
 					creature_hit = True
@@ -1479,9 +1471,7 @@ class ui_Button:
 	def update(self, player_input):
 		local_events, local_mousepos = player_input
 		mouse_x, mouse_y = local_mousepos
-
 		mouse_clicked = False
-
 		mouse_over = 	(mouse_x >= self.rect.left and 
 						mouse_x <= self.rect.right and
 						mouse_y >= self.rect.top and 
@@ -1527,19 +1517,11 @@ def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_b
     return Text_surface, Text_surface.get_rect()
 
 def helper_text_height(font):
-	#font_object = font.render('a', False, (0, 0, 0))
-	#font_rect = font_object.get_rect()
 	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
-
-	#print(font_rect.height)
 	return font_rect.height
 
 def helper_text_width(font):
-	#font_object = font.render('a', False, (0, 0, 0))
-	#font_rect = font_object.get_rect()
 	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
-
-	#print(font_rect.width)
 	return font_rect.width
 
 def helper_dice(upper_bound, bias):
@@ -1853,23 +1835,15 @@ def menu_inventory():
 
 def menu_tile_select(coords_origin = None, max_range = None, 
 	radius = None, penetrate_walls = True, pierce_creature = True):
-	#this menu lets the player select a tile 
-
-	#this function pauses the game, produces an on screen rectangle and 
-	#containing the map address
-
+	#this 'menu' lets the player select a tile, for spells, etc.
 	menu_close = False
 
 	while not menu_close:
-		#get mouse postion
-		mouse_x, mouse_y = pygame.mouse.get_pos()
-
-		#get button clicks
-		events_list = pygame.event.get()
+		mouse_x, mouse_y = pygame.mouse.get_pos() 				#get mouse postion
+		events_list = pygame.event.get()						#get button clicks
 
 		#mouse map selection
 		mapx_pixel, mapy_pixel = CAMERA.win_to_map((mouse_x, mouse_y))
-
 		map_coord_x = int(mapx_pixel / constants.CELL_WIDTH)
 		map_coord_y = int(mapy_pixel / constants.CELL_HEIGHT)
 
@@ -1880,14 +1854,12 @@ def menu_tile_select(coords_origin = None, max_range = None,
 
 			for i, (x, y) in enumerate(full_list_of_tiles):
 				valid_tiles.append((x, y))
-				#stop at max range
-				if max_range and i == max_range:
+				
+				if max_range and i == max_range:				#stop at max range
 					break
-				#stop at wall
-				if not penetrate_walls and GAME.current_map[x][y].block_path: 
+				if not penetrate_walls and GAME.current_map[x][y].block_path: 	#stop at wall
 					break
-				#stop at creature
-				if not pierce_creature and map_check_for_creatures(x, y):
+				if not pierce_creature and map_check_for_creatures(x, y):		#stop at creature
 					break
 
 		else:
@@ -1903,13 +1875,13 @@ def menu_tile_select(coords_origin = None, max_range = None,
 				if event.button == 1:
 					return(valid_tiles[-1])
 
-		
+			#update drawing the game map
 			SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
 			SURFACE_MAP.fill(constants.COLOR_BLACK)
-
 			CAMERA.update()
-
 			draw_map(GAME.current_map)
+			for obj in GAME.current_objects:
+				obj.draw()
 
 		#draw rect at mouse position over game screen, marking tile targeted
 			for (tile_x, tile_y) in valid_tiles:
@@ -1926,10 +1898,7 @@ def menu_tile_select(coords_origin = None, max_range = None,
 						tile_color = constants.COLOR_ORANGE,
 						tile_alpha = 150)
 
-					#draw rectangle at mouse position
-					#raw_tile_rect(tile_color = constants.COLOR_WHITE, coords = (map_coord_x, map_coord_y))
-
-										#these numbers are the starting offset, for left/top padding
+			#these numbers are the starting offset, for left/top padding
 			SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)				
 
 			if settings.ENABLE_DEBUG == True:
@@ -1939,7 +1908,6 @@ def menu_tile_select(coords_origin = None, max_range = None,
 			#update display
 			pygame.display.flip()
 			CLOCK.tick(constants.GAME_FPS)
-
 
 ##########################################################################################################
 #procedural generators
@@ -1967,14 +1935,11 @@ def gen_item(coords):
 
 	
 	GAME.current_objects.insert(0, new_item)
-	#GAME.current_objects.append(new_item)
 
 def gen_scroll_lightning(coords):
 	x, y = coords
-
 	damage = helper_dice(5, 6)
 	m_range = 8
-
 	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range), name = "Scroll of Lightning")#not going to worry about weight or volume yet
 
 	return_object = obj_Actor(x, y, "Scroll of Lightning", item = item_com, 
@@ -1984,11 +1949,9 @@ def gen_scroll_lightning(coords):
 
 def gen_scroll_fireball(coords):
 	x, y = coords
-
 	damage = helper_dice(7, 7)
 	local_radius = 2
 	max_r = 9
-
 	item_com = com_Item(use_function = cast_fireball, value = (damage, local_radius, max_r), name = "Scroll of Fireball")#not going to worry about weight or volume yet
 
 	return_object =obj_Actor(x, y, "Scroll of Fireball", item = item_com, 
@@ -1998,11 +1961,8 @@ def gen_scroll_fireball(coords):
 
 def gen_scroll_confusion(coords):
 	x, y = coords
-
 	effect_duration = helper_dice(3, 3)
-
 	item_com = com_Item(use_function = cast_confusion, value = (effect_duration), name = "Scroll of Confusion")#not going to worry about weight or volume yet
-
 	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, 
 							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
 
@@ -2010,8 +1970,6 @@ def gen_scroll_confusion(coords):
 
 def gen_weapon_sword(coords):
 	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(attack_bonus = 18, defense_bonus = 1, slot = "Main Hand", name = "Longsword") #, name = "a plain longsword")
 
 	return_object = obj_Actor(x, y, "Longsword",
@@ -2019,22 +1977,8 @@ def gen_weapon_sword(coords):
 					equipment = equipment_com)
 	return return_object
 
-def gen_weapon_pickaxe(coords):
-	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
-	equipment_com = com_Equipment(attack_bonus = 4, defense_bonus = 1, slot = "Main Hand", name = "a sturdy pickaxe")
-
-	return_object = obj_Actor(x, y, "Pickaxe",
-					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
-					equipment = equipment_com)
-	return return_object
-
-#, name = ""
 def gen_armor_leather(coords):
 	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Armor", name = "a suit of leather armor")
 
 	return_object = obj_Actor(x, y, "Leather Armor",
@@ -2044,8 +1988,6 @@ def gen_armor_leather(coords):
 
 def gen_armor_helmet(coords):
 	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Helmet", name = "an ancient Temryavite helmet") 
 
 	item_com = com_Item(value = 3, use_function = cast_heal, name = "an ancient Temryavite helmet") 
@@ -2057,8 +1999,6 @@ def gen_armor_helmet(coords):
 
 def gen_armor_shirt(coords):
 	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Shirt", name = "a bleached Guiding Star tunic.") 
 
 	item_com = com_Item(value = 3, use_function = cast_heal, name = "a bleached Guiding Star tunic.")
@@ -2070,8 +2010,6 @@ def gen_armor_shirt(coords):
 
 def gen_armor_boots(coords):
 	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Boots", name = "a pair of muddy combat boots.") 
 
 	return_object = obj_Actor(x, y, "Combat Boots",
@@ -2081,8 +2019,6 @@ def gen_armor_boots(coords):
 
 def gen_armor_chainmail(coords):
 	x, y = coords
-
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Chainmail", name = "a light") 
 
 	return_object = obj_Actor(x, y, "Ars Enchantica Chainmail",
@@ -2093,7 +2029,6 @@ def gen_armor_chainmail(coords):
 def gen_armor_gloves(coords):
 	x, y = coords
 
-	#bonus = libtcod.random_get_int(0, 1 , 2)
 	equipment_com = com_Equipment(defense_bonus = 4, slot = "Gloves", name = "a weathered pair of standard-issue, legionaire glvoes.") 
 
 	return_object = obj_Actor(x, y, "Pax Magisteria gloves",
@@ -2121,20 +2056,20 @@ def gen_player(coords):
 	PLAYER = obj_Actor(x, y, "python",  
 						creature = creature_com,
 						container = container_com,
-						icon = " Я ", icon_color = constants.COLOR_WHITE
+						icon = " @ ", icon_color = constants.COLOR_WHITE
 						)
 	PLAYER_SPAWNED = True
 
 	GAME.current_objects.append(PLAYER)
 	
-	
 #enemies
-def gen_enemy(coords):
+def gen_creature(coords):
 	global GAME
 
 	random_num = helper_dice(100, 0)
 	if random_num  <= 30 : 					new_enemy = gen_nightcrawler_greater(coords)
 	elif random_num <= 80 :					new_enemy = gen_nightcrawler_lesser(coords)
+	elif random_num >= 90 :					new_enemy = gen_dragon(coords)
 	else:									new_enemy = gen_rabbit(coords)
 	
 	GAME.current_objects.insert(0, new_enemy)
@@ -2146,7 +2081,8 @@ def gen_nightcrawler_lesser(coords):
 	creature_com = com_Creature("Lesser Nightcrawler", death_function = death_monster,
 								hp = 12,
 								base_attack = (helper_dice(3, 5)),
-								base_defense = (helper_dice(3, 3))
+								base_defense = (helper_dice(3, 3)),
+								xp_on_death = 5
 	) 
 	ai_com = ai_Chase()
 							#name of item when picked up
@@ -2161,7 +2097,8 @@ def gen_nightcrawler_greater(coords):
 	creature_com = com_Creature("Greater Nightcrawler", death_function = death_monster,
 								hp = 15,
 								base_attack = (helper_dice(4, 9)),
-								base_defense = (helper_dice(4, 4))
+								base_defense = (helper_dice(4, 4)),
+								xp_on_death = 12
 	) 
 	#the crab's creature name
 	ai_com = ai_Chase()
@@ -2170,6 +2107,24 @@ def gen_nightcrawler_greater(coords):
 		creature = creature_com, ai = ai_com, item = item_com, icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY)
 
 	return ENEMY
+
+def gen_dragon(coords):
+	x, y = coords
+	item_com = com_Item(value = 70, use_function = cast_heal, name = "Golden Dragon carcass")								#name of enemy when alive
+	creature_com = com_Creature("Golden Dragon", death_function = death_monster,
+								hp = 35,
+								base_attack = (helper_dice(9, 12)),
+								base_defense = (helper_dice(4, 7)),
+								xp_on_death = 75
+	) 
+	#the crab's creature name
+	ai_com = ai_Chase()
+							#name of item when picked up
+	ENEMY = obj_Actor(x, y, "Golden Dragon carcass", 
+		creature = creature_com, ai = ai_com, item = item_com, icon = settings.draconic_icon, icon_color = constants.COLOR_YINZER)
+
+	return ENEMY
+
 
 def gen_rabbit(coords):
 	x, y = coords
@@ -2209,6 +2164,7 @@ def gen_exit_point_stairs(coords, downwards):
 		ep_stairs = obj_Actor(x, y, "A staircase leading down.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
 	else:
 		ep_stairs = obj_Actor(x, y, "A staircase leading up.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
+	static = True
 
 	GAME.current_objects.append(ep_stairs)
 
@@ -2425,7 +2381,7 @@ def game_load():
 def game_initialize():
 	global SURFACE_MAIN, SURFACE_MAP, CLOCK, FOV_CALCULATE, GAME
 	global CAMERA, PLAYER, ENEMY, TURNS_ELAPSED, PLAYER_NAME
-	global DUNGEON_DEPTH
+	global DUNGEON_DEPTH, SURFACE_WINDOW, SURFACE_BOTTOM_PANEL
 
 	pygame.init()
 
@@ -2435,9 +2391,14 @@ def game_initialize():
 		pygame.key.set_repeat(constants.KeyDownDelay, constants.KeyRepeatDelay)
 
 	#create the rendered window
+	SURFACE_WINDOW = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
+
+
 	SURFACE_MAIN = pygame.display.set_mode((constants.CAM_WIDTH, constants.CAM_HEIGHT))
 	SURFACE_MAP = pygame.Surface((constants.MAP_WIDTH * constants.CELL_WIDTH,
 									constants.MAP_HEIGHT * constants.CELL_HEIGHT))	
+
+	SURFACE_BOTTOM_PANEL = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
 
 	#side panel
 	#SURFACE_SIDE = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH * ( 1.3), 
@@ -2452,7 +2413,6 @@ def game_initialize():
 
 	FOV_CALCULATE = True
 	TURNS_ELAPSED = 0
-
 
 	DUNGEON_DEPTH = 0 
 

@@ -5,8 +5,15 @@ import pygame
 #draw background image
 DRAW_MENU_BACKGROUND = True
 
+#Window background
+COLOR_DEFAULT_BG = (20, 20, 20)
+
+
+#length of key string in map list
+MAP_KEY_LENGTH = 16
+
 #toggle rendering ballistics (spells, projectiles, etc.), currently broken by camera refactor
-RENDER_BALLISTICS = True
+RENDER_BALLISTICS = False
 
 BALLISTIC_TICK_UPPER = 50	#ms elapsed before ballistic is cleared
 BALLISTIC_TICK_LOWER = 50	#ms elapsed before next tick
@@ -19,7 +26,7 @@ CAM_LERP_X = .05
 CAM_LERP_Y = .05
 
 SAVE_COMPRESSION = True		#use GZip to compress save files, should make no difference
-GEN_LEGACY_FILE = True		#dump message log text to .txt file, optional
+GEN_LEGACY_FILE = False		#dump message log text to .txt file, optional
 
 #Inventory
 CLOSE_AFTER_DROP = False	#quit inv menu after dropping item
@@ -92,6 +99,7 @@ DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
 DEBUG_PRINT_TURNS = False
 DEBUG_MOUSE_IN_INVENTORY = False
+
 
 #background image for the main menu _ optionally remove
 MAIN_MENU_BG_IMAGE = pygame.image.load("stars-in-the-night-sky.jpg")
