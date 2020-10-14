@@ -10,7 +10,7 @@ COLOR_DEFAULT_BG = (20, 20, 20)
 
 
 #length of key string in map list
-MAP_KEY_LENGTH = 16
+MAP_KEY_LENGTH = 32
 
 #toggle rendering ballistics (spells, projectiles, etc.), currently broken by camera refactor
 RENDER_BALLISTICS = False
@@ -30,7 +30,6 @@ GEN_LEGACY_FILE = False		#dump message log text to .txt file, optional
 
 #Inventory
 CLOSE_AFTER_DROP = False	#quit inv menu after dropping item
-
 CLOSE_AFTER_USE = True
 
 
@@ -97,7 +96,7 @@ DISPLAY_FPS = False
 
 DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
-DEBUG_PRINT_TURNS = False
+DEBUG_PRINT_TURNS = True
 DEBUG_MOUSE_IN_INVENTORY = False
 
 
