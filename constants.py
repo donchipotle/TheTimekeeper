@@ -82,6 +82,9 @@ KeyRepeatDelay = 70
 #artificial limiter
 GAME_FPS = 60
 
+#used for num prompts
+NUMPAD_KEYS = {pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_KP7, pygame.K_KP8, pygame.K_KP9}
+
 #message console
 NUM_MESSAGES = 4
 TEXT_AA = True

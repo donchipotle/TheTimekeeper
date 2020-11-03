@@ -13,7 +13,7 @@ import constants
 import settings
 import helpers
 
-#for dice rolls, move when that function is moved too
+#for 'dice' rolls, move when that function is moved too
 import random
 #for generating random crap for map keys
 import string
@@ -51,7 +51,6 @@ class struc_Direction:
 		self.x = x,
 		self.y = y
 
-
 class obj_Actor:
 	def __init__(self, x, y, 
 		name_object,
@@ -72,11 +71,11 @@ class obj_Actor:
 		exitportal = None,
 		static = False,		
 		discovered = False,
-		exit_point = False
-
+		exit_point = False,
+		doorcom = None,
+		allegiance_com = None
 		):
 
-		#map addresses, later to be converted to pixel address
 		self.x = x
 		self.y = y
 		self.name_object = name_object
@@ -129,6 +128,14 @@ class obj_Actor:
 		if self.exit_point:
 			self.exit_point.owner = self
 
+		self.doorcom = doorcom
+		if self.doorcom:
+			self.doorcom.owner = self
+
+		self.allegiance_com = allegiance_com
+		if self.allegiance_com:
+			self.allegiance_com.owner = self
+
 	@property
 	def display_name(self):
 		if self.creature:
@@ -144,16 +151,12 @@ class obj_Actor:
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 		#is_visible = libtcod.map.compute_fov(FOV_MAP, self.x, self.y)
 
-		if is_visible or self.static:
+		if is_visible or (self.static and self.discovered):
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
 				center = True)
-				
-
-			#SURFACE_MAIN.blit(self.sprite, (self.x*constants.CELL_WIDTH, self.y*constants.CELL_HEIGHT))
-		#else 
-		#takes in difference of x and difference of y
+	
 
 	def distance_to(self, other):
 		delta_x = other.x - self.x
@@ -166,8 +169,8 @@ class obj_Actor:
 		delta_y = other.y - self.y
 		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
 
-		delta_x = int(round(delta_x / distance))
-		delta_y = int(round(delta_y/distance))
+		delta_x = int((delta_x / distance))
+		delta_y = int((delta_y/distance))
 
 		self.creature.move(delta_x, delta_y)
 
@@ -178,17 +181,16 @@ class obj_Actor:
 		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
 
 		delta_x = int(round(delta_x / distance))
-		delta_y = int(round(delta_y/distance))
+		delta_y = int(round(delta_y / distance))
 
 		self.creature.move(delta_x, delta_y)
-			
+
+#massive structure that stores game data 		
 class obj_Game:
 	def __init__(self):
 		#self.current_map = map_create()
 		self.message_history = []
 		self.current_objects = []
-		self.maps_previous = []			#legacy
-		self.maps_next = []				#legacy
 		self.current_map, self.current_rooms = map_create()
 		self.existing_maps =  {}      #list used for new map loading system, maybe use dicts later
 		self.first_map = True
@@ -196,45 +198,6 @@ class obj_Game:
 		self.new_key = ""
 		self.turns_elapsed = 0
 	
-	def transition_next(self):
-		global FOV_CALCULATE
-
-		FOV_CALCULATE = True
-
-		self.maps_previous.append((PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects))
-
-		if len(self.maps_next) == 0:   #means that next map has not been created yet
-			#save literally everything
-
-			self.current_objects = [PLAYER] 
-
-			self.current_map, self.current_rooms = map_create()
-			map_place_objects(self.current_rooms)
-		else:
-			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_next[-1]
-
-			map_make_fov(self.current_map)
-			FOV_CALCULATE = True
-
-			del self.maps_next[-1]
-
-	def transition_previous(self):
-		global FOV_CALCULATE
-
-		if len(self.maps_previous) != 0:
-			self.maps_next.append((PLAYER.x, PLAYER.y, 
-					self.current_map, 
-					self.current_rooms, 
-					self.current_objects))
-
-			#load everything in
-			(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.maps_previous[-1]
-
-			map_make_fov(self.current_map)
-			FOV_CALCULATE = True
-
-			del self.maps_previous[-1]
-
 	def transition(self):
 		global FOV_CALCULATE
 		GAME.first_map = False	#bool to start spawning 'up' staircases, when this function is called, automatically false
@@ -297,6 +260,8 @@ class obj_Game:
 	#this is a rectangle that lives on the map
 
 	#move intersect functions into separate function
+
+
 class obj_Room:
 	def __init__(self, coords, size): #coords are upper left corner location 
 		self.x1, self.y1 = coords
@@ -307,8 +272,8 @@ class obj_Room:
 
 	@property
 	def center(self):
-		center_x = ((self.x1 + self.x2) // 2)
-		center_y = ((self.y1 + self.y2) // 2)
+		center_x = int(((self.x1 + self.x2) // 2))
+		center_y = int(((self.y1 + self.y2) // 2))
 
 		return (center_x, center_y)
 
@@ -321,6 +286,8 @@ class obj_Room:
 		return objects_intersect
 
 		#object that is spawned in towns
+
+
 class obj_Building:
 	def __init__(self, coords, size): #coords are upper left corner location 
 		self.x1, self.y1 = coords
@@ -345,6 +312,7 @@ class obj_Building:
 
 		return (center_x, center_y)
 
+#the player's viewport - level is spatially mapped to it
 class obj_Camera:
 	def __init__(self):
 		self.width = constants.CAM_WIDTH
@@ -415,6 +383,8 @@ class com_Creature:
 		base_dodge_chance = 10,
 		base_hit_chance = 10,
 
+		resist_fire_base = 1,
+
 		gender = 0, base_xp = 1, xp_on_death = 10):
 		self.name_instance = name_instance
 		self.max_hp = hp
@@ -432,6 +402,10 @@ class com_Creature:
 
 		self.dodge_chance_base = base_dodge_chance
 		self.hit_chance_base = base_hit_chance
+
+		self.resist_fire_base = resist_fire_base
+
+
 
 		#base_dodge_chance
 		#base_hit_chance
@@ -455,18 +429,45 @@ class com_Creature:
 		#else:
 			#print (self.name_instance + "'s health is " + str(self.hp) + "/" + str(self.maxhp))
 	def move(self, dx, dy):
+		
 		tile_is_wall = (GAME.current_map[self.owner.x + dx][self.owner.y + dy].block_path == True)
+		new_x = self.owner.x
+		new_y = self.owner.y
 
 		target = map_check_for_creatures(self.owner.x + dx, self.owner.y + dy, self.owner)
 
-		#possibly move this statement into loop above
 		if target:
+			print("Attacker has a target.")
 			#prompt to check for hostility
-			self.attack(target)
+			if self.owner.allegiance_com and target.allegiance_com:
+				print("Attacker and target have allegiance components.")
+				#check if attacker's category equals the target's category - do not attack
+				if self.owner.allegiance_com.category == target.allegiance_com.category:
+					print("Attacker and target have the same category. No attacking.")
+					return
+
+				print("target allegiance category = " + str(target.allegiance_com.category))
+				print("self hostile list = " + str(self.owner.allegiance_com.hostile_list))
+
+				if str(target.allegiance_com.category) in self.owner.allegiance_com.hostile_list:
+					#check if target's category is in the list of hostile categories, if so, attack
+					self.attack(target)
+				else: 
+					print("Target is not hostile, not attacking.")
+					#putting this funciton here ttemporarily instead of returning because frankly
+					#thing thing is being stupid and, ya know, not working lulz
+					self.attack(target)
+			else:
+				print("One or both actors does not have an allegiance component.")
 
 		if not tile_is_wall and target is None:
-			self.owner.x += dx
-			self.owner.y += dy
+			new_x += dx
+			new_y += dy
+			if new_x >= 0 and new_x <= (constants.MAP_WIDTH - 1):
+				if new_y >= 0 and new_y <= constants.MAP_HEIGHT:
+					self.owner.x += dx
+					self.owner.y += dy
+	
 
 	def attack(self, target):
 		damage_dealt = self.damage_physical - target.creature.resist_physical
@@ -536,11 +537,26 @@ class com_Creature:
 		if self.owner.container:
 			object_bonuses = [obj.equipment.resist_phys_bonus
 								for obj in self.owner.container.equipped_items]
+
 		for resist_phys_base in object_bonuses:
 			if resist_phys_base:
 				physical_resistance += resist_phys_base
 
 		return physical_resistance
+
+
+	@property 
+	def resist_fire(self):
+		fire_resistance = self.resist_fire_base
+
+		object_bonuses = []
+		if self.owner.container:
+			object_bonuses = [obj.equipment.resist_fire_bonus
+								for obj in self.owner.container.equipped_items]
+		for resist_fire_base in object_bonuses:
+			if resist_fire_base:
+				fire_resistance += resist_fire_base
+		return fire_resistance
 
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
@@ -549,8 +565,6 @@ class com_Container:
 		if inventory: self.inventory = inventory
 		else: self.inventory = []
 		
-
-
 		#names of everything in inventory
 		#get volume within container
 	@property 
@@ -584,10 +598,19 @@ class com_Item:
 
 			else:
 				print("Picked up.")
-				if self.name:
-					game_message("Picked up " + self.name + ".")
+			
+				if self.owner.equipment:
+					game_message("Picked up " + self.owner.equipment.name + ".")
+					print(" Printed self.owner.equipment.name ")
+				elif self.name:
+					game_message("Picked up " + self.owner.item.name + ".")
+					print(" Printed self.owner.item.name ")
+
+					print("Option 1")
 				elif self.name_object:
 					game_message("Picked up " + self.name_object + ".")
+					print("Option 2")
+
 
 				print("item picked up is " + self.name)
 				actor.container.inventory.append(self.owner)
@@ -602,7 +625,13 @@ class com_Item:
 		self.owner.x = new_x
 		self.owner.y = new_y
 
-		game_message(self.name + " dropped.")
+		#game_message(self.name + " dropped.")
+		if self.owner.equipment:
+			game_message("Dropped " + self.owner.equipment.name + ".")
+			print(" Printed self.owner.equipment.name ")
+		elif self.name:
+			game_message("Dropped " + self.owner.item.name + ".")
+			print(" Printed self.owner.item.name ")
 
 	def use(self):
 		if self.owner.equipment:
@@ -621,9 +650,16 @@ class com_Item:
 
 #add more bonuses later
 class com_Equipment:
-	def __init__(self, damage_phys_bonus = 0, resist_phys_bonus = 0, slot = None, name = None):
+	def __init__(self, 
+		damage_phys_bonus = 0, resist_phys_bonus = 0,
+		damage_fire_bonus = 0, resist_fire_bonus = 0, 
+		slot = None, name = None):
 		self.damage_phys_bonus = damage_phys_bonus
 		self.resist_phys_bonus = resist_phys_bonus
+
+		self.damage_fire_bonus = damage_fire_bonus
+		self.resist_fire_bonus = resist_fire_bonus
+
 		self.name = name
 
 		self.slot = slot
@@ -762,10 +798,61 @@ class com_Exit_Point:
 
 #physical door that can be opened or closed
 class com_Door:
+	def __init__(self, is_destructable = True, 
+		is_locked = False, default_locked = False,
+		is_closed = False, default_closed = False,
+		door_interaction_message = ""):
+
+		self.is_destructable = is_destructable,
+		self.default_locked = default_locked,
+		self.default_closed = default_closed,
+
+		self.is_locked = default_locked,
+		self.is_closed = default_closed,
+		self.door_interaction_message = door_interaction_message
+
+	def interact(self):
+		print("com_Door.interact() called")
+
+		#if the door is closed and unlocked, open it
+		if self.is_closed == False:
+			if self.is_locked == False:
+				self.is_closed = False
+				self.door_interaction_message = "You open the door."
+				self.icon = settings.door_open_icon
+			else:
+				self.door_interaction_message = "You try to turn the knob - it is still locked."
+
+		else: #self.is_closed == True:
+			self.is_closed == False
+			self.door_interaction_message = "You close the door."
+			self.icon = settings.door_closed_icon
+		#if the door is open, close it
+		game_message(self.door_interaction_message)
+
+	def lock_unlock():
+		#add a line or two to check if the door is closed first. you can't lock and open door
+		if is_locked:
+			is_locked = False
+			door_interaction_message = "You unlock the door."
+		else:
+			is_locked = True
+			door_interaction_message = "You lock the door."
+
+		game_message(door_interaction_message, msg_color = constants.COLOR_WHITE)
+
 	print("Placeholder")
-#tile that can be used as an exit point or a shop
-class com_Doorway:
-	print("Placeholder")
+
+class com_Allegiance:
+	def __init__(self, category = "undefined", protect_list = "", hostile_list = "", docile = True):
+		#list of targets whose attackers the npc will attack
+		self.category = category,
+		self.protect_list = protect_list,
+		#list of categories which the npc will not
+		self.hostile_list = hostile_list,
+		#npc has not yet been provoked into attacking
+		self.docile = docile
+
 
 
 ######################################################################################################################
@@ -793,7 +880,7 @@ class ai_Confuse:
 
 class ai_Chase:
 	#a basic ai script which chases and tries to harm the player
-	#refactor later with target selection
+	#add target selection and prioritizaiton later
 	def take_turn(self):
 		monster = self.owner
 		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
@@ -811,7 +898,11 @@ class ai_Flee:
 		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
 			self.owner.move_away(PLAYER)
 
-
+class ai_Townfolk_Wander:
+	def take_turn(self):
+		print("Townfolk taking turn")
+		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+		
 #fire ranged until entering melee range. sustain fire at all times
 #class ai_Ranged_Assault:
 #	print("Placeholder.")
@@ -853,6 +944,7 @@ class ai_Player:
 	def take_turn(self):
 		return
 
+#engage with AKC at range then attack
 class ai_Dragon:
 	def take_turn(self):
 		monster = self.owner
@@ -998,7 +1090,17 @@ def map_create_town():
 	#initialize empty map, flooded with empty tiles
 	new_map = [[struc_Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
 									for x in range (0, constants.MAP_WIDTH)]
+
 	#create borders of town
+	for i in range(0, constants.MAP_WIDTH):
+		new_map[i][0].block_path = True
+		new_map[i][constants.MAP_HEIGHT -1].block_path = True
+
+	for i in range(0, constants.MAP_HEIGHT):
+		new_map[0][i].block_path = True
+		new_map[constants.MAP_WIDTH -1][i].block_path = True
+
+	
 	#for i in range(new_map[0]):
 	#	struc_Tile(False)
 
@@ -1065,11 +1167,6 @@ def map_create_house_interior():
 #HOUSE_INTERIOR_MIN_WIDTH = 35
 
 def map_place_objects(room_list, is_first_map = None):
-	current_level = len(GAME.maps_previous) + 1
-
-	top_level = (len(GAME.maps_previous) == 0)
-	final_level = (current_level == constants.MAP_NUM_LEVELS)
-
 	for room in room_list:
 		first_room = (room ==  room_list[0])
 		second_room = (room ==  room_list[1])
@@ -1089,8 +1186,6 @@ def map_place_objects(room_list, is_first_map = None):
 
 		if last_room:
 			gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
-			if final_level: 
-				gen_mcguffin(room.center)
 			
 		#generated items and enemies
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
@@ -1102,19 +1197,108 @@ def map_place_objects(room_list, is_first_map = None):
 		gen_creature((x,y))
 
 def map_place_objects_town(building_list, is_first_map = False):
-	PLAYER.x, PLAYER.y = (12, 12)
+	PLAYER.x, PLAYER.y = (3, 3)
+
+	for i in range (0, 100):
+		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
+		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
+		if GAME.current_map[x][y].block_path == False:
+			PLAYER.x, PLAYER.y = (x, y)
+			print("Player successfully placed after " + str(i) + " tries.")
+			break
+
+	for i in range (0, 10):
+		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
+		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
+		if GAME.current_map[x][y].block_path == False:
+			weapon = gen_weapon_sword((x, y))
+			armor = gen_armor_leather((x, y))
+			GAME.current_objects.insert(0, weapon)
+			GAME.current_objects.insert(0, armor)
+
+			print("Player's kit spawned after " + str(i) + " tries.")
+			break
+			
+
+
 	gen_exit_point_door((5, 4))
 	gen_exit_point_door((8, 10))
 	
+	x = 0
+	y = 0
+
+	i = 0
+	successful_townsfolk_spawns = 0
+	for i in range(0, 1):
+		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
+		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
+
+		if GAME.current_map[x][y].block_path == False:
+			gen_town_folk((x, y))
+
+			successful_townsfolk_spawns += 1
+	print(str(successful_townsfolk_spawns) + " townsfolk successfully spawned.")
+
+	i = 0
+	successful_tree_spawns = 0
+	for i in range(0, 120):
+		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
+		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
+
+		if GAME.current_map[x][y].block_path == False:
+			gen_tree((x, y))
+
+			successful_tree_spawns += 1
+	print(str(successful_tree_spawns) + " trees successfully spawned.")
+	
+
+def map_create_overworld():
+	print("Placeholder")
+
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
 		for y in range(new_room.y1, new_room.y2):
 			new_map[x][y].block_path = False
 
-def map_create_building(new_map, new_building):
+def map_create_building(new_map, new_building, has_door = True):
 	for x in range(new_building.x1, new_building.x2):
 		for y in range(new_building.y1, new_building.y2):
 			new_map[x][y].block_path = True
+
+	if has_door:
+		gen_building_door(new_map, new_building)
+		
+		
+def gen_building_door(new_map, new_building):
+	side = helper_dice(4, 0)
+	if side == 1: #top?
+		door_x_pos = round((new_building.x1 + new_building.x2) / 2)
+		door_y_pos = new_building.y1
+
+		new_map[door_x_pos][door_y_pos].block_path = False
+		gen_exit_point_door((door_x_pos, door_y_pos))
+
+	if side == 2: #bottom
+		door_x_pos = round((new_building.x1 + new_building.x2) / 2)
+		door_y_pos = new_building.y2 - 1
+
+		new_map[door_x_pos][door_y_pos].block_path = False
+		gen_exit_point_door((door_x_pos, door_y_pos))
+
+	if side == 3: #left
+		door_y_pos = round((new_building.y1 + new_building.y2) / 2)
+		door_x_pos = new_building.x1  
+
+		new_map[door_x_pos][door_y_pos].block_path = False
+		gen_exit_point_door((door_x_pos, door_y_pos))
+
+	if side == 4: #right
+		door_y_pos = round((new_building.y1 + new_building.y2) / 2)
+		door_x_pos = new_building.x2 - 1 
+
+		new_map[door_x_pos][door_y_pos].block_path = False
+		gen_exit_point_door((door_x_pos, door_y_pos))
+
 
 def map_create_tunnels(coords1, coords2, new_map):
 	#coin_flip = (libtcod.random_get_int(0, 0, 1) == 1)
@@ -1321,11 +1505,12 @@ def draw_debug():
 
 def draw_stat_panel():
 	global SURFACE_BOTTOM_PANEL, PLAYER
-	start_y = ((constants.CAM_HEIGHT + 20) * .85)
+	start_y = (int((constants.CAM_HEIGHT + 20) * .85))
 
 	stats = ("Health = " + str(PLAYER.creature.current_hp) + "/" + str(PLAYER.creature.max_hp) + 
 			", Damage / hit = " + str(PLAYER.creature.damage_physical) +
-			", Physical resistance = " + str(PLAYER.creature.resist_physical) +
+			", vs Physical = " + str(PLAYER.creature.resist_physical) +
+			", vs Fire = " + str(PLAYER.creature.resist_fire) + 
 			", XP/LVL = 1/" + str(PLAYER.creature.current_xp))
 	text_height = 0
 
@@ -1567,6 +1752,7 @@ def cast_fireball(caster, T_damage_radius_range):
 
 			creature_to_damage = map_check_for_creatures(x, y)
 			if creature_to_damage: 
+				damage -= creature_to_damage.creature.resist_fire
 				creature_to_damage.creature.take_damage(damage, attacker = caster)
 				if creature_to_damage is not PLAYER:
 					creature_hit = True
@@ -1749,10 +1935,51 @@ def helper_gen_random_key(length):
 	result_str = ''.join(random.choice(letters) for i in range(length))
 	return result_str
 
+#this helper function attempts to place an actor at a tile, randomly finding a new place until it succeeds
+def helper_try_place():
+	print("Placeholder")
+
+
 def ynq_prompt(): #prompt the player to select Yes, No or Quit
 	print("Placeholder.")
 ###############################################################################################################
 #menus
+
+def open_door_prompt(in_event):
+
+	global SURFACE_MAIN, PLAYER
+	prompt_close = False
+
+	while not prompt_close:
+		#get keypresses and stuff
+		draw_text(SURFACE_MAIN, 
+			"Open door in which direction?", 
+			constants.FONT_MESSAGE_TEXT, (100, 100), constants.COLOR_WHITE, back_color = constants.COLOR_BLACK, 
+			center = False)
+
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+
+			if event.type == pygame.KEYDOWN:	
+				if event.key in constants.NUMPAD_KEYS:
+					print("SHOULD have called the attempt open function")
+					adjusted = game_direction_prompt(event_in = in_event)
+					#adjusted = attempt_to_open_door(event_in = in_event)
+					if adjusted != (0,0):
+						prompt_close = True
+
+				if event.key == pygame.K_ESCAPE or pygame.K_o:
+					prompt_close = True
+					game_message("You decide not to open anything.")
+					#return 
+				
+
+
+		pygame.display.flip()
+		CLOCK.tick(constants.GAME_FPS)
+
+#def lock_prompt(in_event):
 
 def menu_main():
 	game_initialize()
@@ -1835,6 +2062,31 @@ def menu_main():
 
 		#update surfaces
 		pygame.display.update()
+
+def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
+
+	adjusted_coords = struc_Direction()
+	to_open_coords = struc_Direction()
+
+	adjusted_coords.x, adjusted_coords.y = game_direction_prompt(event_in, not_in_menu = False)
+
+	print(str(adjusted_coords.x) + ", " + str(adjusted_coords.y))
+
+	to_open_coords.x = start_x + adjusted_coords.x
+	to_open_coords.y = start_y + adjusted_coords.y
+	#print(str(to_open_coords.x) + ", " + str(to_open_coords.y))
+
+	list_of_objects = map_objects_at_coords(to_open_coords.x, to_open_coords.y)
+	for obj in list_of_objects:
+		if obj.doorcom:
+			obj.doorcom.interact()
+			#game_message("You attempt to open the door.")
+			print("obj.door.interact() called")
+		else:
+			game_message("There is nothing to open there.")
+			print("obj.door.interact() not called")
+
+#def player_attempts_lock(event_in):
 
 #really messy, clean up later
 def menu_inventory():
@@ -2102,7 +2354,7 @@ def gen_weapon_sword(coords):
 
 def gen_armor_leather(coords):
 	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 6, slot = "Armor", name = "a suit of leather armor")
+	equipment_com = com_Equipment(resist_phys_bonus = 6, resist_fire_bonus = 2,slot = "Armor", name = "a suit of leather armor")
 
 	return_object = obj_Actor(x, y, "Leather Armor",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
@@ -2111,7 +2363,7 @@ def gen_armor_leather(coords):
 
 def gen_armor_helmet(coords):
 	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 3, slot = "Helmet", name = "an ancient Temryavite helmet") 
+	equipment_com = com_Equipment(resist_phys_bonus = 3, resist_fire_bonus = 1, slot = "Helmet", name = "an ancient Temryavite helmet") 
 
 	item_com = com_Item(value = 3, use_function = cast_heal, name = "an ancient Temryavite helmet") 
 
@@ -2122,7 +2374,7 @@ def gen_armor_helmet(coords):
 
 def gen_armor_cloak(coords):
 	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 1, slot = "Cloak", name = "a filthy barbarian cloak") 
+	equipment_com = com_Equipment(resist_phys_bonus = 1, resist_fire_bonus = - 1,slot = "Cloak", name = "a filthy barbarian cloak") 
 
 	item_com = com_Item(value = 3, use_function = cast_heal, name = "a filthy barbarian cloak") 
 
@@ -2153,7 +2405,7 @@ def gen_armor_boots(coords):
 
 def gen_armor_chainmail(coords):
 	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 3, slot = "Chainmail", name = "a light") 
+	equipment_com = com_Equipment(resist_phys_bonus = 3, resist_fire_bonus = 2, slot = "Chainmail", name = "Ars Enchantica Chainmail") 
 
 	return_object = obj_Actor(x, y, "Ars Enchantica Chainmail",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_GRAY,
@@ -2163,7 +2415,7 @@ def gen_armor_chainmail(coords):
 def gen_armor_gloves(coords):
 	x, y = coords
 
-	equipment_com = com_Equipment(resist_phys_bonus = 1, slot = "Gloves", name = "a weathered pair of standard-issue, legionaire glvoes.") 
+	equipment_com = com_Equipment(resist_phys_bonus = 1, resist_fire_bonus = 1, slot = "Gloves", name = "a weathered pair of standard-issue, legionaire glvoes.") 
 
 	return_object = obj_Actor(x, y, "Pax Magisteria gloves",
 					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
@@ -2177,6 +2429,22 @@ def gen_consumable_potion(coords):
 					icon = settings.potion_icon, icon_color = constants.COLOR_BROWN,
 					item = item_com )
 
+def gen_tree(coords, fruit = "None"):
+	x, y = coords
+
+	item_com = com_Item(value = 3, use_function = cast_heal, name = "Apple") 
+
+	 
+	ai_com = ai_Static()
+
+
+							#name of item when picked up
+	tree = obj_Actor(x, y, "an oak tree",
+		ai = ai_com, item = item_com,
+		icon = settings.tree_icon, icon_color = constants.COLOR_GREEN)
+
+	GAME.current_objects.append(tree)
+
 #player
 def gen_player(coords):
 	global PLAYER, PLAYER_NAME
@@ -2187,15 +2455,50 @@ def gen_player(coords):
 								damage_phys_base = 8, resist_phys_base = 3, hp = 100, #player's creature component name
 								death_function = death_player
 								)
+	allegiance_com = com_Allegiance(category = "player", 
+					hostile_list = {"eldritch", "wild", "draconic", "townfolk"},
+					docile = False
+					)
+
 	PLAYER = obj_Actor(x, y, "python",  
 						creature = creature_com,
 						container = container_com,
-						icon = " @ ", icon_color = constants.COLOR_WHITE
+						icon = " @ ", icon_color = constants.COLOR_WHITE,
+						allegiance_com = allegiance_com
 						)
 	PLAYER_SPAWNED = True
 
 	GAME.current_objects.append(PLAYER)
 	
+def gen_town_folk(coords):
+	x, y = coords
+
+	container_com = com_Container()
+	
+	creature_com = com_Creature(name_instance = "Townfolk",
+								damage_phys_base = 8, resist_phys_base = 3, hp = 10, #player's creature component name
+								death_function = death_monster
+								)
+
+	ai_com = ai_Townfolk_Wander()
+	
+	allegiance_com = com_Allegiance(category = "townfolk")
+
+	npc = obj_Actor(x, y, "Some random person.",  
+						creature = creature_com,
+						container = container_com,
+						icon = " @ ", icon_color = constants.COLOR_L_GRAY,
+						ai = ai_com,
+						allegiance_com = allegiance_com
+						
+						)
+	print("Townsfolk spawned")
+
+
+	GAME.current_objects.append(npc)
+
+#def gen_town_guard
+
 #enemies
 def gen_creature(coords):
 	global GAME
@@ -2208,10 +2511,15 @@ def gen_creature(coords):
 	
 	GAME.current_objects.insert(0, new_enemy)
 
+
+#data needed to generate a creature (for cleanup purposes)
+#coords (to place at)
+
+
 def gen_nightcrawler_lesser(coords):
 	x, y = coords
 
-	item_com = com_Item(value = 3, use_function = cast_heal, name = "Lesser Nightcrawler carcass") 
+	item_com = com_Item(value = 3, use_function = cast_heal, name = "the carcass of a Lesser Nightcrawler") 
 	creature_com = com_Creature("Lesser Nightcrawler", death_function = death_monster,
 								hp = 12,
 								damage_phys_base = (helper_dice(3, 5)),
@@ -2219,15 +2527,21 @@ def gen_nightcrawler_lesser(coords):
 								xp_on_death = 5
 	) 
 	ai_com = ai_Chase()
+	allegiance_com = com_Allegiance(category = "eldritch",
+								hostile_list = {"player", "townfolk" },
+								docile = False)
+
 							#name of item when picked up
-	ENEMY = obj_Actor(x, y, "Lesser Nightcrawler carcass",
+	ENEMY = obj_Actor(x, y, "Lesser Nightcrawler",
 		creature = creature_com, ai = ai_com, item = item_com,
-		icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY)
+		icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY,
+		allegiance_com = allegiance_com)
+
 	return ENEMY
 
 def gen_nightcrawler_greater(coords):
 	x, y = coords
-	item_com = com_Item(value = 5, use_function = cast_heal, name = "Greater Nightcrawler carcass")								#name of enemy when alive
+	item_com = com_Item(value = 5, use_function = cast_heal, name = "the carcass of a Greater Nightcrawler")								#name of enemy when alive
 	creature_com = com_Creature("Greater Nightcrawler", death_function = death_monster,
 								hp = 15,
 								damage_phys_base = (helper_dice(4, 9)),
@@ -2236,51 +2550,72 @@ def gen_nightcrawler_greater(coords):
 	) 
 	#the crab's creature name
 	ai_com = ai_Chase()
+
+	allegiance_com = com_Allegiance(category = "eldritch",
+								hostile_list = {"player", "townfolk", "wild" },
+								docile = False)
+
 							#name of item when picked up
-	ENEMY = obj_Actor(x, y, "Greater Nightcrawler carcass", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY)
+	ENEMY = obj_Actor(x, y, "Greater Nightcrawler", 
+		creature = creature_com, ai = ai_com, item = item_com, icon = settings.eldritch_icon, 
+		icon_color = constants.COLOR_GRAY,
+		allegiance_com = allegiance_com)
 
 	return ENEMY
 
 def gen_dragon(coords):
 	x, y = coords
-	item_com = com_Item(value = 70, use_function = cast_heal, name = "Golden Dragon carcass")								#name of enemy when alive
+	item_com = com_Item(value = 70, use_function = cast_heal, name = "the carcass of a Golden Dragon")								#name of enemy when alive
 	creature_com = com_Creature("Golden Dragon", death_function = death_monster,
 								hp = 35,
 								damage_phys_base = (helper_dice(9, 12)),
 								resist_phys_base = (helper_dice(4, 7)),
 								xp_on_death = 75
 	) 
-	#the crab's creature name
+	
+	allegiance_com = com_Allegiance(category = "draconic",
+								hostile_list = {"player", "townfolk", "eldritch", "wild" },
+								docile = False)
+
+
 	ai_com =	ai_Dragon()
 							#name of item when picked up
-	ENEMY = obj_Actor(x, y, "Golden Dragon carcass", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = settings.draconic_icon, icon_color = constants.COLOR_YINZER)
+	ENEMY = obj_Actor(x, y, "Golden Dragon", 
+		creature = creature_com, ai = ai_com, item = item_com, icon = settings.draconic_icon, 
+		icon_color = constants.COLOR_YINZER,
+		allegiance_com = allegiance_com)
 
 	return ENEMY
 
 def gen_rabbit(coords):
 	x, y = coords
-	item_com = com_Item(value = 4, use_function = cast_heal, name = "Rabbit carcass")								#name of enemy when alive
+	item_com = com_Item(value = 4, use_function = cast_heal, name = "the carcass of a Rabbit")								#name of enemy when alive
 	creature_com = com_Creature("Rabbit", death_function = death_monster,
 								hp = 3,
 								damage_phys_base = 1,
 								resist_phys_base = 1)
 
+	allegiance_com = com_Allegiance(category = "wild",
+								hostile_list = {"player", "townfolk", "eldritch", "draconic" },
+								docile = False)
+
 	ai_com = ai_Flee()
 					
-	ENEMY = obj_Actor(x, y, "Rabbit carcass", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = settings.game_animal_icon, icon_color = constants.COLOR_L_BROWN)
+	ENEMY = obj_Actor(x, y, "Rabbit", 
+		creature = creature_com, ai = ai_com, item = item_com, icon = settings.game_animal_icon, 
+		icon_color = constants.COLOR_L_BROWN,
+		allegiance_com = allegiance_com)
 
 	return ENEMY
 
 #special
 def gen_stairs(coords, downwards):
 	x, y = coords
-	static = True
+	
 	if downwards:
 		stairs_com = com_Stairs()
-		stairs = obj_Actor(x, y, "A staircase leading down.", stairs = stairs_com, icon = settings.stairs_up_icon) #constants.COLOR_WHITE)
+		stairs = obj_Actor(x, y, "A staircase leading down.", stairs = stairs_com, 
+			icon = settings.stairs_up_icon)
 	else:
 		stairs_com = com_Stairs(downwards)
 		stairs = obj_Actor(x, y, "A staircase leading up.", stairs = stairs_com, icon = settings.stairs_down_icon)
@@ -2289,7 +2624,7 @@ def gen_stairs(coords, downwards):
 
 def gen_exit_point_stairs(coords, downwards):
 	x, y = coords
-	static = True
+
 	exit_point_com = com_Exit_Point(require_input = True)
 	if downwards:
 		ep_stairs = obj_Actor(x, y, "A staircase leading down.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
@@ -2298,44 +2633,28 @@ def gen_exit_point_stairs(coords, downwards):
 
 	GAME.current_objects.append(ep_stairs)
 
-
 def gen_exit_point_door(coords, 
-	default_locked = False, default_closed = False, material = "wooden", 
+	locked_by_default = False, closed_by_default = True, is_closed = True, is_locked = False, material = "wooden", 
 	additional_message = "You are curious as to what may lie behind."):
 
 	x, y = coords
 	static = True
 	exit_point_com = com_Exit_Point(require_input = True)
-	if default_closed:
+	door_com = com_Door(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
+	
+	if closed_by_default:
 		ep_door = obj_Actor(x, y, ("A closed " + material +" door. ", additional_message), 
-							exit_point = exit_point_com, icon = settings.door_closed_icon)
+							exit_point = exit_point_com, doorcom = door_com, icon = settings.door_closed_icon)
+
+	
 	else:
 		ep_door = obj_Actor(x, y, ("An open " + material +" door. " + additional_message),
-							exit_point = exit_point_com, icon = settings.door_closed_icon)
+							exit_point = exit_point_com, door = door_com, icon = settings.door_open_icon)
 
 	GAME.current_objects.append(ep_door)
 
-
 def gen_barrier_door(coords, default_locked, default_closed):
 	print("Temporary placeholder.")
-
-def gen_portal(coords):
-	x, y = coords
-	portalcomponent = com_Exit_Portal()
-	portal = obj_Actor(x, y, "Exit Portal",
-						exitportal = portalcomponent, icon = settings.door_closed_icon)
-
-	GAME.current_objects.append(portal)
-
-def gen_mcguffin(coords):
-	x, y = coords
-
-	item_com = com_Item()
-
-	return_object = obj_Actor(x, y, "McGuffin", icon = settings.misc_icon, icon_color = constants.COLOR_YINZER, item = item_com)
-
-	#return return_object
-	GAME.current_objects.append(return_object)
 
 ################################################################################################################
 
@@ -2418,6 +2737,7 @@ def game_handle_keys():
 							return "no-action"
 							
 				#open (and later toggle) inventory menu
+
 			if event.key == pygame.K_p:
 				print("Test key triggered.")
 				return "no-action"
@@ -2429,13 +2749,14 @@ def game_handle_keys():
 					return "no-action"
 						
 				#temporarily changed to quit the game
+
 			#figure out what stuff is or something
 			if event.key == pygame.K_q:
 				#query_coords = map_tile_query()
 				if settings.Mod2 == False:
 					return "no-action"
 					
-				#fire projectile, by default throwing
+
 			#fire projectiles and stuff
 			if event.key == pygame.K_f:
 				print("Hi")
@@ -2443,8 +2764,8 @@ def game_handle_keys():
 			#open doors and stuff
 			if event.key == pygame.K_o:
 				#prompt player to select a new direction
-				to_open_coords = struc_Direction()
-				to_open_coords.x, to_open_coords.y = game_direction_prompt(event_in = event)
+				open_door_prompt(in_event = event)
+				print("Open door function - receiving input.")
 
 			FOV_CALCULATE = True
 	
@@ -2469,50 +2790,53 @@ def game_handle_keys():
 			return "player-moved"
 	return "no-action"
 
-def game_direction_prompt(event_in):
+def game_direction_prompt(event_in, not_in_menu = True):
 	#return a direction picked from using the numpad, used for moving, firing projectiles, or interacting with doors
 	target_coords = struc_Direction(x = 0, y = 0)
 
-	if event_in.key == pygame.K_KP1:
-		target_coords = (-1, 1)
-		#print("KP1")
-		
-	elif event_in.key == pygame.K_KP2:# or pygame.K_DOWN:
-		target_coords = (0, 1)
-		#print("KP2/KD")
-		
-	elif event_in.key == pygame.K_KP3:
-		target_coords = (1, 1)
-		#print("KP3")
-		
-	elif event_in.key == pygame.K_KP4: # or pygame.K_LEFT:
-		target_coords = (-1, 0)
-		#print("KP4/KL")
-		
-	elif event_in.key == pygame.K_KP5: #this one does literally nothing, just kinda chillin' here till I feel like using it
-		target_coords = (0, 0)
-		#print("KP5")
-		
-	elif event_in.key == pygame.K_KP6: # or pygame.K_RIGHT:
-		target_coords = (1, 0)
-		#print("KP6/KR")
-		
-	elif event_in.key == pygame.K_KP7:
-		target_coords = (-1, -1)
-		#print("KP7")
+	while not_in_menu:
 
-	elif event_in.key == pygame.K_KP8: # or pygame.K_UP:
-		target_coords = (0, -1)
-		#print("KP8/KU")
-		
-	elif event_in.key == pygame.K_KP9:
-		target_coords = (1, -1)
-		#print("KP9")
-	else:
-		target_coords = (0, 0)
-		#print("Player didn't move.")
+		if event_in.key == pygame.K_KP1:
+			target_coords = (-1, 1)
+			print("KP1")
+			
+		elif event_in.key == pygame.K_KP2:# or pygame.K_DOWN:
+			target_coords = (0, 1)
+			print("KP2/KD")
+			
+		elif event_in.key == pygame.K_KP3:
+			target_coords = (1, 1)
+			print("KP3")
+			
+		elif event_in.key == pygame.K_KP4: # or pygame.K_LEFT:
+			target_coords = (-1, 0)
+			print("KP4/KL")
+			
+		elif event_in.key == pygame.K_KP5: #this one does literally nothing, just kinda chillin' here till I feel like using it
+			target_coords = (0, 0)
+			print("KP5")
+			
+		elif event_in.key == pygame.K_KP6: # or pygame.K_RIGHT:
+			target_coords = (1, 0)
+			print("KP6/KR")
+			
+		elif event_in.key == pygame.K_KP7:
+			target_coords = (-1, -1)
+			print("KP7")
 
-	return target_coords
+		elif event_in.key == pygame.K_KP8: # or pygame.K_UP:
+			target_coords = (0, -1)
+			print("KP8/KU")
+			
+		elif event_in.key == pygame.K_KP9:
+			target_coords = (1, -1)
+			print("KP9")
+		else:
+			target_coords = (0, 0)
+			print("No directional input.")
+
+		not_in_menu = False
+		return target_coords
 
 def game_message(game_msg, msg_color = constants.COLOR_WHITE):
 	GAME.message_history.append((game_msg, msg_color))

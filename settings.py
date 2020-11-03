@@ -60,6 +60,7 @@ portal_icon = "О"
 door_open_icon = "|"
 door_closed_icon = "+"
 chest_icon = "П"
+tree_icon = "Т"
 
 
 
