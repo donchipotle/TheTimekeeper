@@ -191,9 +191,11 @@ class obj_Game:
 		#self.current_map = map_create()
 		self.message_history = []
 		self.current_objects = []
-		self.current_map, self.current_rooms = map_create()
+		self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
 		self.existing_maps =  {}      #list used for new map loading system, maybe use dicts later
 		self.next_map_type = "dungeon"
+		self.current_map_x = constants.MAP_WIDTH
+		self.current_map_y = constants.MAP_HEIGHT
 		self.first_map = True
 		self.this_map_key = ""
 		self.new_key = ""
@@ -243,13 +245,16 @@ class obj_Game:
 
 					if self.next_map_type == "dungeon": 
 						print("next map is dungeon.")
-						self.current_map, self.current_rooms = map_create()
+						self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
 						map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
 
 
 					if self.next_map_type == "house": 
-						self.current_map, self.current_rooms = map_create_house_interior()
+						self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create_house_interior()
 						PLAYER.x, PLAYER.y = 10, 20
+
+					self.current_map_x = self.next_map_x
+					self.current_map_y = self.next_map_y
 
 					#self.current_map, self.current_rooms = map_create()
 					#map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
@@ -270,8 +275,8 @@ class obj_Game:
 					self.existing_maps[GAME.new_key] = map_to_save
 					print("Saved second map at key " + GAME.new_key)
 					print("Number of maps saved is " + str(len(GAME.existing_maps)))
-					
-		map_make_fov(self.current_map)
+					#fov_x
+		map_make_fov(self.current_map, fov_x = self.next_map_x, fov_y = self.next_map_y)
 		FOV_CALCULATE = True
 
 	#this is a rectangle that lives on the map
@@ -1057,23 +1062,25 @@ def death_player(player):
 def map_random_walk():
 	print("Placeholder. (map gen)")
 
-def map_create():
+def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, total_rooms = constants.MAP_MAX_NUM_ROOMS):
+	#dungeon_x = constants.MAP_WIDTH
+	#dungeon_y = constants.MAP_HEIGHT
 	#initialize empty map, flooded with unwalkable tiles
-	new_map = [[struc_Tile(True) for y in range(0, constants.MAP_HEIGHT)]  
-									for x in range (0, constants.MAP_WIDTH)]
+	new_map = [[struc_Tile(True) for y in range(0, dungeon_x)]  
+									for x in range (0, dungeon_y)]
 
 	# generate new room
 	list_of_rooms = []
 	num = 0
-	for num in range(constants.MAP_MAX_NUM_ROOMS):
+	for num in range(total_rooms):
 		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH,  
 										constants.ROOM_MAX_WIDTH)
 		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, 
 										constants.ROOM_MAX_HEIGHT)
 
-		x = libtcod.random_get_int(0, 2, constants.MAP_WIDTH - w - 2)
+		x = libtcod.random_get_int(0, 2, dungeon_x - w - 2)
 
-		y = libtcod.random_get_int(0, 2, constants.MAP_HEIGHT - h - 2)
+		y = libtcod.random_get_int(0, 2, dungeon_y - h - 2)
 
 		#create room
 		new_room = obj_Room((x, y), (w, h))
@@ -1102,7 +1109,7 @@ def map_create():
 	#create FOV map		
 	map_make_fov(new_map)
 	print("map creation finished")
-	return (new_map, list_of_rooms)
+	return (new_map, list_of_rooms, dungeon_x, dungeon_y)
 
 def map_create_town():
 	#initialize empty map, flooded with empty tiles
@@ -1168,16 +1175,19 @@ def map_create_town():
 	print("map creation finished")
 	return (new_map, list_of_buildings)
 
-def map_create_house_interior():
+def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_HEIGHT,house_y = constants.HOUSE_INTERIOR_MIN_WIDTH):
 	#initialize empty map, flooded with empty tiles
+	#house_x
 
-	new_map = [[struc_Tile(False) for y in range(0, constants.HOUSE_INTERIOR_MIN_HEIGHT)]  
-									for x in range (0, constants.HOUSE_INTERIOR_MIN_WIDTH)]
+	new_map = [[struc_Tile(False) for y in range(0, house_y)]  
+									for x in range (0, house_x)]
+	#putting this here so the flippin interpreter doesn't whine at me about stuff idk man
+	list_of_buildings = []
 
-		#create FOV map		
-	map_make_fov(new_map)
+	#create FOV map		
+	map_make_fov(new_map, fov_x = house_x, fov_y = house_x)
 	print("map creation finished")
-	return (new_map, list_of_buildings)
+	return (new_map, list_of_buildings, house_x, house_y)
 
 #HOUSE_INTERIOR_MAX_HEIGHT = 40
 #HOUSE_INTERIOR_MIN_HEIGHT = 20
@@ -1247,7 +1257,7 @@ def map_place_objects_town(building_list, is_first_map = False):
 
 	i = 0
 	successful_townsfolk_spawns = 0
-	for i in range(0, 1):
+	for i in range(0, 100):
 		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
 		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
 
@@ -1348,12 +1358,12 @@ def map_create_tunnels(coords1, coords2, new_map):
 		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
 			new_map[int(x)][int(y1)].block_path = False
 
-def map_make_fov(incoming_map):
+def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MAP_HEIGHT):
 	global FOV_MAP
-	FOV_MAP = libtcod.map.Map(constants.MAP_WIDTH, constants.MAP_HEIGHT)
+	FOV_MAP = libtcod.map.Map(fov_x, fov_y)
 
-	for y in range(constants.MAP_HEIGHT):
-		for x in range(constants.MAP_WIDTH):
+	for y in range(fov_y):
+		for x in range(fov_x):
 			libtcod.map_set_properties(FOV_MAP, x, y, 
 				not incoming_map[x][y].block_path, not incoming_map[x][y].block_path)
 
@@ -1646,8 +1656,8 @@ def draw_map(map_to_draw):
 	#crudely clamp values
 	if render_w_min < 0: render_w_min = 0
 	if render_h_min < 0: render_h_min = 0
-	if render_w_max > constants.MAP_WIDTH: render_w_max = constants.MAP_WIDTH
-	if render_h_max > constants.MAP_HEIGHT: render_h_max = constants.MAP_HEIGHT
+	if render_w_max > GAME.current_map_x: render_w_max = GAME.current_map_x
+	if render_h_max > GAME.current_map_y: render_h_max = GAME.current_map_y
 
 	#loop through every tile that is visible to the camera
 	for x in range(render_w_min, render_w_max):
