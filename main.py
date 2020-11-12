@@ -193,6 +193,7 @@ class obj_Game:
 		self.current_objects = []
 		self.current_map, self.current_rooms = map_create()
 		self.existing_maps =  {}      #list used for new map loading system, maybe use dicts later
+		self.next_map_type = "dungeon"
 		self.first_map = True
 		self.this_map_key = ""
 		self.new_key = ""
@@ -209,7 +210,6 @@ class obj_Game:
 				if obj.exit_point.next_map_key != "": 
 					print("This exit point's key is " + obj.exit_point.next_map_key)
 				
-					#(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.existing_maps[obj.exit_point.next_map_key]
 					(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.existing_maps[obj.exit_point.next_map_key]
 
 				else:						#if the exit point has no key, create a new map and key, then load it
@@ -221,9 +221,14 @@ class obj_Game:
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
 					#set the exit point key to point to the new map
 					for obj in list_of_objects:	
-						if obj.exit_point: obj.exit_point.next_map_key = GAME.new_key 
+						if obj.exit_point: 
+							obj.exit_point.next_map_key = GAME.new_key
+							if obj.exit_point.target_map_type: 
+								self.next_map_type = obj.exit_point.target_map_type
+								print(str(self.next_map_type))
+							break
 						print("Exit point set to the new map.")
-						#break
+						#do not 
 							
 
 					#save current map to self.existing_maps
@@ -232,16 +237,29 @@ class obj_Game:
 					self.existing_maps[GAME.current_key] = map_to_save
 					print("Saved first map at key " + GAME.current_key)
 
-					#create new map with that key
-					self.current_objects = [PLAYER] 
-					
-					self.current_map, self.current_rooms = map_create()
-					#self.current_map, self.current_rooms = map_create_house_interior()
-					
-					map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
 
+					#----------------------create new map with that key   -------------------------------------------------
+					self.current_objects = [PLAYER] 
+
+					if self.next_map_type == "dungeon": 
+						print("next map is dungeon.")
+						self.current_map, self.current_rooms = map_create()
+						map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
+
+
+					if self.next_map_type == "house": 
+						self.current_map, self.current_rooms = map_create_house_interior()
+						PLAYER.x, PLAYER.y = 10, 20
+
+					#self.current_map, self.current_rooms = map_create()
+					#map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
+
+					#if self.next_map_type == "house":
+					#	self.current_map, self.current_rooms = map_create_house_interior()
+
+
+					#set the first exit point in the new map (where the player is located) to point back to the old one
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
-					#set the first exit point in the new map to point back to the old one
 					for obj in list_of_objects:	
 						if obj.exit_point: 
 							obj.exit_point.next_map_key = GAME.current_key
@@ -249,7 +267,6 @@ class obj_Game:
 					
 					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
 			
-					#self.existing_maps.update({'map': map_to_save, 'map_key' : GAME.new_key})
 					self.existing_maps[GAME.new_key] = map_to_save
 					print("Saved second map at key " + GAME.new_key)
 					print("Number of maps saved is " + str(len(GAME.existing_maps)))
@@ -788,10 +805,11 @@ class com_Exit_Portal:			#temporary - likely will not be used later
 		pygame.display.update()
 
 class com_Exit_Point:
-	def __init__(self, require_input, next_map_key = "", static = True):
+	def __init__(self, require_input, next_map_key = "", static = True, target_map_type = "dungeon"):
 		self.require_input = require_input,
 		self.next_map_key = next_map_key
 		self.static = True
+		self.target_map_type = target_map_type
 
 	def use(self):
 		GAME.transition()
@@ -900,7 +918,7 @@ class ai_Flee:
 
 class ai_Townfolk_Wander:
 	def take_turn(self):
-		print("Townfolk taking turn")
+		#print("Townfolk taking turn")
 		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
 		
 #fire ranged until entering melee range. sustain fire at all times
@@ -1221,8 +1239,8 @@ def map_place_objects_town(building_list, is_first_map = False):
 			
 
 
-	gen_exit_point_door((5, 4))
-	gen_exit_point_door((8, 10))
+	gen_exit_point_door((5, 4), target_type = "dungeon")
+	gen_exit_point_door((8, 10), target_type = "dungeon")
 	
 	x = 0
 	y = 0
@@ -2635,11 +2653,12 @@ def gen_exit_point_stairs(coords, downwards):
 
 def gen_exit_point_door(coords, 
 	locked_by_default = False, closed_by_default = True, is_closed = True, is_locked = False, material = "wooden", 
+	target_type = "house",
 	additional_message = "You are curious as to what may lie behind."):
 
 	x, y = coords
 	static = True
-	exit_point_com = com_Exit_Point(require_input = True)
+	exit_point_com = com_Exit_Point(require_input = True, target_map_type = target_type)
 	door_com = com_Door(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
 	
 	if closed_by_default:

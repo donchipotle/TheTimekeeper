@@ -3,8 +3,6 @@ class struc_item:
 		damage_phys = 0, resist_phys = 0, accuracy_bonus = 0, dodge_bonus = 0
 		value = 0):
 
-class
-
 #class struc_weapon:
 #	def __init__(self, damage_phys = 0, resist_phys = 0, accuracy_bonus = 0, dodge_bonus = 0):
 #		print("Hi")
