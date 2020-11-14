@@ -23,13 +23,9 @@ class struc_Tile:
 	def __init__(self, block_path): #add more variables like blocking projectiles, blocking sight, DoT, etc.
 		self.block_path = block_path
 		self.explored = False
-		#maybe later replace with a 'light level' that accounts for actor size and potentially renders invisible if not in view?
-		#light level falls off at a distance from light emitting actors?
-		self.lit = False
 		#for things like cages, fences, other permeable barriers
 		self.transparent = False
-		#used for comparing verticality - difference in elevation affects ranged weapon damage and maybe later sight
-		self.elevation = 0
+
 
 class struc_Map:
 	def __init__(self, 
@@ -37,7 +33,9 @@ class struc_Map:
 		current_key = "", 
 		map_tiles = [],
 		map_rooms = [],
-		map_objects = []):
+		map_objects = [],
+		x_dimension = constants.MAP_WIDTH,
+		y_dimension = constants.MAP_HEIGHT):
 
 		self.player_X = player_X
 		self.player_Y = player_Y
@@ -45,6 +43,10 @@ class struc_Map:
 		self.map_tiles = map_tiles
 		self.map_rooms = map_rooms
 		self.map_objects = map_objects
+
+#class struc_Abilities:
+#	def __init__(self, celerity = ):
+
 
 class struc_Direction:
 	def __init__(self, x = 0, y = 0):
@@ -87,8 +89,6 @@ class obj_Actor:
 
 		self.static = static
 
-		#replace sprite with letter/character, primary color and background color
-
 		self.creature = creature
 		if creature: 
 			self.creature = creature
@@ -110,7 +110,6 @@ class obj_Actor:
 		self.equipment = equipment
 		if self.equipment:
 			self.equipment.owner = self
-
 			self.item = com_Item()
 			self.item.owner = self
 
@@ -149,7 +148,6 @@ class obj_Actor:
 
 	def draw(self):
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
-		#is_visible = libtcod.map.compute_fov(FOV_MAP, self.x, self.y)
 
 		if is_visible or (self.static and self.discovered):
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
@@ -169,8 +167,10 @@ class obj_Actor:
 		delta_y = other.y - self.y
 		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
 
-		delta_x = int((delta_x / distance))
-		delta_y = int((delta_y/distance))
+		#delta_x = int((delta_x / distance))
+		#delta_y = int((delta_y/distance))
+		delta_x = int(round(delta_x / distance))
+		delta_y = int(round(delta_y / distance))
 
 		self.creature.move(delta_x, delta_y)
 
@@ -185,22 +185,24 @@ class obj_Actor:
 
 		self.creature.move(delta_x, delta_y)
 
-#massive structure that stores game data 		
+#massive structure that stores game state data 		
 class obj_Game:
 	def __init__(self):
-		#self.current_map = map_create()
+		self.turns_elapsed = 0
 		self.message_history = []
+		self.first_map = True
+
 		self.current_objects = []
+		#TODO - list of AI-possessing actors to iterate over rather than every actor in the map
 		self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
-		self.existing_maps =  {}      #list used for new map loading system, maybe use dicts later
+
+		self.existing_maps =  {}      #dictionary used for new map loading system, maybe use tree later
+		self.this_map_key = ""
+		self.new_key = ""
 		self.next_map_type = "dungeon"
 		self.current_map_x = constants.MAP_WIDTH
 		self.current_map_y = constants.MAP_HEIGHT
-		self.first_map = True
-		self.this_map_key = ""
-		self.new_key = ""
-		self.turns_elapsed = 0
-	
+		
 	def transition(self):
 		global FOV_CALCULATE
 		GAME.first_map = False	#bool to start spawning 'up' staircases, when this function is called, automatically false
@@ -211,8 +213,13 @@ class obj_Game:
 			#if the exit point leads to another map, load the map
 				if obj.exit_point.next_map_key != "": 
 					print("This exit point's key is " + obj.exit_point.next_map_key)
-				
+
 					(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.existing_maps[obj.exit_point.next_map_key]
+					#get the dimensions of the next map (recursive list) and feed it to the FOV
+					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+				
+					map_make_fov(self.current_map, self.next_map_x, self.next_map_y) #, self.current_map.x_dimension, self.current_map.y_dimension)
+
 
 				else:						#if the exit point has no key, create a new map and key, then load it
 					##################################################################################################
@@ -230,39 +237,25 @@ class obj_Game:
 								print(str(self.next_map_type))
 							break
 						print("Exit point set to the new map.")
-						#do not 
-							
-
+						
 					#save current map to self.existing_maps
 					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
-
 					self.existing_maps[GAME.current_key] = map_to_save
 					print("Saved first map at key " + GAME.current_key)
 
 
 					#----------------------create new map with that key   -------------------------------------------------
 					self.current_objects = [PLAYER] 
-
 					if self.next_map_type == "dungeon": 
-						print("next map is dungeon.")
 						self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
 						map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
 
-
 					if self.next_map_type == "house": 
-						self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create_house_interior()
-						PLAYER.x, PLAYER.y = 10, 20
+						self.current_map, self.current_rooms = map_create_house_interior()
+						self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
 
-					self.current_map_x = self.next_map_x
-					self.current_map_y = self.next_map_y
-
-					#self.current_map, self.current_rooms = map_create()
-					#map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
-
-					#if self.next_map_type == "house":
-					#	self.current_map, self.current_rooms = map_create_house_interior()
-
-
+					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+		
 					#set the first exit point in the new map (where the player is located) to point back to the old one
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
 					for obj in list_of_objects:	
@@ -275,15 +268,11 @@ class obj_Game:
 					self.existing_maps[GAME.new_key] = map_to_save
 					print("Saved second map at key " + GAME.new_key)
 					print("Number of maps saved is " + str(len(GAME.existing_maps)))
-					#fov_x
+				
 		map_make_fov(self.current_map, fov_x = self.next_map_x, fov_y = self.next_map_y)
 		FOV_CALCULATE = True
 
-	#this is a rectangle that lives on the map
-
-	#move intersect functions into separate function
-
-
+#this is a rectangle that lives on the map
 class obj_Room:
 	def __init__(self, coords, size): #coords are upper left corner location 
 		self.x1, self.y1 = coords
@@ -304,12 +293,9 @@ class obj_Room:
 		objects_intersect = (self.x1 <= other.x2 and self.x2 >= other.x1 and
                              self.y1 <= other.y2 and self.y2 >= other.y1)
 
-		#return objects_intersect
 		return objects_intersect
 
-		#object that is spawned in towns
-
-
+#object that is spawned in towns
 class obj_Building:
 	def __init__(self, coords, size): #coords are upper left corner location 
 		self.x1, self.y1 = coords
@@ -326,7 +312,7 @@ class obj_Building:
 		#return objects_intersect
 		return objects_intersect
 
-
+	#the center of each building
 	@property
 	def center(self):
 		center_x = ((self.x1 + self.x2) // 2)
@@ -427,8 +413,6 @@ class com_Creature:
 
 		self.resist_fire_base = resist_fire_base
 
-
-
 		#base_dodge_chance
 		#base_hit_chance
 		#bonus_defense
@@ -438,7 +422,6 @@ class com_Creature:
 
 		#add new damage types and stuff later
 	def take_damage(self, damage_received, attacker):
-		#game_message(self.name_instance +  "'s health is " + str(self.hp) + "/" + str(self.maxhp), constants.COLOR_RED)
 		self.current_hp -= damage_received
 
 		#possibly change later to include the name of the attacker
@@ -448,45 +431,46 @@ class com_Creature:
 				if attacker == PLAYER:
 					PLAYER.creature.current_xp += self.xp_on_death
 
-		#else:
-			#print (self.name_instance + "'s health is " + str(self.hp) + "/" + str(self.maxhp))
 	def move(self, dx, dy):
-		
-		tile_is_wall = (GAME.current_map[self.owner.x + dx][self.owner.y + dy].block_path == True)
 		new_x = self.owner.x
 		new_y = self.owner.y
 
-		target = map_check_for_creatures(self.owner.x + dx, self.owner.y + dy, self.owner)
+		next_x = self.owner.x + dx
+		next_y = self.owner.y + dy
 
-		if target:
-			print("Attacker has a target.")
-			#prompt to check for hostility
-			if self.owner.allegiance_com and target.allegiance_com:
-				print("Attacker and target have allegiance components.")
-				#check if attacker's category equals the target's category - do not attack
-				if self.owner.allegiance_com.category == target.allegiance_com.category:
-					print("Attacker and target have the same category. No attacking.")
-					return
+		#check if creature is trying to move off the map
+		if next_x >= 0 and next_x <= (GAME.current_map_x - 1):
+			if next_y >= 0 and next_y < (GAME.current_map_y - 1):
+				tile_is_wall = (GAME.current_map[self.owner.x + dx][self.owner.y + dy].block_path == True)
+				target = map_check_for_creatures(self.owner.x + dx, self.owner.y + dy, self.owner)
 
-				print("target allegiance category = " + str(target.allegiance_com.category))
-				print("self hostile list = " + str(self.owner.allegiance_com.hostile_list))
+				if target:
+					print("Attacker has a target.")
+					#prompt to check for hostility
+					if self.owner.allegiance_com and target.allegiance_com:
+						print("Attacker and target have allegiance components.")
+						#check if attacker's category equals the target's category - do not attack
+						if str(self.owner.allegiance_com.category) == str(target.allegiance_com.category):
+							print("Attacker and target have the same category. No attacking.")
+							#return
 
-				if str(target.allegiance_com.category) in self.owner.allegiance_com.hostile_list:
-					#check if target's category is in the list of hostile categories, if so, attack
-					self.attack(target)
-				else: 
-					print("Target is not hostile, not attacking.")
-					#putting this funciton here ttemporarily instead of returning because frankly
-					#thing thing is being stupid and, ya know, not working lulz
-					self.attack(target)
-			else:
-				print("One or both actors does not have an allegiance component.")
+						print("target allegiance category = " + str(target.allegiance_com.category))
+						print("self hostile list = " + str(self.owner.allegiance_com.hostile_list))
 
-		if not tile_is_wall and target is None:
-			new_x += dx
-			new_y += dy
-			if new_x >= 0 and new_x <= (constants.MAP_WIDTH - 1):
-				if new_y >= 0 and new_y <= constants.MAP_HEIGHT:
+						#check if target's category is in the list of hostile categories, if so, attack
+						for i in self.owner.allegiance_com.hostile_list:
+							if str(target.allegiance_com.category) == self.owner.allegiance_com.hostile_list:
+								self.attack(target)
+						else: 
+							print("Target is not hostile, not attacking.")
+							#a hacky hotfix for the bug above
+							#the list search isn't working, because of course it isn't
+							if self.owner == PLAYER:
+								self.attack(target)
+					else:
+						print("One or both actors does not have an allegiance component.")
+
+				if not tile_is_wall and target is None:
 					self.owner.x += dx
 					self.owner.y += dy
 	
@@ -587,8 +571,6 @@ class com_Container:
 		if inventory: self.inventory = inventory
 		else: self.inventory = []
 		
-		#names of everything in inventory
-		#get volume within container
 	@property 
 	def volume(self):
 		return 0.0
@@ -599,14 +581,12 @@ class com_Container:
 									if obj.equipment and obj.equipment.equipped ]
 		return list_of_equipped_items
 
-		#get weight of everything
 
 class com_Item:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", category = "misc", 
 		use_function = None, value = None, slot = None):
 		self.weight = weight
 		self.volume = volume
-	
 		self.name = name
 		self.value = value
 		self.use_function = use_function
@@ -614,53 +594,35 @@ class com_Item:
 		#pick up this item
 	def pick_up(self, actor):
 		if actor.container:
-			if (actor.container.volume + self.volume) > actor.container.max_volume:
-				game_message("Not enough volume to pick up " + self.name + ".")
-				print("Can't pick up.")
 
-			else:
-				print("Picked up.")
-			
-				if self.owner.equipment:
-					game_message("Picked up " + self.owner.equipment.name + ".")
-					print(" Printed self.owner.equipment.name ")
-				elif self.name:
-					game_message("Picked up " + self.owner.item.name + ".")
-					print(" Printed self.owner.item.name ")
+			if self.owner.equipment: item_name = self.owner.equipment.name
+			elif self.name: item_name = self.owner.item.name
+			elif self.name_object: item_name = self.name_object
+			game_message(actor.creature.name + " picked up " + item_name + ".")
 
-					print("Option 1")
-				elif self.name_object:
-					game_message("Picked up " + self.name_object + ".")
-					print("Option 2")
-
-
-				print("item picked up is " + self.name)
-				actor.container.inventory.append(self.owner)
-				GAME.current_objects.remove(self.owner)
-				#self.container = actor.container
-				self.current_container = actor.container
-				#game_messge(self.name + " dropped.")
+			actor.container.inventory.append(self.owner)
+			GAME.current_objects.remove(self.owner)
+				
+			self.current_container = actor.container
+		
 	def drop(self, new_x, new_y):
 		GAME.current_objects.append(self.owner)
 		self.current_container.inventory.remove(self.owner)
-
+		#place object at the coords at which it was dropped
 		self.owner.x = new_x
 		self.owner.y = new_y
 
-		#game_message(self.name + " dropped.")
-		if self.owner.equipment:
-			game_message("Dropped " + self.owner.equipment.name + ".")
-			print(" Printed self.owner.equipment.name ")
-		elif self.name:
-			game_message("Dropped " + self.owner.item.name + ".")
-			print(" Printed self.owner.item.name ")
+		if self.owner.equipment: item_name = self.owner.equipment.name
+		elif self.name: item_name = self.owner.item.name
+		elif self.name_object: item_name = self.name_object
+		game_message(self.current_container.owner.creature.name + " drops " + item_name + ".")
 
 	def use(self):
 		if self.owner.equipment:
 			self.owner.equipment.toggle_equip()
 			return
 		else: 
-			print("Equipment's not working. Typical.")
+			print("This item cannot be equipped.")
 		
 		if self.use_function:
 			result = self.use_function(self.current_container.owner, self.value)
@@ -683,7 +645,6 @@ class com_Equipment:
 		self.resist_fire_bonus = resist_fire_bonus
 
 		self.name = name
-
 		self.slot = slot
 		self.equipped = False
 
@@ -708,13 +669,14 @@ class com_Equipment:
 	def unequip(self):
 		self.equipped = False
 
+#LEGACY - remove later
 class com_Stairs:
 	def __init__(self, downwards = True):
 		self.downwards = downwards
 		static = True
-	#include parameter for pre-selected nextmap/previous map for premade areas
-	#include parameter for prompting the player before moving
-	#something about doors?
+	
+	#include parameter for prompting the player before moving?
+	
 
 	def use(self):
 		print("Stairs.use called")
@@ -726,7 +688,8 @@ class com_Stairs:
 			GAME.transition_previous()
 			game_message("You ascend the staircase.")
 
-class com_Exit_Portal:			#temporary - likely will not be used later
+#LEGACY - remove later
+class com_Exit_Portal:			
 	def __init__(self):
 		self.open_icon = settings.portal_icon
 		self.closed_icon = settings.door_closed_icon
@@ -736,7 +699,6 @@ class com_Exit_Portal:			#temporary - likely will not be used later
 		#flag initialization
 
 		found_mcguffin = False
-
 		#check conditions
 		portal_open = self.owner.state == "OPEN"
 		for obj in PLAYER.container.inventory:
@@ -867,7 +829,7 @@ class com_Door:
 	print("Placeholder")
 
 class com_Allegiance:
-	def __init__(self, category = "undefined", protect_list = "", hostile_list = "", docile = True):
+	def __init__(self, category = "undefined", protect_list = "", hostile_list = {""}, docile = True):
 		#list of targets whose attackers the npc will attack
 		self.category = category,
 		self.protect_list = protect_list,
@@ -980,7 +942,7 @@ class ai_Dragon:
 			#if target is alive, attack
 			elif PLAYER.creature.current_hp > 0:
 				#cast fireball
-				if monster.distance_to(PLAYER) >= 3:
+				if monster.distance_to(PLAYER) > 3:
 					cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
 					#(PLAYER.x, PLAYER.y)
 
@@ -1063,8 +1025,7 @@ def map_random_walk():
 	print("Placeholder. (map gen)")
 
 def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, total_rooms = constants.MAP_MAX_NUM_ROOMS):
-	#dungeon_x = constants.MAP_WIDTH
-	#dungeon_y = constants.MAP_HEIGHT
+
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, dungeon_x)]  
 									for x in range (0, dungeon_y)]
@@ -1175,24 +1136,29 @@ def map_create_town():
 	print("map creation finished")
 	return (new_map, list_of_buildings)
 
-def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_HEIGHT,house_y = constants.HOUSE_INTERIOR_MIN_WIDTH):
+def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH,house_y = constants.HOUSE_INTERIOR_MIN_HEIGHT):
 	#initialize empty map, flooded with empty tiles
-	#house_x
 
 	new_map = [[struc_Tile(False) for y in range(0, house_y)]  
 									for x in range (0, house_x)]
+	#top/bottom
+	for i in range(0, house_x):
+		new_map[i][1].block_path = True
+		new_map[i][house_y - 1].block_path = True
+	#left/right
+	for i in range(0, house_y - 1):
+		new_map[0][i].block_path = True
+		new_map[house_x -1][i].block_path = True
+
 	#putting this here so the flippin interpreter doesn't whine at me about stuff idk man
 	list_of_buildings = []
+
+	map_place_door_on_walls(x = house_x, y = house_y, map_in = new_map)
 
 	#create FOV map		
 	map_make_fov(new_map, fov_x = house_x, fov_y = house_x)
 	print("map creation finished")
-	return (new_map, list_of_buildings, house_x, house_y)
-
-#HOUSE_INTERIOR_MAX_HEIGHT = 40
-#HOUSE_INTERIOR_MIN_HEIGHT = 20
-#HOUSE_INTERIOR_MAX_WIDTH = 50
-#HOUSE_INTERIOR_MIN_WIDTH = 35
+	return (new_map, list_of_buildings)
 
 def map_place_objects(room_list, is_first_map = None):
 	for room in room_list:
@@ -1208,12 +1174,9 @@ def map_place_objects(room_list, is_first_map = None):
 				gen_exit_point_stairs(room.center, downwards = False)	#create stairs back up to last map
 			else:
 				gen_weapon_sword(room.center)
-			#create exitpoint 
-		#if second_room:
-			#gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
-
+	
 		if last_room:
-			gen_exit_point_stairs(room.center, downwards = True) #, next_map_key = GAME.new_key)
+			gen_exit_point_stairs(room.center, downwards = True)
 			
 		#generated items and enemies
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
@@ -1247,8 +1210,6 @@ def map_place_objects_town(building_list, is_first_map = False):
 			print("Player's kit spawned after " + str(i) + " tries.")
 			break
 			
-
-
 	gen_exit_point_door((5, 4), target_type = "dungeon")
 	gen_exit_point_door((8, 10), target_type = "dungeon")
 	
@@ -1278,6 +1239,26 @@ def map_place_objects_town(building_list, is_first_map = False):
 
 			successful_tree_spawns += 1
 	print(str(successful_tree_spawns) + " trees successfully spawned.")
+	
+#place a door on the walls of a building interior
+def map_place_door_on_walls(x = 0, y = 0, map_in = None):
+	side = helper_dice(4, 0)
+	if side == 1: #top?
+		door_x_pos = round((0 + x) /2)
+		door_y_pos = 1
+	if side == 2: #bottom?
+		door_x_pos = round((0 + x) / 2)
+		door_y_pos = y -1 
+	if side == 3: #left?
+		door_y_pos = round((0 + y) /2)
+		door_x_pos = 1
+	if side == 4: #right?
+		door_y_pos = round((0 + y) / 2)
+		door_x_pos = x -1 
+
+	map_in[door_x_pos][door_y_pos].block_path = False
+	gen_exit_point_door(coords = (door_x_pos, door_y_pos), target_key = GAME.current_key)
+	PLAYER.x, PLAYER.y = (door_x_pos, door_y_pos)
 	
 
 def map_create_overworld():
@@ -1362,16 +1343,13 @@ def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MA
 	global FOV_MAP
 	FOV_MAP = libtcod.map.Map(fov_x, fov_y)
 
-	for y in range(fov_y):
-		for x in range(fov_x):
+	for y in range(int(fov_y)):
+		for x in range(int(fov_x)):
 			libtcod.map_set_properties(FOV_MAP, x, y, 
-				not incoming_map[x][y].block_path, not incoming_map[x][y].block_path)
+				not incoming_map[int(x)][int(y)].block_path, not incoming_map[int(x)][int(y)].block_path)
 
 def map_calculate_fov():
 	global FOV_CALCULATE, PLAYER
-	#global FOV_MAP
-	#map_make_fov(incoming_map)
-
 	if FOV_CALCULATE:
 		FOV_CALCULATE = False
 		libtcod.map_compute_fov(FOV_MAP, 
@@ -1519,7 +1497,6 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
     	text_rect.center = coords
 
     # draw the text onto the display surface.
-
     display_surface.blit(text_surf, text_rect)
    
 def draw_debug():
@@ -1656,8 +1633,12 @@ def draw_map(map_to_draw):
 	#crudely clamp values
 	if render_w_min < 0: render_w_min = 0
 	if render_h_min < 0: render_h_min = 0
-	if render_w_max > GAME.current_map_x: render_w_max = GAME.current_map_x
-	if render_h_max > GAME.current_map_y: render_h_max = GAME.current_map_y
+
+	x, y = helper_2d_list_dimensions(GAME.current_map)
+	
+	#previously used GAME.current_map_x and y instead of x/y
+	if render_w_max > x: render_w_max = x
+	if render_h_max > y: render_h_max = y
 
 	#loop through every tile that is visible to the camera
 	for x in range(render_w_min, render_w_max):
@@ -1752,7 +1733,7 @@ def cast_lightning(caster, T_damage_maxrange):
 
 				#if target.creature.name_instance:
 				#	game_message(target.creature.name_instance + " takes " + str(damage) + " damage.")
-		return "no-action"
+		#return "no-action"
 	
 def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
@@ -1768,7 +1749,7 @@ def cast_fireball(caster, T_damage_radius_range):
 		point_selected = PLAYER.x, PLAYER.y
 
 	if point_selected:
-		game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Conflagration.")
+		game_message(caster.creature.name_instance + " casts Conflagration.")#" casts Alenko-Kharyalov Conflagration.")
 		#get sequence of tiles
 		tiles_to_damage = map_find_radius(point_selected, local_radius)
 		creature_hit = False
@@ -1966,6 +1947,10 @@ def helper_gen_random_key(length):
 #this helper function attempts to place an actor at a tile, randomly finding a new place until it succeeds
 def helper_try_place():
 	print("Placeholder")
+
+#gets the dimensions of an array, particularly maps
+def helper_2d_list_dimensions(array):
+  return [len(array)]+helper_2d_list_dimensions(array[0]) if(type(array) == list) else []
 
 
 def ynq_prompt(): #prompt the player to select Yes, No or Quit
@@ -2484,11 +2469,11 @@ def gen_player(coords):
 								death_function = death_player
 								)
 	allegiance_com = com_Allegiance(category = "player", 
-					hostile_list = {"eldritch", "wild", "draconic", "townfolk"},
+					hostile_list = {"eldritch", "wild", "draconic"},
 					docile = False
 					)
 
-	PLAYER = obj_Actor(x, y, "python",  
+	PLAYER = obj_Actor(x, y, "Player",  
 						creature = creature_com,
 						container = container_com,
 						icon = " @ ", icon_color = constants.COLOR_WHITE,
@@ -2538,11 +2523,6 @@ def gen_creature(coords):
 	else:									new_enemy = gen_rabbit(coords)
 	
 	GAME.current_objects.insert(0, new_enemy)
-
-
-#data needed to generate a creature (for cleanup purposes)
-#coords (to place at)
-
 
 def gen_nightcrawler_lesser(coords):
 	x, y = coords
@@ -2664,18 +2644,19 @@ def gen_exit_point_stairs(coords, downwards):
 def gen_exit_point_door(coords, 
 	locked_by_default = False, closed_by_default = True, is_closed = True, is_locked = False, material = "wooden", 
 	target_type = "house",
+	target_key = "",
 	additional_message = "You are curious as to what may lie behind."):
 
 	x, y = coords
 	static = True
-	exit_point_com = com_Exit_Point(require_input = True, target_map_type = target_type)
+	exit_point_com = com_Exit_Point(require_input = True, target_map_type = target_type, next_map_key = target_key)
 	door_com = com_Door(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
 	
 	if closed_by_default:
-		ep_door = obj_Actor(x, y, ("A closed " + material +" door. ", additional_message), 
+		ep_door = obj_Actor(x, y, ("A closed " + material + " door. ", additional_message), 
 							exit_point = exit_point_com, doorcom = door_com, icon = settings.door_closed_icon)
 
-	
+	#obj.exit_point.next_map_key = GAME.current_key
 	else:
 		ep_door = obj_Actor(x, y, ("An open " + material +" door. " + additional_message),
 							exit_point = exit_point_com, door = door_com, icon = settings.door_open_icon)
@@ -2827,42 +2808,42 @@ def game_direction_prompt(event_in, not_in_menu = True):
 
 		if event_in.key == pygame.K_KP1:
 			target_coords = (-1, 1)
-			print("KP1")
+			#print("KP1")
 			
 		elif event_in.key == pygame.K_KP2:# or pygame.K_DOWN:
 			target_coords = (0, 1)
-			print("KP2/KD")
+			#print("KP2/KD")
 			
 		elif event_in.key == pygame.K_KP3:
 			target_coords = (1, 1)
-			print("KP3")
+			#print("KP3")
 			
 		elif event_in.key == pygame.K_KP4: # or pygame.K_LEFT:
 			target_coords = (-1, 0)
-			print("KP4/KL")
+			#print("KP4/KL")
 			
 		elif event_in.key == pygame.K_KP5: #this one does literally nothing, just kinda chillin' here till I feel like using it
 			target_coords = (0, 0)
-			print("KP5")
+			#print("KP5")
 			
 		elif event_in.key == pygame.K_KP6: # or pygame.K_RIGHT:
 			target_coords = (1, 0)
-			print("KP6/KR")
+			#print("KP6/KR")
 			
 		elif event_in.key == pygame.K_KP7:
 			target_coords = (-1, -1)
-			print("KP7")
+			#print("KP7")
 
 		elif event_in.key == pygame.K_KP8: # or pygame.K_UP:
 			target_coords = (0, -1)
-			print("KP8/KU")
+			#print("KP8/KU")
 			
 		elif event_in.key == pygame.K_KP9:
 			target_coords = (1, -1)
-			print("KP9")
+			#print("KP9")
 		else:
 			target_coords = (0, 0)
-			print("No directional input.")
+			#print("No directional input.")
 
 		not_in_menu = False
 		return target_coords
