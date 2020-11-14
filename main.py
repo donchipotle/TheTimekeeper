@@ -1707,8 +1707,7 @@ def cast_heal(caster, value):
 
 def cast_lightning(caster, T_damage_maxrange):
 	damage, m_range = T_damage_maxrange
-	#damage = helper_dice(5, 6)
-	#m_range = 6
+
 	player_location = (PLAYER.x, PLAYER.y)
 
 	# prompt player for a tile
@@ -1731,9 +1730,7 @@ def cast_lightning(caster, T_damage_maxrange):
 
 				game_message("You smell ozone.")
 
-				#if target.creature.name_instance:
-				#	game_message(target.creature.name_instance + " takes " + str(damage) + " damage.")
-		#return "no-action"
+		
 	
 def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
@@ -1772,7 +1769,7 @@ def cast_fireball(caster, T_damage_radius_range):
 def cast_confusion(caster, effect_duration):
 	#select tile
 	point_selected = menu_tile_select(max_range = 12)
-				#radius = local_radius)
+				
 
 	#get target from that tile
 	if point_selected:
@@ -1799,6 +1796,7 @@ class ui_Button:
 					color_box_default = constants.COLOR_L_GRAY,
 					color_text_hovered = constants.COLOR_BLACK,
 					color_text_default = constants.COLOR_BLACK):
+
 		self.surface = surface
 		self.button_text = button_text
 		self.size = size
@@ -1909,9 +1907,13 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 
 				elif user_text != pygame.K_RETURN:
 					user_text += event.unicode
+
+
+
+
 		#rect that displays the question the player is posed
-		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, question_rect,
-						constants.PROMPT_BORDER_THICKNESS)
+		#pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, question_rect,
+		#				constants.PROMPT_BORDER_THICKNESS)
 
 		question_surface = constants.FONT_MESSAGE_TEXT.render(message,
 						constants.TEXT_AA, constants.COLOR_WHITE)
@@ -1919,12 +1921,20 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 		question_rect.w = max(constants.PROMPT_DEFAULT_WIDTH, question_surface.get_width() + constants.PROMPT_OFFSET_X)
 
 
+	
+
+		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
+					constants.TEXT_AA, constants.COLOR_WHITE)
+
+		#new location
+		#dynamic scaling of textbox
+		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
+							text_surface.get_width() + constants.PROMPT_OFFSET_X)
+
 		#rect that displays the player's input
 		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
 						constants.PROMPT_BORDER_THICKNESS)
 
-		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
-					constants.TEXT_AA, constants.COLOR_WHITE)
 
 		#display menu
 		SURFACE_MAIN.blit(text_surface, 
@@ -1932,9 +1942,8 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 			input_rect.y + constants.PROMPT_OFFSET_Y)
 			)
 
-		#dynamic scaling of textbox
-		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
-							text_surface.get_width() + constants.PROMPT_OFFSET_X)
+		#previous location of input box
+
 
 		pygame.display.flip()
 		CLOCK.tick(constants.GAME_FPS)
