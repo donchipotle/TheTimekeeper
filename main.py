@@ -196,7 +196,7 @@ class obj_Game:
 		#TODO - list of AI-possessing actors to iterate over rather than every actor in the map
 		self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
 
-		self.existing_maps =  {}      #dictionary used for new map loading system, maybe use tree later
+		self.existing_maps =  {}      #dictionary used for new map loading system, replace with tree later
 		self.this_map_key = ""
 		self.new_key = ""
 		self.next_map_type = "dungeon"
@@ -248,13 +248,23 @@ class obj_Game:
 					self.current_objects = [PLAYER] 
 					if self.next_map_type == "dungeon": 
 						self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
-						map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	#player is no longer on the first map
+						map_place_objects(self.current_rooms, is_first_map = GAME.first_map)	
 
 					if self.next_map_type == "house": 
 						self.current_map, self.current_rooms = map_create_house_interior()
-						self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+						#self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
 
+					if self.next_map_type == "cave":
+						self.current_map, self.next_map_x, self.next_map_y = map_random_walk()
+						#map_place_objects_dungeon()
+
+						#self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+						map_tryplace_player(map_x_in = self.next_map_x, map_y_in = self.next_map_y)
+						gen_exit_point_stairs((PLAYER.x, PLAYER.y), downwards = False)
+						
 					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+					
+
 		
 					#set the first exit point in the new map (where the player is located) to point back to the old one
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
@@ -1021,8 +1031,55 @@ def death_player(player):
 
 ###############################################################################################################
 #map functions
-def map_random_walk():
-	print("Placeholder. (map gen)")
+def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, walk_nodes = 6, steps_per_node = 1000):
+	#initialize empty map, flooded with unwalkable tiles
+	new_map = [[struc_Tile(True) for y in range(1, dungeon_x)]  
+									for x in range (1, dungeon_y)]
+
+	x_l_bound = int(dungeon_x * .35)
+	x_u_bound = int(dungeon_x * .55)
+	y_l_bound = int(dungeon_y * .45)
+	y_u_bound = int(dungeon_y * .55)
+
+	first_node = True
+
+	#random walk that propagates out from assigned nodes
+	for n in range(walk_nodes):
+
+		#if first_node:
+		#point_x = int(dungeon_x/2)
+		#point_y = int(dungeon_y/2)
+		#	first_node = False
+			#print("First node.")
+	#	else:
+		point_x = random.randint(x_l_bound, x_u_bound)
+		point_y = random.randint(y_l_bound, y_u_bound)
+		print("Node #" + str(n))
+
+		for i in range(steps_per_node):
+			r = helper_dice(4, -1)
+
+			if r == 0: 
+				point_x += 1
+			if r == 1: 
+				point_x -= 1
+			if r == 2: 
+				point_y += 1
+			if r == 3: 
+				point_y -= 1
+
+			#print("drawing tile at " + str(point_x) + "," + str(point_y))
+			if point_x > 2 and point_x < (dungeon_x -2):
+				if point_y > 2 and point_y < (dungeon_y - 2):
+					new_map[point_x][point_y].block_path = False
+		print("Random walk from node " + str(n) + " completed.")
+
+	map_make_fov(new_map, fov_x = dungeon_x -1, fov_y = dungeon_y -1)
+
+	map_tryplace_stairs(map_x_in = dungeon_x -1, map_y_in = dungeon_y -1)
+	print("map creation finished")
+	return (new_map, dungeon_x, dungeon_y)
+
 
 def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, total_rooms = constants.MAP_MAX_NUM_ROOMS):
 
@@ -1129,14 +1186,16 @@ def map_create_town():
 				##dig tunnels
 				#map_create_tunnels(current_center, previous_center, new_map)
 
-			list_of_buildings.append(new_building)	
+			list_of_buildings.append(new_building)
+
+
 
 	#create FOV map		
 	map_make_fov(new_map)
 	print("map creation finished")
 	return (new_map, list_of_buildings)
 
-def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH,house_y = constants.HOUSE_INTERIOR_MIN_HEIGHT):
+def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH, house_y = constants.HOUSE_INTERIOR_MIN_HEIGHT):
 	#initialize empty map, flooded with empty tiles
 
 	new_map = [[struc_Tile(False) for y in range(0, house_y)]  
@@ -1159,6 +1218,31 @@ def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH,house
 	map_make_fov(new_map, fov_x = house_x, fov_y = house_x)
 	print("map creation finished")
 	return (new_map, list_of_buildings)
+
+def map_tryplace_player(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
+	for i in range(1, 2000):
+		
+		x = random.randint(1, map_x_in - 2)
+		y = random.randint(1, map_y_in - 2)
+		print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
+
+		if GAME.current_map[x][y].block_path == False:
+			PLAYER.x = x
+			PLAYER.y = y		
+			break	
+
+def map_tryplace_stairs(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT, in_key = None): #add key or something later idk tho
+	#I don't even know what is real anymore
+
+	for i in range (0, 1000):
+		x = random.randint(1, map_x_in - 2)
+		y = random.randint(1, map_y_in - 2)
+		#check if there is already an exit point at the given location
+		#map_objects_at_coords
+		if GAME.current_map[x][y].block_path == False: 
+			gen_exit_point_stairs((x, y), downwards = True)
+			print("Stairs successfully placed after " + str(i) + " tries.")
+			break
 
 def map_place_objects(room_list, is_first_map = None):
 	for room in room_list:
@@ -1190,13 +1274,7 @@ def map_place_objects(room_list, is_first_map = None):
 def map_place_objects_town(building_list, is_first_map = False):
 	PLAYER.x, PLAYER.y = (3, 3)
 
-	for i in range (0, 100):
-		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
-		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
-		if GAME.current_map[x][y].block_path == False:
-			PLAYER.x, PLAYER.y = (x, y)
-			print("Player successfully placed after " + str(i) + " tries.")
-			break
+	map_tryplace_player()
 
 	for i in range (0, 10):
 		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
@@ -1210,11 +1288,10 @@ def map_place_objects_town(building_list, is_first_map = False):
 			print("Player's kit spawned after " + str(i) + " tries.")
 			break
 			
-	gen_exit_point_door((5, 4), target_type = "dungeon")
-	gen_exit_point_door((8, 10), target_type = "dungeon")
-	
-	x = 0
-	y = 0
+	#gen_exit_point_door((5, 4), target_type = "dungeon")
+	gen_exit_point_door((5, 4))
+	gen_exit_point_door((8, 10))
+
 
 	i = 0
 	successful_townsfolk_spawns = 0
@@ -1239,6 +1316,10 @@ def map_place_objects_town(building_list, is_first_map = False):
 
 			successful_tree_spawns += 1
 	print(str(successful_tree_spawns) + " trees successfully spawned.")
+
+def map_place_objects_dungeon():
+	#map_tryplace_stairs()
+	print("Placeholder to place stuff in the dungeon.")
 	
 #place a door on the walls of a building interior
 def map_place_door_on_walls(x = 0, y = 0, map_in = None):
@@ -1259,7 +1340,6 @@ def map_place_door_on_walls(x = 0, y = 0, map_in = None):
 	map_in[door_x_pos][door_y_pos].block_path = False
 	gen_exit_point_door(coords = (door_x_pos, door_y_pos), target_key = GAME.current_key)
 	PLAYER.x, PLAYER.y = (door_x_pos, door_y_pos)
-	
 
 def map_create_overworld():
 	print("Placeholder")
@@ -1276,38 +1356,6 @@ def map_create_building(new_map, new_building, has_door = True):
 
 	if has_door:
 		gen_building_door(new_map, new_building)
-		
-		
-def gen_building_door(new_map, new_building):
-	side = helper_dice(4, 0)
-	if side == 1: #top?
-		door_x_pos = round((new_building.x1 + new_building.x2) / 2)
-		door_y_pos = new_building.y1
-
-		new_map[door_x_pos][door_y_pos].block_path = False
-		gen_exit_point_door((door_x_pos, door_y_pos))
-
-	if side == 2: #bottom
-		door_x_pos = round((new_building.x1 + new_building.x2) / 2)
-		door_y_pos = new_building.y2 - 1
-
-		new_map[door_x_pos][door_y_pos].block_path = False
-		gen_exit_point_door((door_x_pos, door_y_pos))
-
-	if side == 3: #left
-		door_y_pos = round((new_building.y1 + new_building.y2) / 2)
-		door_x_pos = new_building.x1  
-
-		new_map[door_x_pos][door_y_pos].block_path = False
-		gen_exit_point_door((door_x_pos, door_y_pos))
-
-	if side == 4: #right
-		door_y_pos = round((new_building.y1 + new_building.y2) / 2)
-		door_x_pos = new_building.x2 - 1 
-
-		new_map[door_x_pos][door_y_pos].block_path = False
-		gen_exit_point_door((door_x_pos, door_y_pos))
-
 
 def map_create_tunnels(coords1, coords2, new_map):
 	#coin_flip = (libtcod.random_get_int(0, 0, 1) == 1)
@@ -1870,7 +1918,7 @@ def helper_text_width(font):
 	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
 	return font_rect.width
 
-def helper_dice(upper_bound, bias):
+def helper_dice(upper_bound = 6, bias = 0):
 	dice_roll = random.randint(1, upper_bound) + bias #simulates a dice roll from 1 to n, with a +/- bias.
 	return dice_roll
 
@@ -1908,25 +1956,15 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 				elif user_text != pygame.K_RETURN:
 					user_text += event.unicode
 
-
-
-
-		#rect that displays the question the player is posed
-		#pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, question_rect,
-		#				constants.PROMPT_BORDER_THICKNESS)
-
 		question_surface = constants.FONT_MESSAGE_TEXT.render(message,
 						constants.TEXT_AA, constants.COLOR_WHITE)
 
 		question_rect.w = max(constants.PROMPT_DEFAULT_WIDTH, question_surface.get_width() + constants.PROMPT_OFFSET_X)
-
-
 	
 
 		text_surface = constants.FONT_MESSAGE_TEXT.render(user_text, 
 					constants.TEXT_AA, constants.COLOR_WHITE)
 
-		#new location
 		#dynamic scaling of textbox
 		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
 							text_surface.get_width() + constants.PROMPT_OFFSET_X)
@@ -1935,15 +1973,11 @@ def helper_text_prompt(background_fill = True, message = "", player_can_exit = T
 		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
 						constants.PROMPT_BORDER_THICKNESS)
 
-
 		#display menu
 		SURFACE_MAIN.blit(text_surface, 
 			(input_rect.x + constants.PROMPT_OFFSET_X,
 			input_rect.y + constants.PROMPT_OFFSET_Y)
 			)
-
-		#previous location of input box
-
 
 		pygame.display.flip()
 		CLOCK.tick(constants.GAME_FPS)
@@ -2102,7 +2136,7 @@ def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
 	for obj in list_of_objects:
 		if obj.doorcom:
 			obj.doorcom.interact()
-			#game_message("You attempt to open the door.")
+			
 			print("obj.door.interact() called")
 		else:
 			game_message("There is nothing to open there.")
@@ -2114,7 +2148,7 @@ def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
 def menu_inventory():
 	menu_close = False
 	#clean up using tuples
-	#(window.x, window.y) =  constants.CAM_WIDTH, constants.CAM_HEIGHT
+
 	window_width = constants.CAM_WIDTH
 	window_height = constants.CAM_HEIGHT
 
@@ -2127,7 +2161,6 @@ def menu_inventory():
 	menu_text_font = constants.FONT_MESSAGE_TEXT
 	menu_text_height = helper_text_height(menu_text_font)
 
-	#local_inventory_surface = pygame.Surface((menu_width, menu_height))
 	local_inventory_surface = pygame.Surface((menu_width, menu_height))
 	
 	while not menu_close:
@@ -2172,15 +2205,10 @@ def menu_inventory():
 					COLOR_GRAY = (100, 100, 100)
 
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				#print(event.button) #gets the id of button clicked, returns int
-				#if (event.button == 1 or 2 or 3):
 				if (event.button == 1):
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
-						#PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
 						PLAYER.container.inventory[mouse_line_selection].item.use()
-						
-						#if settings.CLOSE_AFTER_USE == True: menu_close
 
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
 				if len(PLAYER.container.inventory) > 0:
@@ -2218,7 +2246,6 @@ def menu_inventory():
 								(1000, 1000),
 								(100, 100)
 								)
-
 
 		#render game 
 		draw_game()
@@ -2362,6 +2389,7 @@ def gen_scroll_confusion(coords):
 
 	return return_object
 
+#under construction
 def distribute_item(coords):
 	x, y = coords
 
@@ -2444,13 +2472,6 @@ def gen_armor_gloves(coords):
 					 equipment = equipment_com)
 	return return_object
 
-def gen_consumable_potion(coords):
-	x, y = coords
-	item_com = com_Item(value = 5)
-	return_object = obj_Actor(x, y, "Bottle of Beer",
-					icon = settings.potion_icon, icon_color = constants.COLOR_BROWN,
-					item = item_com )
-
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
 
@@ -2460,7 +2481,7 @@ def gen_tree(coords, fruit = "None"):
 	ai_com = ai_Static()
 
 
-							#name of item when picked up
+	#name of item when picked up
 	tree = obj_Actor(x, y, "an oak tree",
 		ai = ai_com, item = item_com,
 		icon = settings.tree_icon, icon_color = constants.COLOR_GREEN)
@@ -2565,14 +2586,14 @@ def gen_nightcrawler_greater(coords):
 								resist_phys_base = (helper_dice(4, 4)),
 								xp_on_death = 12
 	) 
-	#the crab's creature name
+	
 	ai_com = ai_Chase()
 
 	allegiance_com = com_Allegiance(category = "eldritch",
 								hostile_list = {"player", "townfolk", "wild" },
 								docile = False)
 
-							#name of item when picked up
+	#name of item when picked up
 	ENEMY = obj_Actor(x, y, "Greater Nightcrawler", 
 		creature = creature_com, ai = ai_com, item = item_com, icon = settings.eldritch_icon, 
 		icon_color = constants.COLOR_GRAY,
@@ -2594,9 +2615,8 @@ def gen_dragon(coords):
 								hostile_list = {"player", "townfolk", "eldritch", "wild" },
 								docile = False)
 
-
 	ai_com =	ai_Dragon()
-							#name of item when picked up
+	#name of item when picked up
 	ENEMY = obj_Actor(x, y, "Golden Dragon", 
 		creature = creature_com, ai = ai_com, item = item_com, icon = settings.draconic_icon, 
 		icon_color = constants.COLOR_YINZER,
@@ -2639,10 +2659,20 @@ def gen_stairs(coords, downwards):
 
 	GAME.current_objects.append(stairs)
 
-def gen_exit_point_stairs(coords, downwards):
+def gen_exit_point_stairs(coords, downwards, target_type = None):
 	x, y = coords
+	
+	#randomly choose a type out of a dungeon or a cave
+	if target_type == None:
+		i = helper_dice(10)
+		if i <= 7: map_type = "cave"
+		elif i <= 10: map_type = "dungeon"
+	else:
+		map_type = target_type
+	
+	exit_point_com = com_Exit_Point(require_input = True, target_map_type = map_type)
 
-	exit_point_com = com_Exit_Point(require_input = True)
+
 	if downwards:
 		ep_stairs = obj_Actor(x, y, "A staircase leading down.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
 	else:
@@ -2652,20 +2682,26 @@ def gen_exit_point_stairs(coords, downwards):
 
 def gen_exit_point_door(coords, 
 	locked_by_default = False, closed_by_default = True, is_closed = True, is_locked = False, material = "wooden", 
-	target_type = "house",
+	target_type = None,
 	target_key = "",
 	additional_message = "You are curious as to what may lie behind."):
-
 	x, y = coords
-	static = True
-	exit_point_com = com_Exit_Point(require_input = True, target_map_type = target_type, next_map_key = target_key)
+
+	#randomly choose a type out of a dungeon or a cave
+	if target_type == None:
+		i = helper_dice(10)
+		if i <= 4: map_type = "cave"
+		elif i <= 10: map_type = "dungeon"
+	else:
+		map_type = target_type
+
+	exit_point_com = com_Exit_Point(require_input = True, target_map_type = map_type, next_map_key = target_key)
 	door_com = com_Door(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
 	
 	if closed_by_default:
 		ep_door = obj_Actor(x, y, ("A closed " + material + " door. ", additional_message), 
 							exit_point = exit_point_com, doorcom = door_com, icon = settings.door_closed_icon)
-
-	#obj.exit_point.next_map_key = GAME.current_key
+	
 	else:
 		ep_door = obj_Actor(x, y, ("An open " + material +" door. " + additional_message),
 							exit_point = exit_point_com, door = door_com, icon = settings.door_open_icon)
@@ -2674,6 +2710,28 @@ def gen_exit_point_door(coords,
 
 def gen_barrier_door(coords, default_locked, default_closed):
 	print("Temporary placeholder.")
+
+def gen_building_door(new_map, new_building):
+	side = helper_dice(4, 0)
+	if side == 1: #top?
+		door_x_pos = round((new_building.x1 + new_building.x2) / 2)
+		door_y_pos = new_building.y1
+
+	if side == 2: #bottom
+		door_x_pos = round((new_building.x1 + new_building.x2) / 2)
+		door_y_pos = new_building.y2 - 1
+
+	if side == 3: #left
+		door_y_pos = round((new_building.y1 + new_building.y2) / 2)
+		door_x_pos = new_building.x1  
+
+
+	if side == 4: #right
+		door_y_pos = round((new_building.y1 + new_building.y2) / 2)
+		door_x_pos = new_building.x2 - 1 
+
+	new_map[door_x_pos][door_y_pos].block_path = False
+	gen_exit_point_door((door_x_pos, door_y_pos), target_type = "house")
 
 ################################################################################################################
 
@@ -2704,27 +2762,17 @@ def game_main_loop():
 			GAME.turns_elapsed += 1
 			print(str(GAME.turns_elapsed) + " turns have elapsed so far")
 
-			#increment player turn counter for speedrun purposes
-
-
 		if (PLAYER.state == "STATUS_DEAD" or PLAYER.state == "STATUS_WIN"):	#either ending condition
 			game_quit = True
 
-		#render the game
+	
 		draw_game()
+	
+		pygame.display.flip()   #update the display
 
-		#update information displays
-
-		#update the display
-		pygame.display.flip()
-
-		#tick the clock
-		CLOCK.tick(constants.GAME_FPS)
+		CLOCK.tick(constants.GAME_FPS)   #tick the clock
 
 #########################################################################################################
-	#input updates 
-		#remember, up/down is inverted and therefore confusing
-		#move to a separate folder for organization's sake
 
 def game_handle_keys():
 	global FOV_CALCULATE
@@ -2740,7 +2788,6 @@ def game_handle_keys():
 			return "QUIT"	
 
 		if event.type == pygame.KEYDOWN:
-
 			move_coords = struc_Direction()
 			move_coords.x, move_coords.y = game_direction_prompt(event_in = event)
 			if (move_coords.x,  move_coords.y) != (0, 0):
@@ -2755,8 +2802,6 @@ def game_handle_keys():
 						if settings.Mod2 == False:
 							return "no-action"
 							
-				#open (and later toggle) inventory menu
-
 			if event.key == pygame.K_p:
 				print("Test key triggered.")
 				return "no-action"
@@ -2869,8 +2914,7 @@ def game_new():
 	PLAYER.creature.name = PLAYER_NAME
 	print ("Player.creature.name is = " + PLAYER.creature.name)
 
-	#GAME.current_map, GAME.current_rooms = map_create()
-	#map_place_objects(GAME.current_rooms)
+	#setup the map the player spawns in
 	GAME.current_map, GAME.current_buildings = map_create_town()
 	map_place_objects_town(GAME.current_buildings)
 
@@ -2909,7 +2953,6 @@ def game_initialize():
 	global SURFACE_MAIN, SURFACE_MAP, FOV_CALCULATE, GAME
 	global CAMERA, PLAYER, ENEMY, PLAYER_NAME
 	global DUNGEON_DEPTH, SURFACE_WINDOW, SURFACE_BOTTOM_PANEL
-
 	global CLOCK
 
 	pygame.init()
@@ -2929,13 +2972,9 @@ def game_initialize():
 
 	SURFACE_BOTTOM_PANEL = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
 
-	#side panel
-	#SURFACE_SIDE = pygame.display.set_mode((constants.MAP_WIDTH * constants.CELL_WIDTH * ( 1.3), 
-	#										constants.MAP_HEIGHT * constants.CELL_HEIGHT))
-
 	CAMERA = obj_Camera()
 
-	#create GAME object to track progress
+	#create GAME object to store game state
 	GAME = obj_Game()
 	CLOCK = pygame.time.Clock()
 

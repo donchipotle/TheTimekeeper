@@ -92,8 +92,8 @@ Mod10 = False
 
 	###debug
 
-ENABLE_DEBUG = True
-DISPLAY_FPS = True
+ENABLE_DEBUG = False
+DISPLAY_FPS = False
 
 DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False
