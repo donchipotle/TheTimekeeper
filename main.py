@@ -1017,6 +1017,7 @@ def death_monster(monster):
 		monster.creature = None
 		monster.ai = None
 		monster.icon = settings.consumable_icon
+		monster.static = True
 		#determine what to leave behind
 	else:
 		#print("Nice try. " + monster.creature.name_instance + " is invulnerable.")
@@ -1525,33 +1526,18 @@ def map_find_radius(coords, radius):
 			tile_list.append((x, y))
 	return tile_list
 
-def map_tile_query():
-	print("Map tile query initialized.")
-	menu_close = False
+def map_tile_query(query_x, query_y, exclude_query_player = False):
+	objects_at_player_tile = map_objects_at_coords(query_x, query_y, exclude_player = exclude_query_player)
 
-	while not menu_close:
-		player_location = (PLAYER.x, PLAYER.y)
+	if len(objects_at_player_tile) == 1:
+		for obj in objects_at_player_tile:
+			if obj.item:
+				game_message("You see here " + obj.item.name)
+			if obj.equipment:
+				game_message("You see here " + obj.equipment.name)
 
-		#get mouse postion
-		mouse_x, mouse_y = pygame.mouse.get_pos()
-
-		#get button clicks
-		events_list = pygame.event.get()
-
-		#mouse map selection
-		map_coord_x = int(mouse_x/constants.CELL_WIDTH)
-		map_coord_y = int(mouse_y/constants.CELL_HEIGHT)
-
-		draw_tile_rect((mouse_x, mouse_y))
-
-		menu_tile_select(penetrate_walls = True)
-	
-		#get map coords on  LMB
-		for event in events_list:
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_q:
-						menu_close = True
-						print("Map tile query terminated.")
+	elif len(objects_at_player_tile) > 1:
+		game_message("You see here multiple objects.")
 
 #drawing functions
 def draw_game():
@@ -2429,32 +2415,16 @@ def gen_scroll_confusion(coords):
 
 	return return_object
 
-#under construction
-def distribute_item(coords):
-	x, y = coords
-
 #
 def gen_item(coords, duration = 0):
 	x, y = coords
 
 	effect_duration = helper_dice(3, 3)
 	item_com = com_Item(use_function = cast_confusion, value = (effect_duration), name = "Scroll of Confusion")#not going to worry about weight or volume yet
-	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, 
+	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, static = True,
 							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
 
 
-#generates a generic item
-def gen_equip_item(coords, phys_outgoing = 0, equip_slot = "", item_name = "", item_icon = "", item_icon_color = constants.COLOR_WHITE):
-	x, y = coords
-
-	equipment_com = com_Equipment(damage_phys_bonus = phys_outgoing, equip_slot = slot, name = item_name) 
-
-	return_object = obj_Actor(x, y, item_name,
-					icon = item_icon, icon_color = item_icon_color,
-					equipment = equipment_com)
-	return return_object
-
-	item = GAME.current_objects.append(tree)
 
 
 def gen_weapon_sword(coords):
@@ -2463,7 +2433,7 @@ def gen_weapon_sword(coords):
 
 	return_object = obj_Actor(x, y, "Longsword",
 					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
-					equipment = equipment_com)
+					equipment = equipment_com, static = True)
 	return return_object
 
 def gen_armor_leather(coords):
@@ -2472,7 +2442,7 @@ def gen_armor_leather(coords):
 
 	return_object = obj_Actor(x, y, "Leather Armor",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com) #, name_object = "TURRRRTTTLLLESSSSSS!!!!")
+					 equipment = equipment_com, static = True)
 	return return_object
 
 def gen_armor_helmet(coords):
@@ -2483,7 +2453,7 @@ def gen_armor_helmet(coords):
 
 	return_object = obj_Actor(x, y, "Temryavite Helm",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com, item = item_com)
+					 equipment = equipment_com, item = item_com, static = True)
 	return return_object
 
 def gen_armor_cloak(coords):
@@ -2494,7 +2464,7 @@ def gen_armor_cloak(coords):
 
 	return_object = obj_Actor(x, y, "Southern Horde Parka",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com, item = item_com)
+					 equipment = equipment_com, item = item_com, static = True)
 	return return_object
 
 def gen_armor_shirt(coords):
@@ -2505,7 +2475,7 @@ def gen_armor_shirt(coords):
 
 	return_object = obj_Actor(x, y, "Guiding Star tunic",
 					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
-					 equipment = equipment_com)
+					 equipment = equipment_com, static = True)
 	return return_object
 
 def gen_armor_boots(coords):
@@ -2514,7 +2484,7 @@ def gen_armor_boots(coords):
 
 	return_object = obj_Actor(x, y, "Combat Boots",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_BROWN,
-					 equipment = equipment_com)
+					 equipment = equipment_com, static = True)
 	return return_object
 
 def gen_armor_chainmail(coords):
@@ -2523,7 +2493,7 @@ def gen_armor_chainmail(coords):
 
 	return_object = obj_Actor(x, y, "Ars Enchantica Chainmail",
 					icon = settings.armor_icon, icon_color = constants.COLOR_L_GRAY,
-					 equipment = equipment_com)
+					 equipment = equipment_com, static = True)
 	return return_object
 
 def gen_armor_gloves(coords):
@@ -2533,7 +2503,7 @@ def gen_armor_gloves(coords):
 
 	return_object = obj_Actor(x, y, "Pax Magisteria gloves",
 					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
-					 equipment = equipment_com)
+					 equipment = equipment_com, static = True)
 	return return_object
 
 	#non-item actors
@@ -2541,16 +2511,14 @@ def gen_armor_gloves(coords):
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
 
-	#item_com = com_Item(value = 3, use_function = cast_heal, name = "an Apple") 
-
-	 
+	#item_com = com_Item(value = 3, use_function = cast_heal, name = "an Apple") 	 
 	ai_com = ai_Static()
 
 
 	#name of item when picked up
 	tree = obj_Actor(x, y, "an oak tree",
 		ai = ai_com, #item = item_com,
-		icon = settings.tree_icon, icon_color = constants.COLOR_GREEN)
+		icon = settings.tree_icon, icon_color = constants.COLOR_GREEN, static = True)
 
 	GAME.current_objects.append(tree)
 
