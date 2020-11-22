@@ -53,6 +53,7 @@ class struc_Direction:
 		self.x = x,
 		self.y = y
 
+
 class obj_Actor:
 	def __init__(self, x, y, 
 		name_object,
@@ -88,6 +89,8 @@ class obj_Actor:
 		self.icon_color = icon_color
 
 		self.static = static
+
+		self.discovered = discovered
 
 		self.creature = creature
 		if creature: 
@@ -135,6 +138,9 @@ class obj_Actor:
 		if self.allegiance_com:
 			self.allegiance_com.owner = self
 
+		
+
+
 	@property
 	def display_name(self):
 		if self.creature:
@@ -149,7 +155,15 @@ class obj_Actor:
 	def draw(self):
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 
-		if is_visible or (self.static and self.discovered):
+		if is_visible:
+			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
+				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
+				text_color = self.icon_color, 
+				center = True)
+			if self.static: 
+				self.discovered = True
+
+		elif self.static and self.discovered:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
@@ -184,6 +198,22 @@ class obj_Actor:
 		delta_y = int(round(delta_y / distance))
 
 		self.creature.move(delta_x, delta_y)
+
+class struc_item:
+	def __init__(self):
+		coords = (0, 0), 
+		phys_outgoing = 0, 
+		equip_slot = "", 
+		item_name = "", 
+		item_icon = "", 
+		item_icon_color = constants.COLOR_WHITE
+
+class struc_actor:
+	def __init__(self):
+		coords = (0, 0),
+		actor_icon = ""
+		actor_icon_color = constants.COLOR_WHITE
+
 
 #massive structure that stores game state data 		
 class obj_Game:
@@ -1076,7 +1106,7 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 
 	map_make_fov(new_map, fov_x = dungeon_x -1, fov_y = dungeon_y -1)
 
-	map_tryplace_stairs(map_x_in = dungeon_x -1, map_y_in = dungeon_y -1)
+	map_tryplace_stairs(map_in = new_map, map_x_in = dungeon_x -1, map_y_in = dungeon_y -1)
 	print("map creation finished")
 	return (new_map, dungeon_x, dungeon_y)
 
@@ -1227,11 +1257,11 @@ def map_tryplace_player(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP
 		print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
 
 		if GAME.current_map[x][y].block_path == False:
-			PLAYER.x = x
-			PLAYER.y = y		
+			PLAYER.x, PLAYER.y = x, y
+			 		
 			break	
 
-def map_tryplace_stairs(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT, in_key = None): #add key or something later idk tho
+def map_tryplace_stairs(map_in, map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT, in_key = None): #add key or something later idk tho
 	#I don't even know what is real anymore
 
 	for i in range (0, 1000):
@@ -1239,7 +1269,7 @@ def map_tryplace_stairs(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP
 		y = random.randint(1, map_y_in - 2)
 		#check if there is already an exit point at the given location
 		#map_objects_at_coords
-		if GAME.current_map[x][y].block_path == False: 
+		if map_in[x][y].block_path == False: 
 			gen_exit_point_stairs((x, y), downwards = True)
 			print("Stairs successfully placed after " + str(i) + " tries.")
 			break
@@ -1714,6 +1744,9 @@ def draw_map(map_to_draw):
 						text_color = constants.COLOR_WHITE, back_color = constants.COLOR_BLACK,
 						center = True)	
 
+					
+
+
 			#tiles that have already been rendered but are no longer visible
 			else:
 				#draw explored but not visible wall tiles
@@ -1732,6 +1765,10 @@ def draw_map(map_to_draw):
 							coords = (((x * constants.CELL_WIDTH) + 16), ((y * constants.CELL_HEIGHT) + 16)), 
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
 							center = True)
+
+
+
+
 
 ###############################################################################################################
 #helper functions
@@ -2338,24 +2375,7 @@ def menu_tile_select(coords_origin = None, max_range = None,
 
 #items
 #use better solution later
-def gen_item(coords):
-	global GAME
 
-	random_num = helper_dice(11, 0)
-	if random_num == 1: new_item = gen_scroll_lightning(coords)
-	elif random_num == 2: new_item = gen_scroll_fireball(coords)
-	elif random_num == 3:  new_item = gen_scroll_confusion(coords)
-	elif random_num == 4:  new_item = gen_weapon_sword(coords)
-	elif random_num == 5:  new_item = gen_armor_leather(coords)
-	elif random_num == 6:  new_item = gen_weapon_sword(coords)
-	elif random_num == 7:  new_item = gen_armor_helmet(coords)
-	elif random_num == 8:  new_item = gen_armor_shirt(coords)
-	elif random_num == 9:  new_item = gen_armor_boots(coords)
-	elif random_num == 10: new_item = gen_armor_gloves(coords)
-	elif random_num == 11: new_item = gen_armor_chainmail(coords)
-
-	print("Items distributed")
-	GAME.current_objects.insert(0, new_item)
 
 def gen_scroll_lightning(coords):
 	x, y = coords
@@ -2392,6 +2412,30 @@ def gen_scroll_confusion(coords):
 #under construction
 def distribute_item(coords):
 	x, y = coords
+
+#
+def gen_item(coords, duration = 0):
+	x, y = coords
+
+	effect_duration = helper_dice(3, 3)
+	item_com = com_Item(use_function = cast_confusion, value = (effect_duration), name = "Scroll of Confusion")#not going to worry about weight or volume yet
+	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, 
+							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
+
+
+#generates a generic item
+def gen_equip_item(coords, phys_outgoing = 0, equip_slot = "", item_name = "", item_icon = "", item_icon_color = constants.COLOR_WHITE):
+	x, y = coords
+
+	equipment_com = com_Equipment(damage_phys_bonus = phys_outgoing, equip_slot = slot, name = item_name) 
+
+	return_object = obj_Actor(x, y, item_name,
+					icon = item_icon, icon_color = item_icon_color,
+					equipment = equipment_com)
+	return return_object
+
+	item = GAME.current_objects.append(tree)
+
 
 def gen_weapon_sword(coords):
 	x, y = coords
@@ -2471,6 +2515,8 @@ def gen_armor_gloves(coords):
 					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
 					 equipment = equipment_com)
 	return return_object
+
+	#non-item actors
 
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
@@ -2674,9 +2720,11 @@ def gen_exit_point_stairs(coords, downwards, target_type = None):
 
 
 	if downwards:
-		ep_stairs = obj_Actor(x, y, "A staircase leading down.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
+		ep_stairs = obj_Actor(x, y, "A staircase leading down.", exit_point = exit_point_com, icon = settings.stairs_up_icon, 
+			static = True, discovered = False)
 	else:
-		ep_stairs = obj_Actor(x, y, "A staircase leading up.", exit_point = exit_point_com, icon = settings.stairs_up_icon)
+		ep_stairs = obj_Actor(x, y, "A staircase leading up.", exit_point = exit_point_com, icon = settings.stairs_up_icon, 
+			static = True,  discovered = False)
 
 	GAME.current_objects.append(ep_stairs)
 
@@ -2700,11 +2748,13 @@ def gen_exit_point_door(coords,
 	
 	if closed_by_default:
 		ep_door = obj_Actor(x, y, ("A closed " + material + " door. ", additional_message), 
-							exit_point = exit_point_com, doorcom = door_com, icon = settings.door_closed_icon)
+							exit_point = exit_point_com, doorcom = door_com, icon = settings.door_closed_icon,
+							static = True,  discovered = False)
 	
 	else:
 		ep_door = obj_Actor(x, y, ("An open " + material +" door. " + additional_message),
-							exit_point = exit_point_com, door = door_com, icon = settings.door_open_icon)
+							exit_point = exit_point_com, door = door_com, icon = settings.door_open_icon,
+							static = True,  discovered = False)
 
 	GAME.current_objects.append(ep_door)
 
