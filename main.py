@@ -513,7 +513,22 @@ class com_Creature:
 				if not tile_is_wall and target is None:
 					self.owner.x += dx
 					self.owner.y += dy
-	
+
+					#if there are items at the player's tile, print them to the message log
+					#collapse this into a function later?
+					if self.owner == PLAYER:
+
+						objects_at_player_tile = map_objects_at_coords(self.owner.x, self.owner.y, exclude_player = True)
+
+						if len(objects_at_player_tile) == 1:
+							for obj in objects_at_player_tile:
+									if obj.item:
+										game_message("You see here " + obj.item.name)
+									if obj.equipment:
+										game_message("You see here " + obj.equipment.name)
+
+						elif len(objects_at_player_tile) > 1:
+							game_message("You see here multiple objects.")
 
 	def attack(self, target):
 		damage_dealt = self.damage_physical - target.creature.resist_physical
@@ -1435,9 +1450,14 @@ def map_calculate_fov():
 								constants.TORCH_RADIUS, constants.FOV_LIGHT_WALLS, 
 								constants.FOV_ALGO)
 
-def map_objects_at_coords(coords_x, coords_y):
+def map_objects_at_coords(coords_x, coords_y, exclude_player = False):
 	object_options = [obj for obj in GAME.current_objects 
-	if obj.x == coords_x and obj.y ==coords_y]
+	if obj.x == coords_x and obj.y == coords_y]
+
+	if exclude_player:
+		for obj in object_options:
+			if obj == PLAYER:
+				object_options.remove(obj)
 
 	return object_options
 
@@ -2521,7 +2541,7 @@ def gen_armor_gloves(coords):
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
 
-	item_com = com_Item(value = 3, use_function = cast_heal, name = "Apple") 
+	#item_com = com_Item(value = 3, use_function = cast_heal, name = "an Apple") 
 
 	 
 	ai_com = ai_Static()
@@ -2529,7 +2549,7 @@ def gen_tree(coords, fruit = "None"):
 
 	#name of item when picked up
 	tree = obj_Actor(x, y, "an oak tree",
-		ai = ai_com, item = item_com,
+		ai = ai_com, #item = item_com,
 		icon = settings.tree_icon, icon_color = constants.COLOR_GREEN)
 
 	GAME.current_objects.append(tree)
