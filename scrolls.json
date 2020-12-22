@@ -1,0 +1,56 @@
+{
+	"scrollslist":
+	[
+		{
+			"scroll_name":"Scroll of Fireball",
+			"pickup_name":"a scroll of Fireball",
+			"weight":1,
+			"icon":" ! ",
+
+			"attack_type":"aoe",
+			"damage_type":"fire",
+			"duration":"1",
+
+
+
+
+			"icon_r":255,
+			"icon_g":128,
+			"icon_b":0,
+			"static":true,
+			
+			"rarity":0,
+			"id": "scroll000",
+
+			"attack_strength_min":10,
+			"attack_strength_max":15
+
+		},
+		{
+			"scroll_name":"Scroll of Kharyalov Blast",
+			"pickup_name":"a scroll of Kharyalov Blast",
+			"weight":1,
+			"icon":" ! ",
+
+			"attack_type":"aoe",
+			"damage_type":"special",
+			"duration":"1",
+
+
+
+
+			"icon_r":255,
+			"icon_g":128,
+			"icon_b":255,
+			"static":true,
+			
+			"rarity":0,
+			"id": "scroll001",
+
+			"attack_strength_min":10,
+			"attack_strength_max":15
+
+		}
+	]
+}
+	

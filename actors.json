@@ -1,0 +1,159 @@
+{
+	"actorlist":
+	[
+		{
+			"creature_name":"Lesser Nightcrawler",
+			"carcass_name":"the slimy carcass of a Lesser Nightcrawler",
+			"carcass_value": 10,
+			"carcass_heal_amount": 5,
+			"creature_id":"creature_001",
+
+			"base_hp": 13,
+			"damage_phys_base": 5,
+			"damage_fire_base": 0,
+			"resist_phys_base": 4,
+			"resist_fire_base": 3,
+			"xp_on_death": 10,
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+
+			"actor_name":"Lesser Nightcrawler",
+			"icon_r": 192,
+			"icon_g": 192,
+			"icon_b": 192,
+			"actor_icon": "Ж "
+		},
+		{
+			"creature_name": "Greater Nightcrawler",
+			"carcass_name": "the slimy carcass of a Greater Nightcrawler",
+			"carcass_value": 42,
+			"carcass_heal_amount": 11,
+			"creature_id":"creature_002",
+
+			"base_hp": 32,
+			"damage_phys_base": 10,
+			"damage_fire_base": 0,
+			"resist_phys_base": 8,
+			"resist_fire_base": 3,
+			"xp_on_death": 35,
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+
+			"actor_name":"Greater Nightcrawler",
+			"icon_r": 192,
+			"icon_g": 192,
+			"icon_b": 192,
+			"actor_icon": "Ж"
+		},
+		{
+			"creature_name": "Nightcrawler Sentinel",
+			"carcass_name": "the heavy, slimy carcass of a colossal Nightcrawler",
+			"carcass_value": 75,
+			"carcass_heal_amount": 20,
+			"creature_id":"creature_003",
+
+			"base_hp": 46,
+			"damage_phys_base": 20,
+			"damage_fire_base": 0,
+			"resist_phys_base": 12,
+			"resist_fire_base": 7,
+			"xp_on_death": 80,
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+
+			"actor_name":"Greater Nightcrawler",
+			"icon_r": 192,
+			"icon_g": 192,
+			"icon_b": 192,
+			"actor_icon": "Ж"
+
+
+		},
+		{
+			"creature_name": "Otter",
+			"carcass_name": "the carcass of an otter. What kind of monster would such a thing?",
+			"carcass_value": 1,
+			"carcass_heal_amount": 1,
+			"creature_id":"creature_004",
+
+			"base_hp": 10,
+			"damage_phys_base": 1,
+			"damage_fire_base": 0,
+			"resist_phys_base": 1,
+			"resist_fire_base": 2,
+			"xp_on_death": 1,
+
+			"ai_script_type": "flee",
+			"allegiance_category": "wild",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+
+			"actor_name":"Otter",
+			"icon_r": 192,
+			"icon_g": 192,
+			"icon_b": 192,
+			"actor_icon": "о"
+		},
+		{
+			"creature_name": "Golden Dragon",
+			"carcass_name": "the carcass of golden dragon.",
+			"carcass_value": 100,
+			"carcass_heal_amount": 68,
+			"creature_id":"creature_005",
+
+			"base_hp": 46,
+			"damage_phys_base": 22,
+			"damage_fire_base": 3,
+			"resist_phys_base": 12,
+			"resist_fire_base": 9,
+			"xp_on_death": 128,
+
+			"ai_script_type": "dragon_fireball",
+			"allegiance_category": "draconic",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"},
+							{"name":"eldritch"}
+						],
+			"docile": false,
+
+			"actor_name":"Golden Dragon",
+			"icon_r": 255,
+			"icon_g": 128,
+			"icon_b": 0,
+			"actor_icon": "B"
+
+		}
+	]
+}

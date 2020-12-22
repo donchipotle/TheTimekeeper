@@ -1,0 +1,270 @@
+{
+	"equipmentlist":
+	[
+		{
+			"name":"Lamellar Armor",
+			"pickup_name":"a supple cuirass of lamellar armor",
+			"weight":14,
+			"icon":" ] ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static":true,
+			"slot": "Armor",
+			"rarity":0,
+			"id": "armor000",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":12,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":5,
+
+			"dodge_bonus":5,
+			"accuracy_bonus":5,
+			"critical_chance":-5,
+			"critical_damage":1
+		},
+		
+		{
+			"name": "Temryavite Helment",
+			"pickup_name":"an ancient Temryavite helmet",
+			"weight":0,
+			"icon":" ] ",
+			"icon_r":0,
+			"icon_g":0,
+			"icon_b":255,
+			"static": true,
+			"slot": "Head",
+			"rarity":0,
+			"id": "armor001",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":0,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":1,
+
+			"dodge_bonus":0,
+			"accuracy_bonus":0,
+			"critical_chance":0,
+			"critical_damage":1
+		},
+		
+		{
+			"name":"Pax Magisteria gloves",
+			"pickup_name":"a tattered pair of Pax Magisteria guardsman gloves.",
+			"weight":1,
+			"icon":" ] ",
+			"icon_r":192,
+			"icon_g":192,
+			"icon_b":192,
+			"static":true,
+			"slot": "Hands",
+			"rarity":0,
+			"id": "armor002",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":0,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":1,
+
+			"dodge_bonus":0,
+			"accuracy_bonus": 5,
+			"critical_chance":1,
+			"critical_damage":1.1
+		},
+		
+		{
+			"name":"Guiding Star tunic",
+			"pickup_name":"a well-worn Guiding Star tunic",
+			"weight":2,
+			"icon":" ] ",
+			"icon_r":255,
+			"icon_g":255,
+			"icon_b":255,
+			"static": true,
+			"slot": "Shirt",
+			"rarity":0,
+			"id": "armor003",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max" :0,
+			"resist_phys_bonus":3,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":-1,
+
+			"dodge_bonus":8,
+			"accuracy_bonus":2,
+			"critical_chance":0,
+			"critical_damage":1
+		},
+		{
+			"name":"Longsword",
+			"pickup_name":"a chipped and nicked longsword.",
+			"weight":5,
+			"icon":" ) ",
+			"icon_r":149,
+			"icon_g":202,
+			"icon_b":255,
+			"static": true,
+			"slot": "Main Hand",
+			"rarity":0,
+			"id": "sword001",
+
+			"damage_phys_bonus":12,
+			"damage_phys_bonus_max" :0,
+			"resist_phys_bonus":0,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":0,
+
+			"dodge_bonus":10,
+			"accuracy_bonus":3,
+			"critical_chance":1,
+			"critical_damage":1.5
+		},
+
+		{
+			"name":"Great River cloak",
+			"pickup_name":"a filthy barbarian cloak.",
+			"weight":2,
+			"icon":" ] ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static": true,
+			"slot": "Cloak",
+			"rarity":0,
+			"id": "armor004",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max" :0,
+			"resist_phys_bonus":1,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":-1,
+
+			"dodge_bonus":8,
+			"accuracy_bonus":2,
+			"critical_chance":-1,
+			"critical_damage":1
+		},
+		{
+			"name":"Combat Boots",
+			"pickup_name":"a pair of muddy combat boots.",
+			"weight":2,
+			"icon":" ] ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static": true,
+			"slot": "Boots",
+			"rarity":0,
+			"id": "armor005",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max" :0,
+			"resist_phys_bonus":1,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":1,
+
+			"dodge_bonus":2,
+			"accuracy_bonus":2,
+			"critical_chance":0,
+			"critical_damage":1
+		},
+		{
+			"name":"Ars Enchantica chainmail",
+			"pickup_name":"a light, glittery shirt of chainmail.",
+			"weight":10,
+			"icon":" ] ",
+			"icon_r":192,
+			"icon_g":192,
+			"icon_b":192,
+			"static": true,
+			"slot": "Chainmail",
+			"rarity":0,
+			"id": "armor006",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max" :0,
+			"resist_phys_bonus":3,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":2,
+
+			"dodge_bonus":8,
+			"accuracy_bonus":2,
+			"critical_chance":1,
+			"critical_damage":1
+		},
+		{
+			"name":"Leather Armor",
+			"pickup_name":"a light suit of leather armor.",
+			"weight":7,
+			"icon":" ] ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static":true,
+			"slot": "Armor",
+			"rarity":0,
+			"id": "armor007",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":8,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":3,
+
+			"dodge_bonus":10,
+			"accuracy_bonus":10,
+			"critical_chance":0,
+			"critical_damage":1
+		},
+		{
+			"name":"Temryavite Hauberk",
+			"pickup_name":"a dull, rough hauberk bearing a green Temryavite rose.",
+			"weight":9,
+			"icon":"]",
+			"icon_r":149,
+			"icon_g":202,
+			"icon_b":255,
+			"static":true,
+			"slot": "Armor",
+			"rarity":0,
+			"id": "armor008",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":7,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":5,
+
+			"dodge_bonus":6,
+			"accuracy_bonus":7,
+			"critical_chance":0,
+			"critical_damage":1
+		}
+	
+	]
+}

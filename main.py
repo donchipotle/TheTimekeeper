@@ -18,6 +18,9 @@ import random
 #for generating random crap for map keys
 import string
 
+#json handling
+import json
+
 #structures
 class struc_Tile:
 	def __init__(self, block_path): #add more variables like blocking projectiles, blocking sight, DoT, etc.
@@ -25,6 +28,7 @@ class struc_Tile:
 		self.explored = False
 		#for things like cages, fences, other permeable barriers
 		self.transparent = False
+		self.is_diggable = True
 
 
 class struc_Map:
@@ -52,6 +56,33 @@ class struc_Direction:
 	def __init__(self, x = 0, y = 0):
 		self.x = x,
 		self.y = y
+
+
+class struc_equipment:
+	def __init__(self, name, pickup_name, weight, 
+		static, rarity, id, icon, icon_color
+		):
+		print("Hi")
+#			"weight":0,
+#			"icon":" ] ",
+#			"icon_color":"constants.COLOR_BLUE",
+#			"static": true,
+#			"slot": "head",
+#			"rarity":0,
+#			"id": "armor001",
+
+#			"damage_phys_bonus":0,
+#			"damage_phys_bonus_max":0,
+#			"resist_phys_bonus":0,
+
+#			"damage_fire_bonus":0,
+#			"damage_fire_bonus_max":0,
+#			"resist_fire_bonus":0,
+
+#			"dodge_bonus":0,
+#			"accuracy_bonus":0,
+#			"critical_chance":0,
+#			"critical_damage":0
 
 
 class obj_Actor:
@@ -180,6 +211,8 @@ class obj_Actor:
 		delta_x = other.x - self.x
 		delta_y = other.y - self.y
 		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
+		if distance == 0:
+			distance = 1
 
 		#delta_x = int((delta_x / distance))
 		#delta_y = int((delta_y/distance))
@@ -198,22 +231,6 @@ class obj_Actor:
 		delta_y = int(round(delta_y / distance))
 
 		self.creature.move(delta_x, delta_y)
-
-class struc_item:
-	def __init__(self):
-		coords = (0, 0), 
-		phys_outgoing = 0, 
-		equip_slot = "", 
-		item_name = "", 
-		item_icon = "", 
-		item_icon_color = constants.COLOR_WHITE
-
-class struc_actor:
-	def __init__(self):
-		coords = (0, 0),
-		actor_icon = ""
-		actor_icon_color = constants.COLOR_WHITE
-
 
 #massive structure that stores game state data 		
 class obj_Game:
@@ -517,18 +534,8 @@ class com_Creature:
 					#if there are items at the player's tile, print them to the message log
 					#collapse this into a function later?
 					if self.owner == PLAYER:
-
-						objects_at_player_tile = map_objects_at_coords(self.owner.x, self.owner.y, exclude_player = True)
-
-						if len(objects_at_player_tile) == 1:
-							for obj in objects_at_player_tile:
-									if obj.item:
-										game_message("You see here " + obj.item.name)
-									if obj.equipment:
-										game_message("You see here " + obj.equipment.name)
-
-						elif len(objects_at_player_tile) > 1:
-							game_message("You see here multiple objects.")
+						map_tile_query(query_x = self.owner.x, query_y = self.owner.y, exclude_query_player = True)
+						
 
 	def attack(self, target):
 		damage_dealt = self.damage_physical - target.creature.resist_physical
@@ -635,7 +642,6 @@ class com_Container:
 		list_of_equipped_items = [obj for obj in self.inventory 
 									if obj.equipment and obj.equipment.equipped ]
 		return list_of_equipped_items
-
 
 class com_Item:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", category = "misc", 
@@ -894,7 +900,6 @@ class com_Allegiance:
 		self.docile = docile
 
 
-
 ######################################################################################################################
 #AI scripts
 	#execute once per turn
@@ -942,22 +947,22 @@ class ai_Townfolk_Wander:
 	def take_turn(self):
 		#print("Townfolk taking turn")
 		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
-		
-#fire ranged until entering melee range. sustain fire at all times
-#class ai_Ranged_Assault:
-#	print("Placeholder.")
 
-#ranged only, retreating from target while attacking
-#class ai_Ranged_Fall_Back:
-#	print("Placeholder.")
+class ai_Town_Guardsman_Patrol:
+	def take_turn(self):
+		guard = self
 
-#cast offensive spell
-#class ai_Offensive_Spell:
-#	print("Placeholder.")
+	#patrol for targets
 
-#cast suppressive spell
-#class ai_Crowd_Control:
-#	print("Placeholder.")
+		#get list of all npcs in actor's line of sight
+
+		#if any NPCs are listed as hostile, set all as potential targets
+
+		#prioritize most important target
+
+
+
+	#engage most important target
 
 class com_AI:
 	def take_turn(self):
@@ -1077,10 +1082,12 @@ def death_player(player):
 
 ###############################################################################################################
 #map functions
-def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, walk_nodes = 6, steps_per_node = 1000):
+def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, walk_nodes = 8, steps_per_node = 800):
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(1, dungeon_x)]  
 									for x in range (1, dungeon_y)]
+
+	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x -1, map_y = dungeon_y -1)								
 
 	x_l_bound = int(dungeon_x * .35)
 	x_u_bound = int(dungeon_x * .55)
@@ -1123,15 +1130,26 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 	map_make_fov(new_map, fov_x = dungeon_x -1, fov_y = dungeon_y -1)
 
 	map_tryplace_stairs(map_in = new_map, map_x_in = dungeon_x -1, map_y_in = dungeon_y -1)
+
+	map_place_objects_dungeon(map_in = new_map, map_x =  dungeon_x -1, map_y =  dungeon_y -1)
+
+	distribute_equipment(num_attempts = 4, map_in = new_map, map_x = dungeon_x -1, map_y = dungeon_y -1)
+
+	#make outer edges of the map undiggable 
+	#is_diggable
+
+
 	print("map creation finished")
 	return (new_map, dungeon_x, dungeon_y)
-
 
 def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, total_rooms = constants.MAP_MAX_NUM_ROOMS):
 
 	#initialize empty map, flooded with unwalkable tiles
 	new_map = [[struc_Tile(True) for y in range(0, dungeon_x)]  
 									for x in range (0, dungeon_y)]
+
+	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x - 1, map_y = dungeon_y - 1)								
+						
 
 	# generate new room
 	list_of_rooms = []
@@ -1175,27 +1193,26 @@ def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT
 	print("map creation finished")
 	return (new_map, list_of_rooms, dungeon_x, dungeon_y)
 
+def map_make_borders_undiggable(map_in, map_x, map_y):
+	for i in range(0, map_x):
+		map_in[i][0].block_path = True
+		map_in[i][0].is_diggable = False
+		map_in[i][map_y -1].block_path = True
+
+	for i in range(0, map_y):
+		map_in[0][i].block_path = True
+		map_in[0][i].is_diggable = False
+		map_in[map_x -1][i].block_path = True
+
 def map_create_town():
 	#initialize empty map, flooded with empty tiles
 	new_map = [[struc_Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
 									for x in range (0, constants.MAP_WIDTH)]
 
 	#create borders of town
-	for i in range(0, constants.MAP_WIDTH):
-		new_map[i][0].block_path = True
-		new_map[i][constants.MAP_HEIGHT -1].block_path = True
-
-	for i in range(0, constants.MAP_HEIGHT):
-		new_map[0][i].block_path = True
-		new_map[constants.MAP_WIDTH -1][i].block_path = True
-
+	map_make_borders_undiggable(map_in = new_map, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT)
 	
-	#for i in range(new_map[0]):
-	#	struc_Tile(False)
-
-	#function to add borders to town
-
-	# generate new builds
+	# generate new buildings
 	list_of_buildings = []
 	num = 0
 	#create random buildings
@@ -1234,6 +1251,8 @@ def map_create_town():
 
 			list_of_buildings.append(new_building)
 
+	distribute_equipment(num_attempts = 20, map_in = new_map)
+
 
 
 	#create FOV map		
@@ -1246,14 +1265,8 @@ def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH, hous
 
 	new_map = [[struc_Tile(False) for y in range(0, house_y)]  
 									for x in range (0, house_x)]
-	#top/bottom
-	for i in range(0, house_x):
-		new_map[i][1].block_path = True
-		new_map[i][house_y - 1].block_path = True
-	#left/right
-	for i in range(0, house_y - 1):
-		new_map[0][i].block_path = True
-		new_map[house_x -1][i].block_path = True
+
+	map_make_borders_undiggable(map_in = new_map, map_x = house_x, map_y = house_y)	
 
 	#putting this here so the flippin interpreter doesn't whine at me about stuff idk man
 	list_of_buildings = []
@@ -1311,30 +1324,19 @@ def map_place_objects(room_list, is_first_map = None):
 		#generated items and enemies
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
-		gen_item((x,y))
+		
 		
 		x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1) #only add +1/-1 later if issues arise
 		y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1) #ditto
 		gen_creature((x,y))
+		distribute_equipment(num_attempts = 5, map_in = GAME.current_map)
+		distribute_scrolls(num_attempts = 5, map_in = GAME.current_map)
 
 def map_place_objects_town(building_list, is_first_map = False):
 	PLAYER.x, PLAYER.y = (3, 3)
 
 	map_tryplace_player()
-
-	for i in range (0, 10):
-		x = libtcod.random_get_int(0, 1, constants.MAP_WIDTH - 1)
-		y = libtcod.random_get_int(0, 1, constants.MAP_HEIGHT - 1)
-		if GAME.current_map[x][y].block_path == False:
-			weapon = gen_weapon_sword((x, y))
-			armor = gen_armor_leather((x, y))
-			GAME.current_objects.insert(0, weapon)
-			GAME.current_objects.insert(0, armor)
-
-			print("Player's kit spawned after " + str(i) + " tries.")
-			break
 			
-	#gen_exit_point_door((5, 4), target_type = "dungeon")
 	gen_exit_point_door((5, 4))
 	gen_exit_point_door((8, 10))
 
@@ -1363,9 +1365,21 @@ def map_place_objects_town(building_list, is_first_map = False):
 			successful_tree_spawns += 1
 	print(str(successful_tree_spawns) + " trees successfully spawned.")
 
-def map_place_objects_dungeon():
+def map_place_objects_dungeon(map_in = None, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT):
 	#map_tryplace_stairs()
 	print("Placeholder to place stuff in the dungeon.")
+	successful_mob_spawns = 0
+
+	for i in range (0, 30):
+		x = libtcod.random_get_int(0, 1, map_x -1)
+		y = libtcod.random_get_int(0, 1, map_y - 1)
+		if map_in[x][y].block_path == False:
+			gen_creature((x, y))
+			successful_mob_spawns += 1
+
+		print(str(successful_mob_spawns) + " hostile mobs spawned ")
+	
+			
 	
 #place a door on the walls of a building interior
 def map_place_door_on_walls(x = 0, y = 0, map_in = None):
@@ -1772,13 +1786,6 @@ def draw_map(map_to_draw):
 							text_color = constants.COLOR_GRAY, back_color = constants.COLOR_BLACK,
 							center = True)
 
-
-
-
-
-###############################################################################################################
-#helper functions
-
 ###############################################################################################################
 #magic
 
@@ -1821,8 +1828,6 @@ def cast_lightning(caster, T_damage_maxrange):
 
 				game_message("You smell ozone.")
 
-		
-	
 def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
 	damage, local_radius, max_r = T_damage_radius_range
@@ -1850,7 +1855,13 @@ def cast_fireball(caster, T_damage_radius_range):
 			creature_to_damage = map_check_for_creatures(x, y)
 			if creature_to_damage: 
 				damage -= creature_to_damage.creature.resist_fire
-				creature_to_damage.creature.take_damage(damage, attacker = caster)
+
+				if damage > 0:
+					creature_to_damage.creature.take_damage(damage, attacker = caster)
+				else:
+					if creature_to_damage.creature.name:
+						game_message(creature_to_damage.creature.name + " is unfazed.")
+
 				if creature_to_damage is not PLAYER:
 					creature_hit = True
 
@@ -1874,6 +1885,55 @@ def cast_confusion(caster, effect_duration):
 			target.ai = ai_Confuse(old_ai = oldai, num_turns = effect_duration)
 			target.ai.owner = target
 			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
+
+
+def aoe_damage(caster, damage_type = "fire", range = 15, radius = 4, penetrate_walls = False):
+	#definitions, change later
+	damage, local_radius, max_r = T_damage_radius_range
+	caster_location = (caster.x, caster.y)
+	#TODO get target tile
+	if caster == PLAYER:
+		point_selected = menu_tile_select(coords_origin = caster_location, max_range = max_r,
+			 penetrate_walls = False, 
+			 pierce_creature = False, 
+			 radius = local_radius)
+	else:
+		point_selected = PLAYER.x, PLAYER.y
+
+	if point_selected:
+		game_message(caster.creature.name_instance + " casts Conflagration.")#" casts Alenko-Kharyalov Conflagration.")
+		#get sequence of tiles
+		tiles_to_damage = map_find_radius(point_selected, local_radius)
+		creature_hit = False
+
+		#damage all creatures in tiles
+		for (x, y) in tiles_to_damage:
+			#add visual feedback to fireball, maybe even adding a trail to its destination later
+			#draw_explosion(local_radius, PLAYER.x, PLAYER.y, constants.COLOR_ORANGE)
+
+			creature_to_damage = map_check_for_creatures(x, y)
+			if creature_to_damage: 
+				damage -= creature_to_damage.creature.resist_fire
+
+				if damage > 0:
+					creature_to_damage.creature.take_damage(damage, attacker = caster)
+				else:
+					if creature_to_damage.creature.name:
+						game_message(creature_to_damage.creature.name + " is unfazed.")
+
+				if creature_to_damage is not PLAYER:
+					creature_hit = True
+
+		if creature_hit:
+			game_message("You smell the repugnant stench of burning flesh.", constants.COLOR_RED)
+
+
+
+#def singular_damage():
+
+#def singular_effect():
+
+#def area_affect():
 
 def fire_projectile(source, ranged_weapon, target, ammo_count):
 	if (ammo_count > 0 and target and ranged_weapon):
@@ -1937,7 +1997,9 @@ class ui_Button:
 			self.current_c_text, 
 			center = True)
 
-#helpers 
+###############################################################################################################
+#helper functions
+
 def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
     # if there is a background color, render with that.
     if incoming_bg:
@@ -2374,14 +2436,7 @@ def menu_tile_select(coords_origin = None, max_range = None,
 			CLOCK.tick(constants.GAME_FPS)
 
 ##########################################################################################################
-#procedural generators
-
-#note - possibly include 'special function' in items?
-#to allow additional behaviors in items such as with pickaxes
-
-#items
-#use better solution later
-
+#generators
 
 def gen_scroll_lightning(coords):
 	x, y = coords
@@ -2399,7 +2454,8 @@ def gen_scroll_fireball(coords):
 	damage = helper_dice(7, 7)
 	local_radius = 2
 	max_r = 9
-	item_com = com_Item(use_function = cast_fireball, value = (damage, local_radius, max_r), name = "Scroll of Fireball")#not going to worry about weight or volume yet
+	item_com = com_Item(use_function = aoe_damage(caster, damage_type = "fire", range = 15, radius = 4, penetrate_walls = False),
+	 value = (damage, local_radius, max_r), name = "Scroll of Fireball")
 
 	return_object =obj_Actor(x, y, "Scroll of Fireball", item = item_com, 
 							icon = settings.scroll_icon, icon_color = constants.COLOR_ORANGE)
@@ -2416,97 +2472,120 @@ def gen_scroll_confusion(coords):
 	return return_object
 
 #
-def gen_item(coords, duration = 0):
+def distribute_equipment(num_attempts = 10, map_in = None, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT):
+	global GAME_EQUIPMENT_POOL
+
+
+	#print("Equipment distributed on the map.")
+	successful_spawns = 0
+
+	for i in range (num_attempts):
+		x = libtcod.random_get_int(0, 1, map_x - 1)
+		y = libtcod.random_get_int(0, 1, map_y - 1)
+		if map_in[x][y].block_path == False:
+			gen_equipment((x, y))
+			successful_spawns += 1
+
+	#print(str(successful_spawns) + " pieces of equipment spawned ")
+
+
+
+def distribute_scrolls(num_attempts = 100, map_in = None, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT):
+	global GAME_SCROLL_POOL
+
+
+	#print("Equipment distributed on the map.")
+	successful_spawns = 0
+
+	for i in range (num_attempts):
+		x = libtcod.random_get_int(0, 1, map_x - 1)
+		y = libtcod.random_get_int(0, 1, map_y - 1)
+		if map_in[x][y].block_path == False:
+			gen_scroll((x, y))
+			successful_spawns += 1
+			print("Scroll distributed")
+
+
+
+	
+
+
+#def gen_creature(coords):
+
+def gen_equipment(coords):
+	print("Placing equipment")
+	global GAME_EQUIPMENT_POOL, GAME
+	selected_equipment = random.choice(GAME_EQUIPMENT_POOL)
+
+	x, y = coords
+	equipment_com = com_Equipment(damage_phys_bonus = selected_equipment['damage_phys_bonus'], resist_phys_bonus = selected_equipment['resist_phys_bonus'],
+					damage_fire_bonus = selected_equipment['damage_fire_bonus'], resist_fire_bonus = selected_equipment['resist_fire_bonus'],
+					slot = selected_equipment['slot'], name = selected_equipment['pickup_name'],)
+
+	return_object = obj_Actor(x, y, selected_equipment['name'],
+					icon = selected_equipment['icon'], 
+					icon_color = (selected_equipment['icon_r'],selected_equipment['icon_g'], selected_equipment['icon_b']),
+					equipment = equipment_com, static = selected_equipment['static'])
+	
+	GAME.current_objects.append(return_object)
+
+def gen_creature(coords):
+	print("Placing creature")
+	global GAME_CREATURE_POOL, GAME
+	selected_creature = random.choice(GAME_CREATURE_POOL)
+	#print(selected_creature['resist_phys_base'])
 	x, y = coords
 
-	effect_duration = helper_dice(3, 3)
-	item_com = com_Item(use_function = cast_confusion, value = (effect_duration), name = "Scroll of Confusion")#not going to worry about weight or volume yet
-	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, static = True,
-							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
+	ai_com = assign_ai_script(creature_in = selected_creature)
+
+	item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, name = selected_creature['carcass_name'])	
+
+	creature_com = com_Creature(selected_creature['creature_name'], death_function = death_monster,
+								hp = selected_creature['base_hp'],
+								damage_phys_base = selected_creature['damage_phys_base'],
+								resist_phys_base = selected_creature['resist_phys_base'],
+								xp_on_death = selected_creature['xp_on_death']
+	) 
+	
+	allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
+								hostile_list = {"player", "townfolk", "eldritch", "wild" },
+								docile = selected_creature['docile'])
+	
+	#name of item when picked up
+	return_object = obj_Actor(x, y, selected_creature['creature_name'], 
+		creature = creature_com, ai = ai_com, item = item_com, icon = selected_creature['actor_icon'], 
+		icon_color = (selected_creature['icon_r'], selected_creature['icon_g'], selected_creature['icon_b']),
+		allegiance_com = allegiance_com)
+
+	GAME.current_objects.append(return_object)
 
 
-
-
-def gen_weapon_sword(coords):
+def gen_scroll(coords):
+	global GAME, GAME_SCROLL_POOL
 	x, y = coords
-	equipment_com = com_Equipment(damage_phys_bonus = 18, slot = "Main Hand", name = "Longsword") #, name = "a plain longsword")
+	selected_scroll = random.choice(GAME_SCROLL_POOL)
 
-	return_object = obj_Actor(x, y, "Longsword",
-					icon = settings.weapon_icon, icon_color = constants.COLOR_L_BLUE,
-					equipment = equipment_com, static = True)
-	return return_object
+	damage = helper_dice(5, 6)
+	m_range = 8
+	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range), name = selected_scroll['scroll_name'])#not going to worry about weight or volume yet
 
-def gen_armor_leather(coords):
-	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 6, resist_fire_bonus = 2,slot = "Armor", name = "a suit of leather armor")
+	return_object = obj_Actor(x, y, selected_scroll['scroll_name'], item = item_com, 
+							icon = selected_scroll['icon'], icon_color = (selected_scroll['icon_r'], selected_scroll['icon_g'], selected_scroll['icon_b']))
 
-	return_object = obj_Actor(x, y, "Leather Armor",
-					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com, static = True)
-	return return_object
+	GAME.current_objects.append(return_object)
 
-def gen_armor_helmet(coords):
-	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 3, resist_fire_bonus = 1, slot = "Helmet", name = "an ancient Temryavite helmet") 
 
-	item_com = com_Item(value = 3, use_function = cast_heal, name = "an ancient Temryavite helmet") 
+def assign_ai_script(creature_in = None):
+	if str(creature_in['ai_script_type'])== "dragon_fireball":
+		return ai_Dragon()
+		print("Assigning dragon script")
 
-	return_object = obj_Actor(x, y, "Temryavite Helm",
-					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com, item = item_com, static = True)
-	return return_object
-
-def gen_armor_cloak(coords):
-	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 1, resist_fire_bonus = - 1,slot = "Cloak", name = "a filthy barbarian cloak") 
-
-	item_com = com_Item(value = 3, use_function = cast_heal, name = "a filthy barbarian cloak") 
-
-	return_object = obj_Actor(x, y, "Southern Horde Parka",
-					icon = settings.armor_icon, icon_color = constants.COLOR_L_BLUE,
-					 equipment = equipment_com, item = item_com, static = True)
-	return return_object
-
-def gen_armor_shirt(coords):
-	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 0, slot = "Shirt", name = "a bleached Guiding Star tunic.") 
-
-	item_com = com_Item(value = 3, use_function = cast_heal, name = "a bleached Guiding Star tunic.")
-
-	return_object = obj_Actor(x, y, "Guiding Star tunic",
-					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
-					 equipment = equipment_com, static = True)
-	return return_object
-
-def gen_armor_boots(coords):
-	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 1, slot = "Boots", name = "a pair of muddy combat boots.") 
-
-	return_object = obj_Actor(x, y, "Combat Boots",
-					icon = settings.armor_icon, icon_color = constants.COLOR_L_BROWN,
-					 equipment = equipment_com, static = True)
-	return return_object
-
-def gen_armor_chainmail(coords):
-	x, y = coords
-	equipment_com = com_Equipment(resist_phys_bonus = 3, resist_fire_bonus = 2, slot = "Chainmail", name = "Ars Enchantica Chainmail") 
-
-	return_object = obj_Actor(x, y, "Ars Enchantica Chainmail",
-					icon = settings.armor_icon, icon_color = constants.COLOR_L_GRAY,
-					 equipment = equipment_com, static = True)
-	return return_object
-
-def gen_armor_gloves(coords):
-	x, y = coords
-
-	equipment_com = com_Equipment(resist_phys_bonus = 1, resist_fire_bonus = 1, slot = "Gloves", name = "a weathered pair of standard-issue, legionaire glvoes.") 
-
-	return_object = obj_Actor(x, y, "Pax Magisteria gloves",
-					icon = settings.armor_icon, icon_color = constants.COLOR_GRAY,
-					 equipment = equipment_com, static = True)
-	return return_object
-
-	#non-item actors
+	elif str(creature_in['ai_script_type']) == "flee":
+		return ai_Flee()
+		print("Assigning flee script")
+	else: 
+		return ai_Chase()
+		print("Assigning chase script")
 
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
@@ -2573,125 +2652,6 @@ def gen_town_folk(coords):
 
 
 	GAME.current_objects.append(npc)
-
-#def gen_town_guard
-
-#enemies
-def gen_creature(coords):
-	global GAME
-
-	random_num = helper_dice(100, 0)
-	if random_num  <= 30 : 					new_enemy = gen_nightcrawler_greater(coords)
-	elif random_num <= 80 :					new_enemy = gen_nightcrawler_lesser(coords)
-	elif random_num >= 90 :					new_enemy = gen_dragon(coords)
-	else:									new_enemy = gen_rabbit(coords)
-	
-	GAME.current_objects.insert(0, new_enemy)
-
-def gen_nightcrawler_lesser(coords):
-	x, y = coords
-
-	item_com = com_Item(value = 3, use_function = cast_heal, name = "the carcass of a Lesser Nightcrawler") 
-	creature_com = com_Creature("Lesser Nightcrawler", death_function = death_monster,
-								hp = 12,
-								damage_phys_base = (helper_dice(3, 5)),
-								resist_phys_base = (helper_dice(3, 3)),
-								xp_on_death = 5
-	) 
-	ai_com = ai_Chase()
-	allegiance_com = com_Allegiance(category = "eldritch",
-								hostile_list = {"player", "townfolk" },
-								docile = False)
-
-							#name of item when picked up
-	ENEMY = obj_Actor(x, y, "Lesser Nightcrawler",
-		creature = creature_com, ai = ai_com, item = item_com,
-		icon = settings.eldritch_icon, icon_color = constants.COLOR_GRAY,
-		allegiance_com = allegiance_com)
-
-	return ENEMY
-
-def gen_nightcrawler_greater(coords):
-	x, y = coords
-	item_com = com_Item(value = 5, use_function = cast_heal, name = "the carcass of a Greater Nightcrawler")								#name of enemy when alive
-	creature_com = com_Creature("Greater Nightcrawler", death_function = death_monster,
-								hp = 15,
-								damage_phys_base = (helper_dice(4, 9)),
-								resist_phys_base = (helper_dice(4, 4)),
-								xp_on_death = 12
-	) 
-	
-	ai_com = ai_Chase()
-
-	allegiance_com = com_Allegiance(category = "eldritch",
-								hostile_list = {"player", "townfolk", "wild" },
-								docile = False)
-
-	#name of item when picked up
-	ENEMY = obj_Actor(x, y, "Greater Nightcrawler", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = settings.eldritch_icon, 
-		icon_color = constants.COLOR_GRAY,
-		allegiance_com = allegiance_com)
-
-	return ENEMY
-
-def gen_dragon(coords):
-	x, y = coords
-	item_com = com_Item(value = 70, use_function = cast_heal, name = "the carcass of a Golden Dragon")								#name of enemy when alive
-	creature_com = com_Creature("Golden Dragon", death_function = death_monster,
-								hp = 35,
-								damage_phys_base = (helper_dice(9, 12)),
-								resist_phys_base = (helper_dice(4, 7)),
-								xp_on_death = 75
-	) 
-	
-	allegiance_com = com_Allegiance(category = "draconic",
-								hostile_list = {"player", "townfolk", "eldritch", "wild" },
-								docile = False)
-
-	ai_com =	ai_Dragon()
-	#name of item when picked up
-	ENEMY = obj_Actor(x, y, "Golden Dragon", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = settings.draconic_icon, 
-		icon_color = constants.COLOR_YINZER,
-		allegiance_com = allegiance_com)
-
-	return ENEMY
-
-def gen_rabbit(coords):
-	x, y = coords
-	item_com = com_Item(value = 4, use_function = cast_heal, name = "the carcass of a Rabbit")								#name of enemy when alive
-	creature_com = com_Creature("Rabbit", death_function = death_monster,
-								hp = 3,
-								damage_phys_base = 1,
-								resist_phys_base = 1)
-
-	allegiance_com = com_Allegiance(category = "wild",
-								hostile_list = {"player", "townfolk", "eldritch", "draconic" },
-								docile = False)
-
-	ai_com = ai_Flee()
-					
-	ENEMY = obj_Actor(x, y, "Rabbit", 
-		creature = creature_com, ai = ai_com, item = item_com, icon = settings.game_animal_icon, 
-		icon_color = constants.COLOR_L_BROWN,
-		allegiance_com = allegiance_com)
-
-	return ENEMY
-
-#special
-def gen_stairs(coords, downwards):
-	x, y = coords
-	
-	if downwards:
-		stairs_com = com_Stairs()
-		stairs = obj_Actor(x, y, "A staircase leading down.", stairs = stairs_com, 
-			icon = settings.stairs_up_icon)
-	else:
-		stairs_com = com_Stairs(downwards)
-		stairs = obj_Actor(x, y, "A staircase leading up.", stairs = stairs_com, icon = settings.stairs_down_icon)
-
-	GAME.current_objects.append(stairs)
 
 def gen_exit_point_stairs(coords, downwards, target_type = None):
 	x, y = coords
@@ -2820,6 +2780,7 @@ def game_handle_keys():
 	
 	#check for mod key (shift)
 	MOD_KEY = (keys_list[pygame.K_RSHIFT] or keys_list[pygame.K_LSHIFT])
+	MOD_KEY2 = (keys_list[pygame.K_q])
 	
 	for event in events_list:
 		if event.type == pygame.QUIT:
@@ -2831,7 +2792,7 @@ def game_handle_keys():
 			if (move_coords.x,  move_coords.y) != (0, 0):
 				PLAYER.creature.move(move_coords.x, move_coords.y)
 
-				#non-movement, non turn-changing ?
+			#pop up menu if there are multiple objects at the tile?
 			if event.key == pygame.K_COMMA:
 				objects_at_player = map_objects_at_coords(PLAYER.x, PLAYER.y)
 				for obj in objects_at_player:
@@ -2849,14 +2810,19 @@ def game_handle_keys():
 				menu_inventory()
 				if settings.Mod2 == False:
 					return "no-action"
-						
-				#temporarily changed to quit the game
+					
 
 			#figure out what stuff is or something
-			if event.key == pygame.K_q:
-				#query_coords = map_tile_query()
-				if settings.Mod2 == False:
-					return "no-action"
+			if MOD_KEY2 and event.key == pygame.MOUSEBUTTONDOWN:
+				print("Hi")
+							#if event.type == pygame.MOUSEBUTTONDOWN:
+				
+
+				#	if settings.Mod2 == True:
+				#		return "no-action"
+				return "no-action"
+			if MOD_KEY2:
+				return "no-action"
 					
 
 			#fire projectiles and stuff
@@ -2983,8 +2949,31 @@ def game_load():
 	else:
 		with open('savedata\savegame', 'rb') as file:
 			GAME, PLAYER = pickle.load(file)
+			#game_json_loader()
 
 	map_make_fov(GAME.current_map)
+
+def game_json_loader():
+	with open('equipment.json') as equip: equipment_archive = json.load(equip)
+
+	with open('actors.json') as actor: actor_archive = json.load(actor)
+
+	with open('scrolls.json') as scroll: scroll_archive = json.load(scroll)
+
+	global GAME_EQUIPMENT_POOL, GAME_CREATURE_POOL, GAME_SCROLL_POOL
+	GAME_EQUIPMENT_POOL = []
+	GAME_CREATURE_POOL = []
+	GAME_SCROLL_POOL = []
+
+	for item in equipment_archive['equipmentlist']:
+		GAME_EQUIPMENT_POOL.append(item)
+
+	for actor in actor_archive['actorlist']:
+		GAME_CREATURE_POOL.append(actor)
+
+	for scroll in scroll_archive['scrollslist']:
+		GAME_SCROLL_POOL.append(scroll)
+
 
 #'''initializing the main window and pygame'''
 def game_initialize():
@@ -3008,12 +2997,17 @@ def game_initialize():
 	SURFACE_MAP = pygame.Surface((constants.MAP_WIDTH * constants.CELL_WIDTH,
 									constants.MAP_HEIGHT * constants.CELL_HEIGHT))	
 
+	
+
 	SURFACE_BOTTOM_PANEL = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
 
 	CAMERA = obj_Camera()
 
 	#create GAME object to store game state
 	GAME = obj_Game()
+
+	game_json_loader()
+
 	CLOCK = pygame.time.Clock()
 
 	FOV_CALCULATE = True
