@@ -24,6 +24,7 @@
 							{"name":"townfolk"}
 						],
 			"docile": false,
+			"noncorporeal":false,
 
 			"actor_name":"Lesser Nightcrawler",
 			"icon_r": 192,
@@ -33,7 +34,7 @@
 		},
 		{
 			"creature_name": "Greater Nightcrawler",
-			"carcass_name": "the slimy carcass of a Greater Nightcrawler",
+			"carcass_name": "the slimy carcass of a Greater Nightcrawler.",
 			"carcass_value": 42,
 			"carcass_heal_amount": 11,
 			"creature_id":"creature_002",
@@ -54,6 +55,7 @@
 							{"name":"townfolk"}
 						],
 			"docile": false,
+			"noncorporeal":false,
 
 			"actor_name":"Greater Nightcrawler",
 			"icon_r": 192,
@@ -63,7 +65,7 @@
 		},
 		{
 			"creature_name": "Nightcrawler Sentinel",
-			"carcass_name": "the heavy, slimy carcass of a colossal Nightcrawler",
+			"carcass_name": "the heavy, slimy carcass of a colossal Nightcrawler.",
 			"carcass_value": 75,
 			"carcass_heal_amount": 20,
 			"creature_id":"creature_003",
@@ -84,6 +86,7 @@
 							{"name":"townfolk"}
 						],
 			"docile": false,
+			"noncorporeal":false,
 
 			"actor_name":"Greater Nightcrawler",
 			"icon_r": 192,
@@ -116,6 +119,7 @@
 							{"name":"townfolk"}
 						],
 			"docile": false,
+			"noncorporeal":false,
 
 			"actor_name":"Otter",
 			"icon_r": 192,
@@ -147,6 +151,7 @@
 							{"name":"eldritch"}
 						],
 			"docile": false,
+			"noncorporeal":false,
 
 			"actor_name":"Golden Dragon",
 			"icon_r": 255,
@@ -154,6 +159,100 @@
 			"icon_b": 0,
 			"actor_icon": "B"
 
+		},
+		{
+			"creature_name": "Nightcrawler Patriarch",
+			"carcass_name": "the massive carcass of a shiny, charcoal-gray Nightcrawler.",
+			"carcass_value": 103,
+			"carcass_heal_amount": 170,
+			"creature_id":"creature_006",
+
+			"base_hp": 32,
+			"damage_phys_base": 25,
+			"damage_fire_base": 5,
+			"resist_phys_base": 16,
+			"resist_fire_base": 9,
+			"xp_on_death": 350,
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+			"noncorporeal":false,
+
+			"actor_name":"Nightcrawler Patriarch",
+			"icon_r": 192,
+			"icon_g": 192,
+			"icon_b": 192,
+			"actor_icon": "Ж"
+		},
+		{
+			"creature_name": "Minor Mistform",
+			"carcass_name": "Nothing.",
+			"carcass_value": 0,
+			"carcass_heal_amount": 0,
+			"creature_id":"creature_006",
+
+			"base_hp": 10,
+			"damage_phys_base": 5,
+			"damage_fire_base": 5,
+			"resist_phys_base": 1,
+			"resist_fire_base": 4,
+			"xp_on_death": 20,
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+			"noncorporeal":true,
+
+			"actor_name":"Minor Mistform",
+			"icon_r": 255,
+			"icon_g": 255,
+			"icon_b": 1,
+			"actor_icon": "Ж"
+		},
+		{
+			"creature_name": "Major Mistform",
+			"carcass_name": "Nothing.",
+			"carcass_value": 0,
+			"carcass_heal_amount": 0,
+			"creature_id":"creature_006",
+
+			"base_hp": 32,
+			"damage_phys_base": 12,
+			"damage_fire_base": 5,
+			"resist_phys_base": 4,
+			"resist_fire_base": 4,
+			"xp_on_death": 50,
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+			"noncorporeal":true,
+
+			"actor_name":"Major Mistform",
+			"icon_r": 255,
+			"icon_g": 255,
+			"icon_b": 1,
+			"actor_icon": "Ж"
 		}
+
 	]
 }

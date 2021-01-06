@@ -58,33 +58,6 @@ class struc_Direction:
 		self.y = y
 
 
-class struc_equipment:
-	def __init__(self, name, pickup_name, weight, 
-		static, rarity, id, icon, icon_color
-		):
-		print("Hi")
-#			"weight":0,
-#			"icon":" ] ",
-#			"icon_color":"constants.COLOR_BLUE",
-#			"static": true,
-#			"slot": "head",
-#			"rarity":0,
-#			"id": "armor001",
-
-#			"damage_phys_bonus":0,
-#			"damage_phys_bonus_max":0,
-#			"resist_phys_bonus":0,
-
-#			"damage_fire_bonus":0,
-#			"damage_fire_bonus_max":0,
-#			"resist_fire_bonus":0,
-
-#			"dodge_bonus":0,
-#			"accuracy_bonus":0,
-#			"critical_chance":0,
-#			"critical_damage":0
-
-
 class obj_Actor:
 	def __init__(self, x, y, 
 		name_object,
@@ -107,7 +80,9 @@ class obj_Actor:
 		discovered = False,
 		exit_point = False,
 		doorcom = None,
-		allegiance_com = None
+		allegiance_com = None,
+		shopkeep_com = None,
+		trap_com = None
 		):
 
 		self.x = x
@@ -118,7 +93,6 @@ class obj_Actor:
 
 		self.icon = icon
 		self.icon_color = icon_color
-
 		self.static = static
 
 		self.discovered = discovered
@@ -169,7 +143,15 @@ class obj_Actor:
 		if self.allegiance_com:
 			self.allegiance_com.owner = self
 
-		
+		self.shopkeep_com = shopkeep_com
+		if self.shopkeep_com:
+			self.shopkeep_com.owner = self
+
+		self.trap_com = trap_com
+		if self.trap_com:
+			self.trap_com.owner = self
+
+
 
 
 	@property
@@ -243,12 +225,20 @@ class obj_Game:
 		#TODO - list of AI-possessing actors to iterate over rather than every actor in the map
 		self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
 
+		#special lists to iterate through when i get to optimizing
+		#self.current_traps = []
+		#self.current_ai_actors = []
+
+
+
+
 		self.existing_maps =  {}      #dictionary used for new map loading system, replace with tree later
 		self.this_map_key = ""
 		self.new_key = ""
 		self.next_map_type = "dungeon"
 		self.current_map_x = constants.MAP_WIDTH
 		self.current_map_y = constants.MAP_HEIGHT
+
 		
 	def transition(self):
 		global FOV_CALCULATE
@@ -450,7 +440,11 @@ class com_Creature:
 
 		resist_fire_base = 1,
 
+		noncorporeal = False,
+		enchantment_level = 0,
+
 		gender = 0, base_xp = 1, xp_on_death = 10):
+
 		self.name_instance = name_instance
 		self.max_hp = hp
 		self.current_hp = hp
@@ -461,6 +455,8 @@ class com_Creature:
 		self.xp_on_death = xp_on_death
 		self.current_xp = base_xp
 
+		self.noncorporeal = noncorporeal
+
 		#combat stats
 		self.damage_phys_base = damage_phys_base
 		self.resist_phys_base = resist_phys_base
@@ -469,6 +465,9 @@ class com_Creature:
 		self.hit_chance_base = base_hit_chance
 
 		self.resist_fire_base = resist_fire_base
+
+
+		self.enchantment_level = enchantment_level
 
 		#base_dodge_chance
 		#base_hit_chance
@@ -488,6 +487,7 @@ class com_Creature:
 				if attacker == PLAYER:
 					PLAYER.creature.current_xp += self.xp_on_death
 
+
 	def move(self, dx, dy):
 		new_x = self.owner.x
 		new_y = self.owner.y
@@ -498,38 +498,49 @@ class com_Creature:
 		#check if creature is trying to move off the map
 		if next_x >= 0 and next_x <= (GAME.current_map_x - 1):
 			if next_y >= 0 and next_y < (GAME.current_map_y - 1):
-				tile_is_wall = (GAME.current_map[self.owner.x + dx][self.owner.y + dy].block_path == True)
-				target = map_check_for_creatures(self.owner.x + dx, self.owner.y + dy, self.owner)
+				tile_is_wall = (GAME.current_map[next_x][next_y].block_path == True)
+				target = map_check_for_creatures(next_x, next_y, self.owner)
 
+				#is there are target where the actor iss attempting to movie
 				if target:
-					print("Attacker has a target.")
-					#prompt to check for hostility
-					if self.owner.allegiance_com and target.allegiance_com:
-						print("Attacker and target have allegiance components.")
-						#check if attacker's category equals the target's category - do not attack
-						if str(self.owner.allegiance_com.category) == str(target.allegiance_com.category):
-							print("Attacker and target have the same category. No attacking.")
-							#return
+					#print("Attacker has a target.")
+					if self.owner == PLAYER:
+						print(target.name_object)
 
-						print("target allegiance category = " + str(target.allegiance_com.category))
-						print("self hostile list = " + str(self.owner.allegiance_com.hostile_list))
+					#check if moving to a trap
+					if target.trap_com:
+						print("Target is a trap.")
+						if not tile_is_wall:
+							self.owner.x = next_x
+							self.owner.y = next_y
+							target.trap_com.affect_receiver(receiver = self)
+							return
+					
+
+
+
+					#else, check if hostile
+					if self.owner.allegiance_com and target.allegiance_com:
+						if (self.owner == PLAYER): self.attack(target)
+						return
 
 						#check if target's category is in the list of hostile categories, if so, attack
-						for i in self.owner.allegiance_com.hostile_list:
-							if str(target.allegiance_com.category) == self.owner.allegiance_com.hostile_list:
+						for allegiance_type in self.owner.allegiance_com.hostile_list:
+							#print(str(self.owner.allegiance_com.hostile_list[i]))
+							#print(target.allegiance_com.category)
+							if str(target.allegiance_com.category) == allegiance_type: 
 								self.attack(target)
-						else: 
-							print("Target is not hostile, not attacking.")
-							#a hacky hotfix for the bug above
-							#the list search isn't working, because of course it isn't
-							if self.owner == PLAYER:
-								self.attack(target)
+						
+						#else: print("Target is not hostile, not attacking.")
+				
 					else:
 						print("One or both actors does not have an allegiance component.")
 
+
+				#move this code to a separate function
 				if not tile_is_wall and target is None:
-					self.owner.x += dx
-					self.owner.y += dy
+					self.owner.x = next_x
+					self.owner.y = next_y
 
 					#if there are items at the player's tile, print them to the message log
 					#collapse this into a function later?
@@ -890,7 +901,7 @@ class com_Door:
 	print("Placeholder")
 
 class com_Allegiance:
-	def __init__(self, category = "undefined", protect_list = "", hostile_list = {""}, docile = True):
+	def __init__(self, category = "undefined", protect_list = "", hostile_list = [], docile = True):
 		#list of targets whose attackers the npc will attack
 		self.category = category,
 		self.protect_list = protect_list,
@@ -898,6 +909,34 @@ class com_Allegiance:
 		self.hostile_list = hostile_list,
 		#npc has not yet been provoked into attacking
 		self.docile = docile
+
+class com_Shopkeep:
+	def __init__(self, category = "general", funds = 100, stock = []):
+		self.category = category,
+		self.funds = funds,
+		self.stock = stock
+
+class com_Trap:
+	def __init__(self, trap_effect = None, is_active = True, is_visible = True, disarm_difficulty = 1):
+		self.trap_effect = trap_effect,
+		self.is_active = is_active,
+		self.disarm_difficulty = disarm_difficulty
+		self.is_visible = is_visible
+
+		#(trap_effect = "fire_trap", is_active = True, is_visible = True, disarm_difficulty = 1)
+
+
+	def affect_receiver(receiver = None):
+		#self.trap_effect
+
+
+		#default, damage the receiver
+		if receiver.creature:
+			receiver.creature.take_damage
+		print("Placeholder")
+
+
+
 
 
 ######################################################################################################################
@@ -989,7 +1028,7 @@ class ai_Player:
 	def take_turn(self):
 		return
 
-#engage with AKC at range then attack
+#engage with fireballs at range then attack
 class ai_Dragon:
 	def take_turn(self):
 		monster = self.owner
@@ -1003,7 +1042,17 @@ class ai_Dragon:
 			elif PLAYER.creature.current_hp > 0:
 				#cast fireball
 				if monster.distance_to(PLAYER) > 3:
-					cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
+
+
+
+					#replace this function with the more flexible aoe_damage function
+					#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
+					aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
+
+
+
+
+
 					#(PLAYER.x, PLAYER.y)
 
 				else: # if within blast radius, engage in melee
@@ -1013,15 +1062,18 @@ class ai_Dragon:
 					if monster.distance_to(PLAYER) < 3:
 						self.owner.move_towards(PLAYER)	
 
+#
+
 def death_monster(monster):
 	if monster.is_invulnerable != True:
 		#on death, most monsters stop moving
 		#print (monster.creature.name_instance + " is killed!")
 		
 		game_message(monster.creature.name_instance + " is dead!", constants.COLOR_GRAY)
+		if (monster.creature.noncorporeal == False): monster.icon = settings.consumable_icon
 		monster.creature = None
 		monster.ai = None
-		monster.icon = settings.consumable_icon
+		
 		monster.static = True
 		#determine what to leave behind
 	else:
@@ -1253,6 +1305,7 @@ def map_create_town():
 
 	distribute_equipment(num_attempts = 20, map_in = new_map)
 
+	gen_trap((2,2))
 
 
 	#create FOV map		
@@ -1302,6 +1355,18 @@ def map_tryplace_stairs(map_in, map_x_in = constants.MAP_WIDTH, map_y_in = const
 			gen_exit_point_stairs((x, y), downwards = True)
 			print("Stairs successfully placed after " + str(i) + " tries.")
 			break
+
+def map_tryplace_shopkeeper(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
+		for i in range(1, 2000):
+		
+			x = random.randint(1, map_x_in - 2)
+			y = random.randint(1, map_y_in - 2)
+			print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
+
+			if GAME.current_map[x][y].block_path == False:
+				PLAYER.x, PLAYER.y = x, y
+			 		
+				break	
 
 def map_place_objects(room_list, is_first_map = None):
 	for room in room_list:
@@ -1680,8 +1745,18 @@ def draw_projectile(ballistic_x, ballistic_y, projectile_color):
 	#new_surface.fill(misc_cat.S_SELECTED_DEFAULT)
 	projectile_surface.set_alpha(150)
 
-	#render ballistic
-	SURFACE_MAIN.blit(projectile_surface, (ballistic_x * constants.CELL_WIDTH, ballistic_y * constants.CELL_HEIGHT))
+
+
+
+
+	SURFACE_MAIN.blit(projectile_surface, (ballistic_x * constants.CELL_WIDTH * 1 , ballistic_y * constants.CELL_HEIGHT * 1))
+	#SURFACE_MAIN.blit(projectile_surface, (ballistic_x, ballistic_y))
+
+
+	#	new_x = x * constants.CELL_WIDTH - 16
+	#	new_y = y * constants.CELL_HEIGHT  -16
+
+
 	pygame.display.flip()
 	#ballistic tick duration
 	pygame.time.delay(settings.BALLISTIC_TICK_UPPER)
@@ -1819,7 +1894,7 @@ def cast_lightning(caster, T_damage_maxrange):
 		#cycle through list and damage everything found
 		for i, (x, y) in enumerate(list_of_tiles):
 			if settings.RENDER_BALLISTICS:
-				draw_projectile(x, y, constants.COLOR_L_BLUE)
+				draw_projectile((x * constants.CELL_HEIGHT), (y * constants.CELL_WIDTH), constants.COLOR_L_BLUE)
 			target = map_check_for_creatures(x, y)
 			if target: # and i != 0:
 				game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
@@ -1886,24 +1961,24 @@ def cast_confusion(caster, effect_duration):
 			target.ai.owner = target
 			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
 
-
-def aoe_damage(caster, damage_type = "fire", range = 15, radius = 4, penetrate_walls = False):
+# i.e. fireball
+def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, to_hit_radius = 3, penetrate_walls = False, msg = "The spell hits the target."):
 	#definitions, change later
-	damage, local_radius, max_r = T_damage_radius_range
+
 	caster_location = (caster.x, caster.y)
 	#TODO get target tile
 	if caster == PLAYER:
-		point_selected = menu_tile_select(coords_origin = caster_location, max_range = max_r,
+		point_selected = menu_tile_select(coords_origin = caster_location, max_range = target_range,
 			 penetrate_walls = False, 
 			 pierce_creature = False, 
-			 radius = local_radius)
+			 radius = to_hit_radius)
 	else:
 		point_selected = PLAYER.x, PLAYER.y
 
 	if point_selected:
 		game_message(caster.creature.name_instance + " casts Conflagration.")#" casts Alenko-Kharyalov Conflagration.")
 		#get sequence of tiles
-		tiles_to_damage = map_find_radius(point_selected, local_radius)
+		tiles_to_damage = map_find_radius(point_selected, to_hit_radius)
 		creature_hit = False
 
 		#damage all creatures in tiles
@@ -1913,10 +1988,11 @@ def aoe_damage(caster, damage_type = "fire", range = 15, radius = 4, penetrate_w
 
 			creature_to_damage = map_check_for_creatures(x, y)
 			if creature_to_damage: 
-				damage -= creature_to_damage.creature.resist_fire
+				#allow flexibility for damage types later
+				damage_to_deal -= creature_to_damage.creature.resist_fire
 
-				if damage > 0:
-					creature_to_damage.creature.take_damage(damage, attacker = caster)
+				if damage_to_deal > 0:
+					creature_to_damage.creature.take_damage(damage_to_deal, attacker = caster)
 				else:
 					if creature_to_damage.creature.name:
 						game_message(creature_to_damage.creature.name + " is unfazed.")
@@ -1925,13 +2001,44 @@ def aoe_damage(caster, damage_type = "fire", range = 15, radius = 4, penetrate_w
 					creature_hit = True
 
 		if creature_hit:
-			game_message("You smell the repugnant stench of burning flesh.", constants.COLOR_RED)
+			game_message(msg, constants.COLOR_RED)
 
 
 
-#def singular_damage():
+#i.e. lightning
+def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, penetrate_walls = False, msg = "The spell hits the target."):
+
+
+	player_location = (PLAYER.x, PLAYER.y)
+
+	# prompt player for a tile
+	point_selected = menu_tile_select(coords_origin = player_location, 
+		max_range = target_range, penetrate_walls = False)
+
+	if point_selected:
+	# convert that tile into a list of coordinates, A -> B
+		list_of_tiles = map_find_line(player_location, point_selected)
+
+		#cycle through list and damage everything found
+		for i, (x, y) in enumerate(list_of_tiles):
+			if settings.RENDER_BALLISTICS:
+
+				print ("Rendering tile at " + str(x) + ", " + str(y))
+				draw_projectile((x), (y), constants.COLOR_L_BLUE)
+				print("I like turtles")
+			target = map_check_for_creatures(x, y)
+			print ("Target at " + str(x) + ", " + str(y))
+			if target: # and i != 0:
+				game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
+				#check if spell uselessly hits wall
+				target.creature.take_damage(damage_to_deal, attacker = caster)
+
+				game_message(msg, constants.COLOR_RED)
+
 
 #def singular_effect():
+#	caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, penetrate_walls = False, msg = "The spell hits the target."):
+
 
 #def area_affect():
 
@@ -2438,39 +2545,6 @@ def menu_tile_select(coords_origin = None, max_range = None,
 ##########################################################################################################
 #generators
 
-def gen_scroll_lightning(coords):
-	x, y = coords
-	damage = helper_dice(5, 6)
-	m_range = 8
-	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range), name = "Scroll of Lightning")#not going to worry about weight or volume yet
-
-	return_object = obj_Actor(x, y, "Scroll of Lightning", item = item_com, 
-							icon = settings.scroll_icon, icon_color = constants.COLOR_WHITE)
-
-	return return_object
-
-def gen_scroll_fireball(coords):
-	x, y = coords
-	damage = helper_dice(7, 7)
-	local_radius = 2
-	max_r = 9
-	item_com = com_Item(use_function = aoe_damage(caster, damage_type = "fire", range = 15, radius = 4, penetrate_walls = False),
-	 value = (damage, local_radius, max_r), name = "Scroll of Fireball")
-
-	return_object =obj_Actor(x, y, "Scroll of Fireball", item = item_com, 
-							icon = settings.scroll_icon, icon_color = constants.COLOR_ORANGE)
-
-	return return_object
-
-def gen_scroll_confusion(coords):
-	x, y = coords
-	effect_duration = helper_dice(3, 3)
-	item_com = com_Item(use_function = cast_confusion, value = (effect_duration), name = "Scroll of Confusion")#not going to worry about weight or volume yet
-	return_object =obj_Actor(x, y, "Scroll of Confusion", item = item_com, 
-							icon = settings.scroll_icon, icon_color = constants.COLOR_GRAY)
-
-	return return_object
-
 #
 def distribute_equipment(num_attempts = 10, map_in = None, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT):
 	global GAME_EQUIPMENT_POOL
@@ -2507,11 +2581,6 @@ def distribute_scrolls(num_attempts = 100, map_in = None, map_x = constants.MAP_
 
 
 
-	
-
-
-#def gen_creature(coords):
-
 def gen_equipment(coords):
 	print("Placing equipment")
 	global GAME_EQUIPMENT_POOL, GAME
@@ -2530,7 +2599,6 @@ def gen_equipment(coords):
 	GAME.current_objects.append(return_object)
 
 def gen_creature(coords):
-	print("Placing creature")
 	global GAME_CREATURE_POOL, GAME
 	selected_creature = random.choice(GAME_CREATURE_POOL)
 	#print(selected_creature['resist_phys_base'])
@@ -2538,7 +2606,9 @@ def gen_creature(coords):
 
 	ai_com = assign_ai_script(creature_in = selected_creature)
 
-	item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, name = selected_creature['carcass_name'])	
+	if (selected_creature['noncorporeal'] == False):
+		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, name = selected_creature['carcass_name'])	
+	else: item_com = None
 
 	creature_com = com_Creature(selected_creature['creature_name'], death_function = death_monster,
 								hp = selected_creature['base_hp'],
@@ -2548,7 +2618,7 @@ def gen_creature(coords):
 	) 
 	
 	allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
-								hostile_list = {"player", "townfolk", "eldritch", "wild" },
+								hostile_list = ["eldritch", "wild"],
 								docile = selected_creature['docile'])
 	
 	#name of item when picked up
@@ -2557,7 +2627,16 @@ def gen_creature(coords):
 		icon_color = (selected_creature['icon_r'], selected_creature['icon_g'], selected_creature['icon_b']),
 		allegiance_com = allegiance_com)
 
+
+
 	GAME.current_objects.append(return_object)
+
+
+def gen_shopkeeper():
+	global GAME
+	ai_com = ai_Townfolk_Wander()
+
+	creature_com = com_Creature("shopkeeper")
 
 
 def gen_scroll(coords):
@@ -2567,7 +2646,24 @@ def gen_scroll(coords):
 
 	damage = helper_dice(5, 6)
 	m_range = 8
-	item_com = com_Item(use_function = cast_lightning, value = (damage, m_range), name = selected_scroll['scroll_name'])#not going to worry about weight or volume yet
+
+	if selected_scroll['attack_type'] == "aoe":
+
+		#(caster = None, damage_type = "fire", target_range = 15, to_hit_radius = 4, penetrate_walls = False)
+
+		item_com = com_Item(use_function = aoe_damage,
+						value = (damage, m_range),
+			 			name = selected_scroll['scroll_name'])
+
+#msg = selected_scroll['damage_message']
+
+	elif selected_scroll['attack_type'] == "beam":
+		item_com = com_Item(use_function = beam_damage,
+						value = (damage, m_range),
+						name = selected_scroll['scroll_name'])
+
+
+
 
 	return_object = obj_Actor(x, y, selected_scroll['scroll_name'], item = item_com, 
 							icon = selected_scroll['icon'], icon_color = (selected_scroll['icon_r'], selected_scroll['icon_g'], selected_scroll['icon_b']))
@@ -2609,10 +2705,11 @@ def gen_player(coords):
 	container_com = com_Container()
 	creature_com = com_Creature(PLAYER_NAME,
 								damage_phys_base = 8, resist_phys_base = 3, hp = 100, #player's creature component name
-								death_function = death_player
+								death_function = death_player,
+								noncorporeal = False
 								)
 	allegiance_com = com_Allegiance(category = "player", 
-					hostile_list = {"eldritch", "wild", "draconic"},
+					hostile_list = ["eldritch", "wild", "draconic", "townfolk"],
 					docile = False
 					)
 
@@ -2633,7 +2730,9 @@ def gen_town_folk(coords):
 	
 	creature_com = com_Creature(name_instance = "Townfolk",
 								damage_phys_base = 8, resist_phys_base = 3, hp = 10, #player's creature component name
-								death_function = death_monster
+								death_function = death_monster,
+								noncorporeal = False,
+
 								)
 
 	ai_com = ai_Townfolk_Wander()
@@ -2645,13 +2744,15 @@ def gen_town_folk(coords):
 						container = container_com,
 						icon = " @ ", icon_color = constants.COLOR_L_GRAY,
 						ai = ai_com,
-						allegiance_com = allegiance_com
+						allegiance_com = allegiance_com,
 						
 						)
 	print("Townsfolk spawned")
 
 
 	GAME.current_objects.append(npc)
+
+#def gen_town_guard(coords):
 
 def gen_exit_point_stairs(coords, downwards, target_type = None):
 	x, y = coords
@@ -2730,6 +2831,24 @@ def gen_building_door(new_map, new_building):
 
 	new_map[door_x_pos][door_y_pos].block_path = False
 	gen_exit_point_door((door_x_pos, door_y_pos), target_type = "house")
+
+#basic trap which damages whatever steps on it
+def gen_trap(coords):
+	x, y = coords
+	#create the player
+
+
+	trapcom = com_Trap(trap_effect = "fire_trap", is_active = True, is_visible = True, disarm_difficulty = 1)
+
+
+	trap = obj_Actor(x, y, "Fire trap",  
+						trap_com = trapcom,
+						icon = " + ", icon_color = constants.COLOR_WHITE
+						)
+	
+
+	GAME.current_objects.append(trap)
+
 
 ################################################################################################################
 

@@ -13,6 +13,7 @@
 			"slot": "Armor",
 			"rarity":0,
 			"id": "armor000",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max":0,
@@ -40,6 +41,7 @@
 			"slot": "Head",
 			"rarity":0,
 			"id": "armor001",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max":0,
@@ -67,6 +69,7 @@
 			"slot": "Hands",
 			"rarity":0,
 			"id": "armor002",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max":0,
@@ -94,6 +97,7 @@
 			"slot": "Shirt",
 			"rarity":0,
 			"id": "armor003",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max" :0,
@@ -120,6 +124,7 @@
 			"slot": "Main Hand",
 			"rarity":0,
 			"id": "sword001",
+			"sort_class":"weapon",
 
 			"damage_phys_bonus":12,
 			"damage_phys_bonus_max" :0,
@@ -147,6 +152,7 @@
 			"slot": "Cloak",
 			"rarity":0,
 			"id": "armor004",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max" :0,
@@ -173,6 +179,7 @@
 			"slot": "Boots",
 			"rarity":0,
 			"id": "armor005",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max" :0,
@@ -199,6 +206,7 @@
 			"slot": "Chainmail",
 			"rarity":0,
 			"id": "armor006",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max" :0,
@@ -225,6 +233,7 @@
 			"slot": "Armor",
 			"rarity":0,
 			"id": "armor007",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max":0,
@@ -238,6 +247,7 @@
 			"accuracy_bonus":10,
 			"critical_chance":0,
 			"critical_damage":1
+
 		},
 		{
 			"name":"Temryavite Hauberk",
@@ -251,6 +261,7 @@
 			"slot": "Armor",
 			"rarity":0,
 			"id": "armor008",
+			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
 			"damage_phys_bonus_max":0,
@@ -263,6 +274,60 @@
 			"dodge_bonus":6,
 			"accuracy_bonus":7,
 			"critical_chance":0,
+			"critical_damage":1
+		},
+		{
+			"name":"Guiding Star helmet",
+			"pickup_name":"a polished silver helmet emblazoned with a golden star.",
+			"weight":2,
+			"icon":" ] ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static":true,
+			"slot": "Head",
+			"rarity":0,
+			"id": "armor009",
+			"sort_class":"armor",
+
+			"damage_phys_bonus":0,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":2,
+
+			"damage_fire_bonus":0,
+			"damage_fire_bonus_max":1,
+			"resist_fire_bonus":5,
+
+			"dodge_bonus":5,
+			"accuracy_bonus":5,
+			"critical_chance":0,
+			"critical_damage":1
+		},
+		{
+			"name":"The Southern Star",
+			"pickup_name":"a silver two-handed sword.",
+			"weight":14,
+			"icon":" ) ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static":true,
+			"slot": "Main Hand",
+			"rarity":0,
+			"id": "sword000",
+			"sort_class":"weapon",
+
+			"damage_phys_bonus":20,
+			"damage_phys_bonus_max":0,
+			"resist_phys_bonus":1,
+
+			"damage_fire_bonus":5,
+			"damage_fire_bonus_max":0,
+			"resist_fire_bonus":5,
+
+			"dodge_bonus":5,
+			"accuracy_bonus":5,
+			"critical_chance":5,
 			"critical_damage":1
 		}
 	

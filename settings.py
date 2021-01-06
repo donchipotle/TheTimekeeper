@@ -13,7 +13,7 @@ COLOR_DEFAULT_BG = (20, 20, 20)
 MAP_KEY_LENGTH = 32
 
 #toggle rendering ballistics (spells, projectiles, etc.), currently broken by camera refactor
-RENDER_BALLISTICS = False
+RENDER_BALLISTICS = True
 
 BALLISTIC_TICK_UPPER = 50	#ms elapsed before ballistic is cleared
 BALLISTIC_TICK_LOWER = 50	#ms elapsed before next tick
@@ -92,8 +92,8 @@ Mod10 = False
 
 	###debug
 
-ENABLE_DEBUG = False
-DISPLAY_FPS = False
+ENABLE_DEBUG = True
+DISPLAY_FPS = True
 
 DEBUG_MOUSE_POSITON = False
 DEBUG_MOUSE_DELTA = False

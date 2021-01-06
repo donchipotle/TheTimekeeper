@@ -10,25 +10,14 @@
 			"icon_g":69,
 			"icon_b":19,
 			"static":true,
-			"slot": "Junk",
+			"sort_class":"junk",
 			"rarity":0,
 			"id": "item000",
 
-			"damage_phys_bonus":2,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":0,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":0,
-
-			"dodge_bonus":0,
-			"accuracy_bonus":0,
-			"critical_chance":0,
-			"critical_damage":0
+			"description": "This is a good, old, garden variety brick. There is nothing remarkable about it."
 		},
 		{
-			"name":"Brick",
+			"name":"Portrait of a Young Man",
 			"pickup_name":"a crusty, old, clay brick.",
 			"weight":5,
 			"icon":" * ",
@@ -36,22 +25,14 @@
 			"icon_g":69,
 			"icon_b":19,
 			"static":true,
-			"slot": "Junk",
+			"sort_class":"junk",
 			"rarity":0,
-			"id": "item000",
+			"id": "item001",
 
-			"damage_phys_bonus":2,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":0,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":0,
-
-			"dodge_bonus":0,
-			"accuracy_bonus":0,
-			"critical_chance":0,
-			"critical_damage":0
+			"description":"This portrait depicts an absolutely horrid, wretched sight: a young yellow-haired man whos image - though retaining
+							its humanity - has somehow twisted into a demented, repugnant beast. You do not and cannot understand what could have happened to 
+							the image - surely, surely, it could not have been painted this way, nor could it have been so well defiled by another.
+							In the corner, barely legible, is the artist's signature: Безіл Холлуорд"
 		}
 	]
 }

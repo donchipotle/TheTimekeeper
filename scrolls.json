@@ -10,6 +10,8 @@
 			"attack_type":"aoe",
 			"damage_type":"fire",
 			"duration":"1",
+			"sort_class":"scroll",
+			"weight":1,
 
 
 
@@ -23,7 +25,10 @@
 			"id": "scroll000",
 
 			"attack_strength_min":10,
-			"attack_strength_max":15
+			"attack_strength_max":15,
+
+
+			"damage_message":"You smell the nauseating stench of singed flesh."
 
 		},
 		{
@@ -35,6 +40,8 @@
 			"attack_type":"aoe",
 			"damage_type":"special",
 			"duration":"1",
+			"sort_class":"scroll",
+			"weight":1,
 
 
 
@@ -48,9 +55,41 @@
 			"id": "scroll001",
 
 			"attack_strength_min":10,
-			"attack_strength_max":15
+			"attack_strength_max":15,
+
+			"damage_message":"This is a placeholder message until I feel like writing a new one.."
+
+		},
+		{
+			"scroll_name":"Scroll of Static Lance",
+			"pickup_name":"a scroll of Static Lance",
+			"weight":1,
+			"icon":" ! ",
+
+			"attack_type":"beam",
+			"damage_type":"electric",
+			"duration":"1",
+			"sort_class":"scroll",
+			"weight":1,
+
+
+
+
+			"icon_r":255,
+			"icon_g":128,
+			"icon_b":255,
+			"static":true,
+			
+			"rarity":0,
+			"id": "scroll002",
+
+			"attack_strength_min":10,
+			"attack_strength_max":15,
+
+			"damage_message":"You smell ozone."
 
 		}
+
 	]
 }
 	
