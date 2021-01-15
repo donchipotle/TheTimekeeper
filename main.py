@@ -69,6 +69,11 @@ class obj_Actor:
 		description = "No description for this actor.", 
 		state = None,
 
+		last_x = 0,
+		last_y = 0,
+
+
+
 		num_turns = 0, 
 		icon = "x", 
 		icon_color = constants.COLOR_WHITE,
@@ -222,15 +227,12 @@ class obj_Game:
 		self.first_map = True
 
 		self.current_objects = []
-		#TODO - list of AI-possessing actors to iterate over rather than every actor in the map
+		self.actors_with_ai = []
 		self.current_map, self.current_rooms, self.next_map_x, self.next_map_y = map_create()
 
 		#special lists to iterate through when i get to optimizing
 		#self.current_traps = []
 		#self.current_ai_actors = []
-
-
-
 
 		self.existing_maps =  {}      #dictionary used for new map loading system, replace with tree later
 		self.this_map_key = ""
@@ -238,7 +240,6 @@ class obj_Game:
 		self.next_map_type = "dungeon"
 		self.current_map_x = constants.MAP_WIDTH
 		self.current_map_y = constants.MAP_HEIGHT
-
 		
 	def transition(self):
 		global FOV_CALCULATE
@@ -256,6 +257,8 @@ class obj_Game:
 					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
 				
 					map_make_fov(self.current_map, self.next_map_x, self.next_map_y) #, self.current_map.x_dimension, self.current_map.y_dimension)
+
+					#TEMP_FOV
 
 
 				else:						#if the exit point has no key, create a new map and key, then load it
@@ -289,20 +292,15 @@ class obj_Game:
 
 					if self.next_map_type == "house": 
 						self.current_map, self.current_rooms = map_create_house_interior()
-						#self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
 
 					if self.next_map_type == "cave":
 						self.current_map, self.next_map_x, self.next_map_y = map_random_walk()
-						#map_place_objects_dungeon()
 
-						#self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
 						map_tryplace_player(map_x_in = self.next_map_x, map_y_in = self.next_map_y)
 						gen_exit_point_stairs((PLAYER.x, PLAYER.y), downwards = False)
 						
 					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
 					
-
-		
 					#set the first exit point in the new map (where the player is located) to point back to the old one
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
 					for obj in list_of_objects:	
@@ -313,10 +311,9 @@ class obj_Game:
 					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
 			
 					self.existing_maps[GAME.new_key] = map_to_save
-					print("Saved second map at key " + GAME.new_key)
-					print("Number of maps saved is " + str(len(GAME.existing_maps)))
 				
 		map_make_fov(self.current_map, fov_x = self.next_map_x, fov_y = self.next_map_y)
+
 		FOV_CALCULATE = True
 
 #this is a rectangle that lives on the map
@@ -443,6 +440,10 @@ class com_Creature:
 		noncorporeal = False,
 		enchantment_level = 0,
 
+		proximate_actors = [],
+		target = None,
+		proximate_hostiles = [],
+
 		gender = 0, base_xp = 1, xp_on_death = 10):
 
 		self.name_instance = name_instance
@@ -466,8 +467,13 @@ class com_Creature:
 
 		self.resist_fire_base = resist_fire_base
 
-
 		self.enchantment_level = enchantment_level
+
+		self.proximate_actors = proximate_actors
+		self.proximate_hostiles = proximate_hostiles
+
+		print(str(self.name_instance) + "'local FOV has been created.")
+
 
 		#base_dodge_chance
 		#base_hit_chance
@@ -495,6 +501,10 @@ class com_Creature:
 		next_x = self.owner.x + dx
 		next_y = self.owner.y + dy
 
+		if self.owner == PLAYER:
+			print(str(next_x) + "," + str(next_y))
+			#print(target.name_object)
+
 		#check if creature is trying to move off the map
 		if next_x >= 0 and next_x <= (GAME.current_map_x - 1):
 			if next_y >= 0 and next_y < (GAME.current_map_y - 1):
@@ -504,8 +514,7 @@ class com_Creature:
 				#is there are target where the actor iss attempting to movie
 				if target:
 					#print("Attacker has a target.")
-					if self.owner == PLAYER:
-						print(target.name_object)
+					print(str(target.name_object))
 
 					#check if moving to a trap
 					if target.trap_com:
@@ -515,9 +524,6 @@ class com_Creature:
 							self.owner.y = next_y
 							target.trap_com.affect_receiver(receiver = self)
 							return
-					
-
-
 
 					#else, check if hostile
 					if self.owner.allegiance_com and target.allegiance_com:
@@ -526,19 +532,21 @@ class com_Creature:
 
 						#check if target's category is in the list of hostile categories, if so, attack
 						for allegiance_type in self.owner.allegiance_com.hostile_list:
-							#print(str(self.owner.allegiance_com.hostile_list[i]))
-							#print(target.allegiance_com.category)
 							if str(target.allegiance_com.category) == allegiance_type: 
 								self.attack(target)
 						
 						#else: print("Target is not hostile, not attacking.")
 				
-					else:
-						print("One or both actors does not have an allegiance component.")
+					else:print("One or both actors does not have an allegiance component.")
 
 
 				#move this code to a separate function
 				if not tile_is_wall and target is None:
+					#used for checking if the owner has moved from the last tile or not
+					self.owner.last_x = self.owner.x
+					self.owner.last_y = self.owner.y
+
+
 					self.owner.x = next_x
 					self.owner.y = next_y
 
@@ -966,15 +974,65 @@ class ai_Chase:
 	#a basic ai script which chases and tries to harm the player
 	#add target selection and prioritizaiton later
 	def take_turn(self):
+		global GAME, FOV_MAP#, AI_FOV_MAP
 		monster = self.owner
-		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
+		#used for checking if the owner has used at all
+		#self.owner.last_x = self.owner.x
+		#self.owner.last_y = self.owner.y
+
+		#get all actors in FOV
+
+		#AI_FOV_MAP
+
+		#optimization to see if the owner has moved at all
+		#if self.owner.x = self.owner.last_x and self.owner.y == self.owner.last_y:
+		map_make_local_fov(GAME.current_map, actor_in = (self.owner), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
+		libtcod.map_compute_fov(monster.creature.local_fov, 
+								monster.x, monster.y, 
+								10, constants.FOV_LIGHT_WALLS, 
+								constants.FOV_ALGO)
+
+		
+		#brute force version, replace later with smaller actor list
+		i = 0
+		#for obj in GAME.actors_with_ai:
+		for obj in GAME.current_objects:
+			if obj.creature:
+				if libtcod.map_is_in_fov(monster.creature.local_fov, obj.x, obj.y) and obj != monster:
+					print(str(obj.name_object) + " is within " + str(monster.name_object) + "'s line of sight.")
+					monster.creature.proximate_actors.append(obj)
+					i += 1
+		print(str(len(monster.creature.proximate_actors)) + " actors in " + str(monster.name_object) + "'s line of sight")
+		i = 0
+
+		#check each if hostile and add hostiles to list
+		#for obj in monster.creature.proximate_actors:
+
+
+		
+
+		#select hostile according to priority (proximity, danger, etc.)
+
+
+		#engage
+
+
+
+		#disengage 
+		
+
+#		if libtcod.map_is_in_fov(AI_FOV_MAP, monster.x, monster.y):
 			#move towards the player if far away (out of weapon reach)		
 			# move towards the player if far away
-			if monster.distance_to(PLAYER) >= 2:
-				self.owner.move_towards(PLAYER)
+#			if monster.distance_to(PLAYER) >= 2:
+#				self.owner.move_towards(PLAYER)
 			# if close enough, attack player
-			elif PLAYER.creature.current_hp > 0:
-				monster.creature.attack(PLAYER) # monster.creature.power)
+#			elif PLAYER.creature.current_hp > 0:
+#				monster.creature.attack(PLAYER) # monster.creature.power)
+
+		monster.creature.local_fov = None
+		monster.creature.proximate_actors = []
+		#print(" ")
 
 class ai_Flee:
 	def take_turn(self):
@@ -1043,8 +1101,6 @@ class ai_Dragon:
 				#cast fireball
 				if monster.distance_to(PLAYER) > 3:
 
-
-
 					#replace this function with the more flexible aoe_damage function
 					#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
 					aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
@@ -1064,15 +1120,22 @@ class ai_Dragon:
 
 #
 
+def ai_seek_target():
+	print("Placeholder")
+
+
+
 def death_monster(monster):
 	if monster.is_invulnerable != True:
 		#on death, most monsters stop moving
-		#print (monster.creature.name_instance + " is killed!")
 		
 		game_message(monster.creature.name_instance + " is dead!", constants.COLOR_GRAY)
 		if (monster.creature.noncorporeal == False): monster.icon = settings.consumable_icon
 		monster.creature = None
 		monster.ai = None
+		#GAME.actors_with_ai.remove(monster.creature)
+
+		#at some point - remove this from ai actor list so it doesn't get bloated
 		
 		monster.static = True
 		#determine what to leave behind
@@ -1150,16 +1213,8 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 
 	#random walk that propagates out from assigned nodes
 	for n in range(walk_nodes):
-
-		#if first_node:
-		#point_x = int(dungeon_x/2)
-		#point_y = int(dungeon_y/2)
-		#	first_node = False
-			#print("First node.")
-	#	else:
 		point_x = random.randint(x_l_bound, x_u_bound)
 		point_y = random.randint(y_l_bound, y_u_bound)
-		print("Node #" + str(n))
 
 		for i in range(steps_per_node):
 			r = helper_dice(4, -1)
@@ -1173,11 +1228,9 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 			if r == 3: 
 				point_y -= 1
 
-			#print("drawing tile at " + str(point_x) + "," + str(point_y))
 			if point_x > 2 and point_x < (dungeon_x -2):
 				if point_y > 2 and point_y < (dungeon_y - 2):
 					new_map[point_x][point_y].block_path = False
-		print("Random walk from node " + str(n) + " completed.")
 
 	map_make_fov(new_map, fov_x = dungeon_x -1, fov_y = dungeon_y -1)
 
@@ -1190,8 +1243,7 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 	#make outer edges of the map undiggable 
 	#is_diggable
 
-
-	print("map creation finished")
+	#print("map creation finished")
 	return (new_map, dungeon_x, dungeon_y)
 
 def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, total_rooms = constants.MAP_MAX_NUM_ROOMS):
@@ -1274,9 +1326,9 @@ def map_create_town():
 		h = libtcod.random_get_int(0,constants.KAZANY_BUILDING_MIN_HEIGHT, 
 										constants.KAZANY_BUILDING_MAX_HEIGHT)
 
-		x = libtcod.random_get_int(0, 2, constants.MAP_WIDTH - w - 2)
+		x = libtcod.random_get_int(0, 8, constants.MAP_WIDTH - w - 8)
 
-		y = libtcod.random_get_int(0, 2, constants.MAP_HEIGHT - h - 2)
+		y = libtcod.random_get_int(0, 8, constants.MAP_HEIGHT - h - 8)
 
 		#create room
 		new_building = obj_Building((x, y), (w, h))
@@ -1336,7 +1388,7 @@ def map_tryplace_player(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP
 		
 		x = random.randint(1, map_x_in - 2)
 		y = random.randint(1, map_y_in - 2)
-		print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
+	#	print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
 
 		if GAME.current_map[x][y].block_path == False:
 			PLAYER.x, PLAYER.y = x, y
@@ -1353,7 +1405,7 @@ def map_tryplace_stairs(map_in, map_x_in = constants.MAP_WIDTH, map_y_in = const
 		#map_objects_at_coords
 		if map_in[x][y].block_path == False: 
 			gen_exit_point_stairs((x, y), downwards = True)
-			print("Stairs successfully placed after " + str(i) + " tries.")
+			#print("Stairs successfully placed after " + str(i) + " tries.")
 			break
 
 def map_tryplace_shopkeeper(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
@@ -1363,10 +1415,9 @@ def map_tryplace_shopkeeper(map_x_in = constants.MAP_WIDTH, map_y_in = constants
 			y = random.randint(1, map_y_in - 2)
 			print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
 
-			if GAME.current_map[x][y].block_path == False:
-				PLAYER.x, PLAYER.y = x, y
-			 		
-				break	
+		#	if GAME.current_map[x][y].block_path == False:
+		#	
+			#break
 
 def map_place_objects(room_list, is_first_map = None):
 	for room in room_list:
@@ -1521,6 +1572,20 @@ def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MA
 			libtcod.map_set_properties(FOV_MAP, x, y, 
 				not incoming_map[int(x)][int(y)].block_path, not incoming_map[int(x)][int(y)].block_path)
 
+def map_make_local_fov(incoming_map, actor_in = None, fov_x = constants.MAP_WIDTH, fov_y = constants.MAP_HEIGHT):
+	global GAME
+
+	actor_in.creature.local_fov = libtcod.map.Map(fov_x, fov_y)
+	#AI_FOV_MAP = libtcod.map.Map(fov_x, fov_y)
+
+	for y in range(int(fov_y)):
+		for x in range(int(fov_x)):
+			libtcod.map_set_properties(actor_in.creature.local_fov, x, y, 
+				not incoming_map[int(x)][int(y)].block_path, not incoming_map[int(x)][int(y)].block_path)
+
+	#print("Local FOV made for this actor.")
+	
+
 def map_calculate_fov():
 	global FOV_CALCULATE, PLAYER
 	if FOV_CALCULATE:
@@ -1653,11 +1718,9 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
     # get both the surface and rectangle of the desired message
     text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
     
-    if not center:
-    	text_rect.topleft = coords
+    if not center: text_rect.topleft = coords
 
-    else:
-    	text_rect.center = coords
+    else: text_rect.center = coords
 
     # draw the text onto the display surface.
     display_surface.blit(text_surf, text_rect)
@@ -2218,6 +2281,7 @@ def open_door_prompt(in_event):
 	global SURFACE_MAIN, PLAYER
 	prompt_close = False
 
+	#hold down O and press a numpad direction, or release O to cancel
 	while not prompt_close:
 		#get keypresses and stuff
 		draw_text(SURFACE_MAIN, 
@@ -2226,21 +2290,25 @@ def open_door_prompt(in_event):
 			center = False)
 
 		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
+			if event.type == pygame.QUIT: pygame.quit()
 
 			if event.type == pygame.KEYDOWN:	
 				if event.key in constants.NUMPAD_KEYS:
 					print("SHOULD have called the attempt open function")
 					adjusted = game_direction_prompt(event_in = in_event)
 					#adjusted = attempt_to_open_door(event_in = in_event)
+					print(str(adjusted))
 					if adjusted != (0,0):
-						prompt_close = True
+						to_open_x = PLAYER.x + adjusted.x
+						to_open_y = PLAYER.y + adjusted.y
+					prompt_close = True
 
-				if event.key == pygame.K_ESCAPE or pygame.K_o:
+
+			if event.type == pygame.KEYUP:
+				if event.key == pygame.K_o:
+			
 					prompt_close = True
 					game_message("You decide not to open anything.")
-					#return 
 				
 
 
@@ -2604,7 +2672,7 @@ def gen_creature(coords):
 	#print(selected_creature['resist_phys_base'])
 	x, y = coords
 
-	ai_com = assign_ai_script(creature_in = selected_creature)
+	ai_com = (assign_ai_script(creature_in = selected_creature))
 
 	if (selected_creature['noncorporeal'] == False):
 		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, name = selected_creature['carcass_name'])	
@@ -2627,9 +2695,11 @@ def gen_creature(coords):
 		icon_color = (selected_creature['icon_r'], selected_creature['icon_g'], selected_creature['icon_b']),
 		allegiance_com = allegiance_com)
 
-
+	#create creature's local fov map
+	return_object.creature.local_fov = map_make_local_fov(GAME.current_map, actor_in = return_object, fov_x = GAME.current_map_x, fov_y = GAME.current_map_y)
 
 	GAME.current_objects.append(return_object)
+	GAME.actors_with_ai.append(return_object)
 
 
 def gen_shopkeeper():
@@ -2747,7 +2817,7 @@ def gen_town_folk(coords):
 						allegiance_com = allegiance_com,
 						
 						)
-	print("Townsfolk spawned")
+	#4print("Townsfolk spawned")
 
 
 	GAME.current_objects.append(npc)
@@ -2867,13 +2937,10 @@ def game_main_loop():
 		if player_action == "QUIT":
 			game_quit_sequence()
 		
-		for obj in GAME.current_objects:
-			if obj.ai: 
-				if player_action != "no-action":
+		if player_action != "no-action":
+			for obj in GAME.current_objects:
+				if obj.ai: 
 					obj.ai.take_turn()
-
-			if obj.exitportal:
-				obj.exitportal.update()
 
 		if settings.DEBUG_PRINT_TURNS == True and player_action != "no-action":
 			GAME.turns_elapsed += 1
@@ -2882,11 +2949,9 @@ def game_main_loop():
 		if (PLAYER.state == "STATUS_DEAD" or PLAYER.state == "STATUS_WIN"):	#either ending condition
 			game_quit = True
 
-	
 		draw_game()
 	
 		pygame.display.flip()   #update the display
-
 		CLOCK.tick(constants.GAME_FPS)   #tick the clock
 
 #########################################################################################################
@@ -2902,8 +2967,7 @@ def game_handle_keys():
 	MOD_KEY2 = (keys_list[pygame.K_q])
 	
 	for event in events_list:
-		if event.type == pygame.QUIT:
-			return "QUIT"	
+		if event.type == pygame.QUIT: return "QUIT"	
 
 		if event.type == pygame.KEYDOWN:
 			move_coords = struc_Direction()
@@ -2980,47 +3044,47 @@ def game_handle_keys():
 def game_direction_prompt(event_in, not_in_menu = True):
 	#return a direction picked from using the numpad, used for moving, firing projectiles, or interacting with doors
 	target_coords = struc_Direction(x = 0, y = 0)
+	target_coords = (0, 0)
 
 	while not_in_menu:
-
 		if event_in.key == pygame.K_KP1:
 			target_coords = (-1, 1)
-			#print("KP1")
+			print("KP1")
 			
 		elif event_in.key == pygame.K_KP2:# or pygame.K_DOWN:
 			target_coords = (0, 1)
-			#print("KP2/KD")
+			print("KP2/KD")
 			
 		elif event_in.key == pygame.K_KP3:
 			target_coords = (1, 1)
-			#print("KP3")
+			print("KP3")
 			
 		elif event_in.key == pygame.K_KP4: # or pygame.K_LEFT:
 			target_coords = (-1, 0)
-			#print("KP4/KL")
+			print("KP4/KL")
 			
 		elif event_in.key == pygame.K_KP5: #this one does literally nothing, just kinda chillin' here till I feel like using it
 			target_coords = (0, 0)
-			#print("KP5")
+			print("KP5")
 			
 		elif event_in.key == pygame.K_KP6: # or pygame.K_RIGHT:
 			target_coords = (1, 0)
-			#print("KP6/KR")
+			print("KP6/KR")
 			
 		elif event_in.key == pygame.K_KP7:
 			target_coords = (-1, -1)
-			#print("KP7")
+			print("KP7")
 
 		elif event_in.key == pygame.K_KP8: # or pygame.K_UP:
 			target_coords = (0, -1)
-			#print("KP8/KU")
+			print("KP8/KU")
 			
 		elif event_in.key == pygame.K_KP9:
 			target_coords = (1, -1)
-			#print("KP9")
-		else:
-			target_coords = (0, 0)
-			#print("No directional input.")
+			print("KP9")
+#		else:
+#			target_coords = (0, 0)
+#			print("No directional input.")
 
 		not_in_menu = False
 		return target_coords
@@ -3096,7 +3160,7 @@ def game_json_loader():
 
 #'''initializing the main window and pygame'''
 def game_initialize():
-	global SURFACE_MAIN, SURFACE_MAP, FOV_CALCULATE, GAME
+	global SURFACE_MAIN, SURFACE_MAP, FOV_CALCULATE, GAME, TEMP_FOV
 	global CAMERA, PLAYER, ENEMY, PLAYER_NAME
 	global DUNGEON_DEPTH, SURFACE_WINDOW, SURFACE_BOTTOM_PANEL
 	global CLOCK

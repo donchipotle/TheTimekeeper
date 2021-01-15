@@ -59,7 +59,7 @@ COLOR_DEFAULT_BG = COLOR_D_GRAY
 FOV_ALGO = libtcod.FOV_SHADOW 
 #FOV_ALGO = libtcod.FOV_BASIC
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 18
+TORCH_RADIUS = 10
 
 #fonts
 #font for rendering the entire screen
