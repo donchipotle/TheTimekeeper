@@ -58,6 +58,21 @@ class struc_Direction:
 		self.y = y
 
 
+class struc_Target:
+	def __init__(self, actor = None, distance = 0, threat_level = 0):
+		self.actor = actor,
+		self.distance = distance,
+		self.threat_level = threat_level
+
+
+#class struc_Damage:
+#	def __init__(self, fire = 0, electricity = 0, poison = 0, frost = 0, magic = 0,
+#				ballistic = 0, bludgeoning = 0, ):
+
+#class struc_Resistance:
+
+
+
 class obj_Actor:
 	def __init__(self, x, y, 
 		name_object,
@@ -440,9 +455,10 @@ class com_Creature:
 		noncorporeal = False,
 		enchantment_level = 0,
 
+		local_line_of_sight = 7,
 		proximate_actors = [],
-		target = None,
 		proximate_hostiles = [],
+		target = None,
 
 		gender = 0, base_xp = 1, xp_on_death = 10):
 
@@ -469,6 +485,7 @@ class com_Creature:
 
 		self.enchantment_level = enchantment_level
 
+		self.local_line_of_sight = local_line_of_sight
 		self.proximate_actors = proximate_actors
 		self.proximate_hostiles = proximate_hostiles
 
@@ -501,9 +518,8 @@ class com_Creature:
 		next_x = self.owner.x + dx
 		next_y = self.owner.y + dy
 
-		if self.owner == PLAYER:
-			print(str(next_x) + "," + str(next_y))
-			#print(target.name_object)
+		#if self.owner == PLAYER:
+			#print(str(next_x) + "," + str(next_y))
 
 		#check if creature is trying to move off the map
 		if next_x >= 0 and next_x <= (GAME.current_map_x - 1):
@@ -513,8 +529,7 @@ class com_Creature:
 
 				#is there are target where the actor iss attempting to movie
 				if target:
-					#print("Attacker has a target.")
-					print(str(target.name_object))
+					#print(str(target.name_object))
 
 					#check if moving to a trap
 					if target.trap_com:
@@ -546,7 +561,6 @@ class com_Creature:
 					self.owner.last_x = self.owner.x
 					self.owner.last_y = self.owner.y
 
-
 					self.owner.x = next_x
 					self.owner.y = next_y
 
@@ -560,8 +574,7 @@ class com_Creature:
 		damage_dealt = self.damage_physical - target.creature.resist_physical
 		print(damage_dealt)
 
-		if (damage_dealt < 0):
-			game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
+		if (damage_dealt <= 0): game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
 
 		else:
 			game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
@@ -581,9 +594,8 @@ class com_Creature:
 			object_bonuses = [obj.equipment.accuracy_bonus 
 			for obj in self.owner.container.equipped_items]
 
-		for bonus in object_bonuses:
-			if bonus:
-				dodge += bonus
+		for bonus in object_bonuses: 
+			if bonus: dodge += bonus
 
 		return dodge
 
@@ -595,9 +607,8 @@ class com_Creature:
 			object_bonuses = [obj.equipment.dodge_bonus 
 			for obj in self.owner.container.equipped_items]
 
-		for bonus in object_bonuses:
-			if bonus:
-				dodge += bonus
+		for bonus in object_bonuses: 
+			if bonus: dodge += bonus
 
 		return dodge
 
@@ -974,45 +985,84 @@ class ai_Chase:
 	#a basic ai script which chases and tries to harm the player
 	#add target selection and prioritizaiton later
 	def take_turn(self):
-		global GAME, FOV_MAP#, AI_FOV_MAP
+		global GAME, FOV_MAP
 		monster = self.owner
-		#used for checking if the owner has used at all
-		#self.owner.last_x = self.owner.x
-		#self.owner.last_y = self.owner.y
+
+		monster.creature.proximate_actors = []
 
 		#get all actors in FOV
-
-		#AI_FOV_MAP
-
-		#optimization to see if the owner has moved at all
-		#if self.owner.x = self.owner.last_x and self.owner.y == self.owner.last_y:
 		map_make_local_fov(GAME.current_map, actor_in = (self.owner), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
 		libtcod.map_compute_fov(monster.creature.local_fov, 
 								monster.x, monster.y, 
-								10, constants.FOV_LIGHT_WALLS, 
+								monster.creature.local_line_of_sight, 
+								constants.FOV_LIGHT_WALLS, 
 								constants.FOV_ALGO)
 
-		
-		#brute force version, replace later with smaller actor list
-		i = 0
-		#for obj in GAME.actors_with_ai:
 		for obj in GAME.current_objects:
 			if obj.creature:
 				if libtcod.map_is_in_fov(monster.creature.local_fov, obj.x, obj.y) and obj != monster:
-					print(str(obj.name_object) + " is within " + str(monster.name_object) + "'s line of sight.")
 					monster.creature.proximate_actors.append(obj)
-					i += 1
-		print(str(len(monster.creature.proximate_actors)) + " actors in " + str(monster.name_object) + "'s line of sight")
-		i = 0
+
+		if (len(monster.creature.proximate_actors)) == 0:
+			return
 
 		#check each if hostile and add hostiles to list
-		#for obj in monster.creature.proximate_actors:
+		i = 0
+
+		#hostile_categories = set(monster.allegiance_com.hostile_list)
+		for obj in monster.creature.proximate_actors:
+			if obj.allegiance_com:
+				#this looping is circuitous but so far it seems to be the only think that works lol, checks if prox actor is hostile
+				#
+				#print(str(obj.allegiance_com.category) + " in " + str(monster.allegiance_com.hostile_list)+ "?")
+				for obj.allegiance_com.category in hostile_categories:
+					print("Hostile.")
+					distance_to_target = monster.distance_to(obj)
+					print(str(distance_to_target) + " tiles between " + str(monster.name_object) + " and " + str(obj.name_object))
+					target = struc_Target(actor = obj, distance = distance_to_target, threat_level = 0)
+					monster.creature.proximate_hostiles.append(target)
+					
 
 
-		
+				#for allegiance_class in monster.allegiance_com.hostile_list:
+					
+
+					#for allegiance_type in allegiance_class:
+						
+
+
+
+						#print("this actor's allegiance: " + str(allegiance_type) +", target allegiance: " + str(obj.allegiance_com.category))
+						#if hostile
+						#if str(allegiance_type) == (obj.allegiance_com.category):
+						#	print(str(obj.name_object) + " is hostile to " + str(monster.name_object))
+							#ah, more circuitousness oof
+						#	for redundant_variable_lol_oof in (obj.allegiance_com.category):
+						#		if redundant_variable_lol_oof == str(obj.allegiance_com.category):
+						#			distance_to_target = monster.distance_to(obj)
+						#			print(str(distance_to_target) + " tiles between " + str(monster.name_object) + " and " + str(obj.name_object))
+						#			target = struc_Target(actor = obj, distance = distance_to_target, threat_level = 0)
+						#			monster.creature.proximate_hostiles.append(target)
+						#			i+= 1
+						#			break
+						#break
+						
+					
+	
+
+		if (len(monster.creature.proximate_hostiles)) == 0:
+			print("No proximate hostiles.")
+			return
+		else: print(str(len(monster.creature.proximate_hostiles)))
+
+
 
 		#select hostile according to priority (proximity, danger, etc.)
+		monster.creature.proximate_hostiles.sort(key= lambda target: target.distance)
 
+		print(str(len(monster.creature.proximate_hostiles)))
+		print("Hostiles sorted")
+		#print(str(monster.creature.proximate_hostiles[0].target.name_object) + " is the target of " + monster.name_object)
 
 		#engage
 
@@ -1030,9 +1080,10 @@ class ai_Chase:
 #			elif PLAYER.creature.current_hp > 0:
 #				monster.creature.attack(PLAYER) # monster.creature.power)
 
+		#reset temporary data structures
 		monster.creature.local_fov = None
+		monster.creature.proximate_hostiles = []
 		monster.creature.proximate_actors = []
-		#print(" ")
 
 class ai_Flee:
 	def take_turn(self):
@@ -1117,8 +1168,6 @@ class ai_Dragon:
 
 					if monster.distance_to(PLAYER) < 3:
 						self.owner.move_towards(PLAYER)	
-
-#
 
 def ai_seek_target():
 	print("Placeholder")
@@ -1572,19 +1621,15 @@ def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MA
 			libtcod.map_set_properties(FOV_MAP, x, y, 
 				not incoming_map[int(x)][int(y)].block_path, not incoming_map[int(x)][int(y)].block_path)
 
-def map_make_local_fov(incoming_map, actor_in = None, fov_x = constants.MAP_WIDTH, fov_y = constants.MAP_HEIGHT):
+def map_make_local_fov(incoming_map, actor_in = None, fov_x = constants.MAP_WIDTH - 1, fov_y = constants.MAP_HEIGHT - 1):
 	global GAME
 
 	actor_in.creature.local_fov = libtcod.map.Map(fov_x, fov_y)
-	#AI_FOV_MAP = libtcod.map.Map(fov_x, fov_y)
 
 	for y in range(int(fov_y)):
 		for x in range(int(fov_x)):
 			libtcod.map_set_properties(actor_in.creature.local_fov, x, y, 
 				not incoming_map[int(x)][int(y)].block_path, not incoming_map[int(x)][int(y)].block_path)
-
-	#print("Local FOV made for this actor.")
-	
 
 def map_calculate_fov():
 	global FOV_CALCULATE, PLAYER
@@ -2686,8 +2731,10 @@ def gen_creature(coords):
 	) 
 	
 	allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
-								hostile_list = ["eldritch", "wild"],
+								hostile_list = ['wild', 'player', 'townfolk', 'guardsman'],
 								docile = selected_creature['docile'])
+
+
 	
 	#name of item when picked up
 	return_object = obj_Actor(x, y, selected_creature['creature_name'], 
@@ -2696,10 +2743,8 @@ def gen_creature(coords):
 		allegiance_com = allegiance_com)
 
 	#create creature's local fov map
-	return_object.creature.local_fov = map_make_local_fov(GAME.current_map, actor_in = return_object, fov_x = GAME.current_map_x, fov_y = GAME.current_map_y)
-
+	
 	GAME.current_objects.append(return_object)
-	GAME.actors_with_ai.append(return_object)
 
 
 def gen_shopkeeper():
@@ -2797,17 +2842,17 @@ def gen_town_folk(coords):
 	x, y = coords
 
 	container_com = com_Container()
-	
 	creature_com = com_Creature(name_instance = "Townfolk",
 								damage_phys_base = 8, resist_phys_base = 3, hp = 10, #player's creature component name
 								death_function = death_monster,
-								noncorporeal = False,
-
-								)
+								noncorporeal = False)
 
 	ai_com = ai_Townfolk_Wander()
-	
 	allegiance_com = com_Allegiance(category = "townfolk")
+
+	#assign (assume lol) gender and create a name accordingly
+	creature_com.gender = helper_dice(upper_bound = 2, bias = -1)
+	creature_com.name_instance = assign_random_name(gender_in = creature_com.gender)
 
 	npc = obj_Actor(x, y, "Some random person.",  
 						creature = creature_com,
@@ -2815,12 +2860,26 @@ def gen_town_folk(coords):
 						icon = " @ ", icon_color = constants.COLOR_L_GRAY,
 						ai = ai_com,
 						allegiance_com = allegiance_com,
-						
 						)
-	#4print("Townsfolk spawned")
-
 
 	GAME.current_objects.append(npc)
+
+#M:0, F:1, N:0
+def assign_random_name(gender_in = 0):
+	global GAME_SURNAME_POOL, GAME_MALNAME_POOL, GAME_FEMNAME_POOL
+	print(str(gender_in))
+	if gender_in == 0:
+		firstname = random.choice(GAME_MALNAME_POOL)['firstname']
+	#if gender_in == 1:
+	else:
+		#firstname = random.choice(GAME_FEMNAME_POOL)['firstname']
+		firstname = random.choice(GAME_FEMNAME_POOL)['firstname']
+
+	lastname = (random.choice(GAME_SURNAME_POOL))['surname']
+
+	#return (str(namechoice['firstname']) + " " + str(random.choice(GAME_SURNAME_POOL)['surname']))
+	#return (str(namechoice['firstname']) + " " + str((random.choice(GAME_SURNAME_POOL))['surname']))
+	return(str(firstname) + " " + str(lastname))
 
 #def gen_town_guard(coords):
 
@@ -3143,10 +3202,22 @@ def game_json_loader():
 
 	with open('scrolls.json') as scroll: scroll_archive = json.load(scroll)
 
-	global GAME_EQUIPMENT_POOL, GAME_CREATURE_POOL, GAME_SCROLL_POOL
+	with open('surnames.json') as surname: surname_archive = json.load(surname)
+
+	with open('male_names.json') as malname: malname_archive = json.load(malname)
+
+	with open('female_names.json') as femname: femname_archive = json.load(femname)
+
+#
+
+
+	global GAME_EQUIPMENT_POOL, GAME_CREATURE_POOL, GAME_SCROLL_POOL, GAME_SURNAME_POOL, GAME_MALNAME_POOL, GAME_FEMNAME_POOL
 	GAME_EQUIPMENT_POOL = []
 	GAME_CREATURE_POOL = []
 	GAME_SCROLL_POOL = []
+	GAME_SURNAME_POOL = []
+	GAME_MALNAME_POOL = []
+	GAME_FEMNAME_POOL = []
 
 	for item in equipment_archive['equipmentlist']:
 		GAME_EQUIPMENT_POOL.append(item)
@@ -3156,6 +3227,15 @@ def game_json_loader():
 
 	for scroll in scroll_archive['scrollslist']:
 		GAME_SCROLL_POOL.append(scroll)
+
+	for surname in surname_archive['surnameslist']:
+		GAME_SURNAME_POOL.append(surname)
+
+	for malname in malname_archive['malenameslist']:
+		GAME_MALNAME_POOL.append(malname)
+
+	for femname in femname_archive['femalenameslist']:
+		GAME_FEMNAME_POOL.append(femname)
 
 
 #'''initializing the main window and pygame'''

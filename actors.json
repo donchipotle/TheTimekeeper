@@ -94,7 +94,6 @@
 			"icon_b": 192,
 			"actor_icon": "Ж"
 
-
 		},
 		{
 			"creature_name": "Otter",
@@ -116,7 +115,7 @@
 			"allegiance_hostile_list":
 						[ 
 							{"name":"player"},
-							{"name":"townfolk"}
+							{"name":"eldritch"}
 						],
 			"docile": false,
 			"noncorporeal":false,
@@ -147,8 +146,8 @@
 			"allegiance_hostile_list":
 						[ 
 							{"name":"player"},
-							{"name":"townfolk"},
-							{"name":"eldritch"}
+							{"name":"townfolk"}
+						
 						],
 			"docile": false,
 			"noncorporeal":false,
