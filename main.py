@@ -458,7 +458,7 @@ class com_Creature:
 		local_line_of_sight = 7,
 		proximate_actors = [],
 		proximate_hostiles = [],
-		target = None,
+		target = struc_Target(),
 
 		gender = 0, base_xp = 1, xp_on_death = 10):
 
@@ -760,108 +760,6 @@ class com_Equipment:
 	def unequip(self):
 		self.equipped = False
 
-#LEGACY - remove later
-class com_Stairs:
-	def __init__(self, downwards = True):
-		self.downwards = downwards
-		static = True
-	
-	#include parameter for prompting the player before moving?
-	
-
-	def use(self):
-		print("Stairs.use called")
-		if self.downwards:
-			GAME.transition_next()
-			game_message("You descend the staircase.")
-
-		else:
-			GAME.transition_previous()
-			game_message("You ascend the staircase.")
-
-#LEGACY - remove later
-class com_Exit_Portal:			
-	def __init__(self):
-		self.open_icon = settings.portal_icon
-		self.closed_icon = settings.door_closed_icon
-		self.color = constants.COLOR_YINZER
-
-	def update(self):
-		#flag initialization
-
-		found_mcguffin = False
-		#check conditions
-		portal_open = self.owner.state == "OPEN"
-		for obj in PLAYER.container.inventory:
-			if obj.name_object == "The McGuffin":	#if the player has the mcguffin 
-				found_mcguffin = True 	#shouldn't this be under the player? idk
-
-		if found_mcguffin and not portal_open: #if lamp found but portal not yet open
-			self.owner.state = "OPEN"
-			self.owner.icon = settings.door_open_icon
-			print("Portal open")
-
-		if not found_mcguffin and portal_open: #if lamp found but portal not yet open
-			self.owner.state = "CLOSED"
-			self.owner.icon = settings.door_closed_icon
-			print("Portal closed")
-
-	def use(self):
-		print("Using portal or something idk")
-		#if self.owner.state == "OPEN":
-		game_message("You won!")
-		PLAYER.state = "STATUS_WIN"
-		SURFACE_MAIN.fill(constants.COLOR_BLACK)
-		x = (constants.CAM_WIDTH/2)
-		y = (constants.CAM_HEIGHT/2)
-
-		screen_open = True
-
-		while screen_open:
-			if settings.Mod9: 
-				draw_text(SURFACE_MAIN, "I owe yinz an Arn Ciddy and some pierogies. Good job.",
-						constants.FONT_TITLE_SCREEN1,
-						(x, y),
-						constants.COLOR_YINZER, center = True)
-
-				draw_text(SURFACE_MAIN, "Press F to return to the main menu.",
-							constants.FONT_TITLE_SCREEN2,
-							(x, y + 75),
-							constants.COLOR_YINZER, center = True)
-
-			else: 
-				draw_text(SURFACE_MAIN, "You won. Congratulations.",
-						constants.FONT_TITLE_SCREEN1,
-						(x, y),
-						constants.COLOR_WHITE, center = True)
-
-				draw_text(SURFACE_MAIN, "Press F to return to the main menu.",
-						constants.FONT_TITLE_SCREEN2,
-						(x, y + 75),
-						constants.COLOR_WHITE, center = True)
-
-
-			for event in pygame.event.get():
-					if event.type == pygame.KEYDOWN:
-						screen_open = False
-
-
-			pygame.display.update()
-			pygame.time.wait(1000)
-
-			if settings.GEN_LEGACY_FILE:
-				filename = (PLAYER.creature.name_instance +"_winner" + "." 
-							+ datetime.date.today().strftime("%Y%B%d") #get the date 
-							+ ".txt") 	
-
-			if os.path.isfile(filename):
-				#legacy file
-				legacy_file = open(filename, 'a+')
-
-				for message, color in GAME.message_history:
-					legacy_file.write(message + "\n")
-		pygame.display.update()
-
 class com_Exit_Point:
 	def __init__(self, require_input, next_map_key = "", static = True, target_map_type = "dungeon"):
 		self.require_input = require_input,
@@ -987,13 +885,11 @@ class ai_Chase:
 	def take_turn(self):
 		global GAME, FOV_MAP
 		monster = self.owner
-
 		monster.creature.proximate_actors = []
 
 		#get all actors in FOV
 		map_make_local_fov(GAME.current_map, actor_in = (self.owner), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
-		libtcod.map_compute_fov(monster.creature.local_fov, 
-								monster.x, monster.y, 
+		libtcod.map_compute_fov(monster.creature.local_fov, monster.x, monster.y, 
 								monster.creature.local_line_of_sight, 
 								constants.FOV_LIGHT_WALLS, 
 								constants.FOV_ALGO)
@@ -1003,83 +899,33 @@ class ai_Chase:
 				if libtcod.map_is_in_fov(monster.creature.local_fov, obj.x, obj.y) and obj != monster:
 					monster.creature.proximate_actors.append(obj)
 
-		if (len(monster.creature.proximate_actors)) == 0:
-			return
+		if (len(monster.creature.proximate_actors)) == 0: return
 
-		#check each if hostile and add hostiles to list
-		i = 0
-
-		#hostile_categories = set(monster.allegiance_com.hostile_list)
 		for obj in monster.creature.proximate_actors:
 			if obj.allegiance_com:
-				#this looping is circuitous but so far it seems to be the only think that works lol, checks if prox actor is hostile
-				#
-				#print(str(obj.allegiance_com.category) + " in " + str(monster.allegiance_com.hostile_list)+ "?")
-				for obj.allegiance_com.category in hostile_categories:
-					print("Hostile.")
+				for obj.allegiance_com.category in monster.allegiance_com.hostile_list:	
 					distance_to_target = monster.distance_to(obj)
-					print(str(distance_to_target) + " tiles between " + str(monster.name_object) + " and " + str(obj.name_object))
-					target = struc_Target(actor = obj, distance = distance_to_target, threat_level = 0)
+					target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
 					monster.creature.proximate_hostiles.append(target)
-					
+									
+		if (len(monster.creature.proximate_hostiles)) == 0: return
 
-
-				#for allegiance_class in monster.allegiance_com.hostile_list:
-					
-
-					#for allegiance_type in allegiance_class:
-						
-
-
-
-						#print("this actor's allegiance: " + str(allegiance_type) +", target allegiance: " + str(obj.allegiance_com.category))
-						#if hostile
-						#if str(allegiance_type) == (obj.allegiance_com.category):
-						#	print(str(obj.name_object) + " is hostile to " + str(monster.name_object))
-							#ah, more circuitousness oof
-						#	for redundant_variable_lol_oof in (obj.allegiance_com.category):
-						#		if redundant_variable_lol_oof == str(obj.allegiance_com.category):
-						#			distance_to_target = monster.distance_to(obj)
-						#			print(str(distance_to_target) + " tiles between " + str(monster.name_object) + " and " + str(obj.name_object))
-						#			target = struc_Target(actor = obj, distance = distance_to_target, threat_level = 0)
-						#			monster.creature.proximate_hostiles.append(target)
-						#			i+= 1
-						#			break
-						#break
-						
-					
-	
-
-		if (len(monster.creature.proximate_hostiles)) == 0:
-			print("No proximate hostiles.")
-			return
-		else: print(str(len(monster.creature.proximate_hostiles)))
-
-
-
-		#select hostile according to priority (proximity, danger, etc.)
-		monster.creature.proximate_hostiles.sort(key= lambda target: target.distance)
-
-		print(str(len(monster.creature.proximate_hostiles)))
-		print("Hostiles sorted")
-		#print(str(monster.creature.proximate_hostiles[0].target.name_object) + " is the target of " + monster.name_object)
+		monster.creature.proximate_hostiles = sorted(monster.creature.proximate_hostiles, key=lambda target: target.distance)
+		monster.creature.target = (monster.creature.proximate_hostiles)[0]
+		target_actor = monster.creature.target.actor[0]
 
 		#engage
 
-
-
-		#disengage 
-		
-
-#		if libtcod.map_is_in_fov(AI_FOV_MAP, monster.x, monster.y):
-			#move towards the player if far away (out of weapon reach)		
-			# move towards the player if far away
-#			if monster.distance_to(PLAYER) >= 2:
-#				self.owner.move_towards(PLAYER)
+		print(monster.creature.target.distance)
+		#move towards the target if far away (out of weapon reach)		
+		if (monster.creature.target.distance)[0] >= 2.0:		#no idea why this is a tuple lol
+			monster.move_towards(target_actor)
 			# if close enough, attack player
-#			elif PLAYER.creature.current_hp > 0:
-#				monster.creature.attack(PLAYER) # monster.creature.power)
+		elif target_actor.creature.current_hp > 0:
+			monster.creature.attack(target_actor) # monster.creature.power)
 
+		#disengage?
+		
 		#reset temporary data structures
 		monster.creature.local_fov = None
 		monster.creature.proximate_hostiles = []
