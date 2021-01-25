@@ -30,7 +30,13 @@
 			"icon_r": 192,
 			"icon_g": 192,
 			"icon_b": 192,
-			"actor_icon": "Ж "
+			"actor_icon": "Ж ",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
+
 		},
 		{
 			"creature_name": "Greater Nightcrawler",
@@ -61,7 +67,12 @@
 			"icon_r": 192,
 			"icon_g": 192,
 			"icon_b": 192,
-			"actor_icon": "Ж"
+			"actor_icon": "Ж",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 		},
 		{
 			"creature_name": "Nightcrawler Sentinel",
@@ -92,7 +103,12 @@
 			"icon_r": 192,
 			"icon_g": 192,
 			"icon_b": 192,
-			"actor_icon": "Ж"
+			"actor_icon": "Ж",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 
 		},
 		{
@@ -124,7 +140,12 @@
 			"icon_r": 192,
 			"icon_g": 192,
 			"icon_b": 192,
-			"actor_icon": "о"
+			"actor_icon": "о",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 		},
 		{
 			"creature_name": "Golden Dragon",
@@ -156,7 +177,12 @@
 			"icon_r": 255,
 			"icon_g": 128,
 			"icon_b": 0,
-			"actor_icon": "B"
+			"actor_icon": "B",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 
 		},
 		{
@@ -188,7 +214,12 @@
 			"icon_r": 192,
 			"icon_g": 192,
 			"icon_b": 192,
-			"actor_icon": "Ж"
+			"actor_icon": "Ж",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 		},
 		{
 			"creature_name": "Minor Mistform",
@@ -219,7 +250,12 @@
 			"icon_r": 255,
 			"icon_g": 255,
 			"icon_b": 1,
-			"actor_icon": "Ж"
+			"actor_icon": "Ж",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 		},
 		{
 			"creature_name": "Major Mistform",
@@ -250,7 +286,12 @@
 			"icon_r": 255,
 			"icon_g": 255,
 			"icon_b": 1,
-			"actor_icon": "Ж"
+			"actor_icon": "Ж",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5
 		}
 
 	]

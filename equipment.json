@@ -16,11 +16,9 @@
 			"sort_class":"armor",
 
 			"damage_phys_bonus":0,
-			"damage_phys_bonus_max":0,
 			"resist_phys_bonus":12,
 
 			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
 			"resist_fire_bonus":5,
 
 			"dodge_bonus":5,

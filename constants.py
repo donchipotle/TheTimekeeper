@@ -10,7 +10,7 @@ pygame.init()
 #	Toying with them causes bad things to happen. 										#
 #	Do not cause bad things to happen. 													#
 #	Bad things are bad. kthxbye															#
-#										-sincerely, yo boi Big Chug						#
+#										-sincerely, yo boi Chris						#
 #																						#
 #########################################################################################
 
@@ -51,6 +51,8 @@ COLOR_GREEN = (0, 255, 0)
 COLOR_BROWN = (139,69,19)
 COLOR_L_BROWN = (205,133,63)
 COLOR_YINZER = (212, 175, 55)
+
+
 
 #Window background
 COLOR_DEFAULT_BG = COLOR_D_GRAY

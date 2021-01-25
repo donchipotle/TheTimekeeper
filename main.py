@@ -65,11 +65,33 @@ class struc_Target:
 		self.threat_level = threat_level
 
 
-#class struc_Damage:
-#	def __init__(self, fire = 0, electricity = 0, poison = 0, frost = 0, magic = 0,
-#				ballistic = 0, bludgeoning = 0, ):
+class struc_Damage:
+	def __init__(self, fire = 0, electricity = 0, poison = 0, frost = 0, magic = 0,
+				ballistic = 0, piercing = 0, bludgeoning = 0, slashing = 0):
+		self.fire = fire
+		self.electricity = electricity
+		self.poison = poison
+		self.frost = frost
+		self.magic = magic
 
-#class struc_Resistance:
+		self.ballistic = ballistic
+		self.piercing = piercing
+		self.bludgeoning = bludgeoning
+		self.slashing = slashing
+
+class struc_Resistance:
+	def __init__(self, fire_resist = 0, electricity_resist = 0, poison_resist = 0, frost_resist = 0, magic_resist = 0,
+				ballistic_resist = 0, piercing_resist = 0, bludgeoning_resist = 0, slashing_resist = 0):
+		self.fire_resist = fire_resist
+		self.electricity_resist = electricity_resist
+		self.poison_resist = poison_resist
+		self.frost_resist = frost_resist
+		self.magic_resist = magic_resist
+
+		self.ballistic_resist = ballistic_resist
+		self.piercing_resist = piercing_resist
+		self.bludgeoning_resist = bludgeoning_resist
+		self.slashing_resist = slashing_resist
 
 
 
@@ -447,13 +469,14 @@ class com_Creature:
 
 		damage_phys_base = 1,
 		resist_phys_base = 1,
-		base_dodge_chance = 10,
-		base_hit_chance = 10,
+		base_dodge = 20,
+		base_accuracy = 100,
+		base_crit_chance = 5,
+		base_crit_mult = 1.5,
 
 		resist_fire_base = 1,
 
 		noncorporeal = False,
-		enchantment_level = 0,
 
 		local_line_of_sight = 7,
 		proximate_actors = [],
@@ -477,27 +500,18 @@ class com_Creature:
 		#combat stats
 		self.damage_phys_base = damage_phys_base
 		self.resist_phys_base = resist_phys_base
-
-		self.dodge_chance_base = base_dodge_chance
-		self.hit_chance_base = base_hit_chance
-
 		self.resist_fire_base = resist_fire_base
 
-		self.enchantment_level = enchantment_level
+		self.base_accuracy = base_accuracy
+		self.base_dodge = base_dodge
+		self.base_crit_chance = base_crit_chance
+		self.base_crit_mult = base_crit_mult
 
 		self.local_line_of_sight = local_line_of_sight
 		self.proximate_actors = proximate_actors
 		self.proximate_hostiles = proximate_hostiles
 
 		print(str(self.name_instance) + "'local FOV has been created.")
-
-
-		#base_dodge_chance
-		#base_hit_chance
-		#bonus_defense
-		#bonus_accuracy
-		#base_critical_chance
-		#bonus_critical
 
 		#add new damage types and stuff later
 	def take_damage(self, damage_received, attacker):
@@ -571,14 +585,28 @@ class com_Creature:
 						
 
 	def attack(self, target):
-		damage_dealt = self.damage_physical - target.creature.resist_physical
-		print(damage_dealt)
+		chance_to_hit = self.base_accuracy - target.creature.base_dodge
 
-		if (damage_dealt <= 0): game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
+		if random.randint(0,100) < chance_to_hit:
+			#do the damage
+			damage_dealt = self.damage_physical - target.creature.resist_physical
+			print(damage_dealt)
 
-		else:
-			game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
-			target.creature.take_damage(damage_dealt, attacker = self.owner)
+			#multiply the damage, if done by a player
+			hit_was_critical = False
+			if random.randint(0,100) < self.base_crit_chance:
+				damage_dealt = damage_dealt * self.base_crit_mult
+				hit_was_critical = True
+
+			if (damage_dealt <= 0): game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
+
+			else:
+				if hit_was_critical: game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage in a critical hit."), constants.COLOR_WHITE)
+				else: 
+					game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
+					target.creature.take_damage(damage_dealt, attacker = self.owner)
+		else: game_message((self.name_instance + " fails to hit " + target.creature.name_instance + " and does no damage."), constants.COLOR_WHITE)
+			
 
 	def heal(self, value):
 		self.current_hp += value
@@ -751,7 +779,7 @@ class com_Equipment:
 		
 		for item in all_equipped_items:
 			if item.equipment.slot and (item.equipment.slot == self.slot):
-				game_message(self.slot + " is already occupied.", constants.COLOR_RED)
+				#game_message(self.slot + " is already occupied.", constants.COLOR_RED)
 					#ynaq prompt to replace?
 				return
 		self.equipped = True
@@ -859,6 +887,37 @@ class com_Trap:
 ######################################################################################################################
 #AI scripts
 	#execute once per turn
+
+def ai_designate_targets(actor = None):
+	global GAME
+	map_make_local_fov(GAME.current_map, actor_in = (actor), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
+	libtcod.map_compute_fov(actor.creature.local_fov, actor.x, actor.y, 
+								actor.creature.local_line_of_sight, 
+								constants.FOV_LIGHT_WALLS, 
+								constants.FOV_ALGO)
+
+	for obj in GAME.current_objects:
+		if obj.creature:
+			if libtcod.map_is_in_fov(actor.creature.local_fov, obj.x, obj.y) and obj != actor:
+				actor.creature.proximate_actors.append(obj)
+
+	if (len(actor.creature.proximate_actors)) == 0: return "no actors"
+
+	for obj in actor.creature.proximate_actors:
+		if obj.allegiance_com:
+			for obj.allegiance_com.category in actor.allegiance_com.hostile_list:	
+				distance_to_target = actor.distance_to(obj)
+				target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
+				actor.creature.proximate_hostiles.append(target)
+									
+	if (len(actor.creature.proximate_hostiles)) == 0: return "no actors"
+
+	actor.creature.proximate_hostiles = sorted(actor.creature.proximate_hostiles, key=lambda target: target.distance)
+	#actor.creature.target = (actor.creature.proximate_hostiles)[0]
+	target = (actor.creature.proximate_hostiles)[0]
+	#return (actor.creature.target.actor[0])
+	return target	
+
 class ai_Confuse:
 	def __init__(self, old_ai, num_turns = 5):
 		self.old_ai = old_ai
@@ -885,48 +944,20 @@ class ai_Chase:
 	def take_turn(self):
 		global GAME, FOV_MAP
 		monster = self.owner
-		monster.creature.proximate_actors = []
 
-		#get all actors in FOV
-		map_make_local_fov(GAME.current_map, actor_in = (self.owner), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
-		libtcod.map_compute_fov(monster.creature.local_fov, monster.x, monster.y, 
-								monster.creature.local_line_of_sight, 
-								constants.FOV_LIGHT_WALLS, 
-								constants.FOV_ALGO)
+		target_actor = (ai_designate_targets(actor = monster))
+		#targ
+		if target_actor == "no actors":
+			return
 
-		for obj in GAME.current_objects:
-			if obj.creature:
-				if libtcod.map_is_in_fov(monster.creature.local_fov, obj.x, obj.y) and obj != monster:
-					monster.creature.proximate_actors.append(obj)
+		else:
+			#if (target.distance)[0] >= 2.0:		#no idea why this is a tuple lol
+			if monster.distance_to(target_actor.actor[0]) >= 2.0:
+				monster.move_towards(target_actor.actor[0])
 
-		if (len(monster.creature.proximate_actors)) == 0: return
+			elif target_actor.actor[0].creature.current_hp > 0:
+				monster.creature.attack(target_actor.actor[0])
 
-		for obj in monster.creature.proximate_actors:
-			if obj.allegiance_com:
-				for obj.allegiance_com.category in monster.allegiance_com.hostile_list:	
-					distance_to_target = monster.distance_to(obj)
-					target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
-					monster.creature.proximate_hostiles.append(target)
-									
-		if (len(monster.creature.proximate_hostiles)) == 0: return
-
-		monster.creature.proximate_hostiles = sorted(monster.creature.proximate_hostiles, key=lambda target: target.distance)
-		monster.creature.target = (monster.creature.proximate_hostiles)[0]
-		target_actor = monster.creature.target.actor[0]
-
-		#engage
-
-		print(monster.creature.target.distance)
-		#move towards the target if far away (out of weapon reach)		
-		if (monster.creature.target.distance)[0] >= 2.0:		#no idea why this is a tuple lol
-			monster.move_towards(target_actor)
-			# if close enough, attack player
-		elif target_actor.creature.current_hp > 0:
-			monster.creature.attack(target_actor) # monster.creature.power)
-
-		#disengage?
-		
-		#reset temporary data structures
 		monster.creature.local_fov = None
 		monster.creature.proximate_hostiles = []
 		monster.creature.proximate_actors = []
@@ -987,33 +1018,35 @@ class ai_Player:
 class ai_Dragon:
 	def take_turn(self):
 		monster = self.owner
-		target_coords = PLAYER.x, PLAYER.y
+
+		target_actor = ai_designate_targets(actor = monster) #, actor_fov = 10)
+		if target_actor == "no actors":
+			return
+
+		target_coords = target_actor.actor[0].x, target_actor.actor[0].y
 		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
 			#move towards the player if far away (out of spell reach)		
-			# move towards the player if far away
-			if monster.distance_to(PLAYER) >= 8:
-				self.owner.move_towards(PLAYER)
+			# move towards the player if far away 
+			if monster.distance_to(target_actor.actor[0]) >= 8:
+				self.owner.move_towards(target_actor.actor[0])
 			#if target is alive, attack
-			elif PLAYER.creature.current_hp > 0:
+			#elif target_actor.actor[0].creature.current_hp > 0:
+			elif target_actor.actor[0].creature.current_hp > 0:
 				#cast fireball
-				if monster.distance_to(PLAYER) > 3:
+				if monster.distance_to(target_actor.actor[0]) > 3:
 
 					#replace this function with the more flexible aoe_damage function
 					#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
-					aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
+					aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, 
+						penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
 
-
-
-
-
-					#(PLAYER.x, PLAYER.y)
 
 				else: # if within blast radius, engage in melee
-					if monster.distance_to(PLAYER) < 2:
-						monster.creature.attack(PLAYER)
+					if monster.distance_to(target_actor.actor[0]) < 2:
+						monster.creature.attack(target_actor.actor[0])
 
-					if monster.distance_to(PLAYER) < 3:
-						self.owner.move_towards(PLAYER)	
+					if monster.distance_to(target_actor.actor[0]) < 3:
+						self.owner.move_towards(target_actor.actor[0])	
 
 def ai_seek_target():
 	print("Placeholder")
@@ -1615,6 +1648,17 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
 
     # draw the text onto the display surface.
     display_surface.blit(text_surf, text_rect)
+
+def draw_paragraph(display_surface, text_to_display, font, coords, text_color, back_color = None, center = False, line_length = 15):
+    # get both the surface and rectangle of the desired message
+    text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
+    
+    if not center: text_rect.topleft = coords
+
+    else: text_rect.center = coords
+
+    # draw the text onto the display surface.
+    display_surface.blit(text_surf, text_rect)
    
 def draw_debug():
 	if settings.DISPLAY_FPS :
@@ -2076,6 +2120,8 @@ def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_b
 
     return Text_surface, Text_surface.get_rect()
 
+
+
 def helper_text_height(font):
 	font_rect = font.render('a', False, (0, 0, 0)).get_rect()
 	return font_rect.height
@@ -2323,20 +2369,28 @@ def menu_inventory():
 	window_width = constants.CAM_WIDTH
 	window_height = constants.CAM_HEIGHT
 
-	#include different parameters later for teh lulz
-	menu_width = 900
-	menu_height = 700
-	menu_x = (window_width / 2) - (menu_width / 2)
-	menu_y = (window_height / 2) - (menu_height / 2)
+	#panel listing inventory items
+	menu_width = 700
+	menu_height = 850
+	menu_x = (window_width * 1.6/ 2) - (menu_width / 2)
+	menu_y = (window_height * 1.02 / 2.3) - (menu_height / 2)
+
+	#panel for stats and description
+	side_panel_width = 400
+	side_panel_height = 850
+	panel_x = (window_width * 1/ 2) - (side_panel_width / 2)
+	panel_y = (window_height * 1.02 / 2.3) - (side_panel_height / 2)
 
 	menu_text_font = constants.FONT_MESSAGE_TEXT
 	menu_text_height = helper_text_height(menu_text_font)
 
 	local_inventory_surface = pygame.Surface((menu_width, menu_height))
+	side_panel_surface = pygame.Surface((side_panel_width, side_panel_height))
 	
 	while not menu_close:
 		#clear the menu by wiping it black
-		local_inventory_surface.fill(constants.COLOR_BLACK)
+		local_inventory_surface.fill((20, 20, 20, 120))
+		side_panel_surface.fill(constants.COLOR_D_GRAY)
 
 		print_list = [obj.display_name for obj in PLAYER.container.inventory]
 
@@ -2393,10 +2447,7 @@ def menu_inventory():
 					PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
 					if settings.CLOSE_AFTER_DROP:
 						return "no-action"
-					#if settings.Mod2 == False:
-					#	return "no-action"
-					#else:
-					#	return "player-moved"
+
 					
 		#draw every line in the list
 		for line, (name) in enumerate(print_list):
@@ -2404,11 +2455,18 @@ def menu_inventory():
 				draw_text(local_inventory_surface,
 					name,
 					menu_text_font,
-					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
+					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
+
+				#draw the description on the second panel
+				draw_text(side_panel_surface,
+					name,
+					menu_text_font,
+					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET), constants.COLOR_WHITE)
+
 			else:
 				draw_text(local_inventory_surface,
 					name, menu_text_font,
-					(0, 0 + (line * menu_text_height)), constants.COLOR_WHITE)
+					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE)
 
 		button_height = 80
 		button_width = 100
@@ -2420,6 +2478,7 @@ def menu_inventory():
 
 		#render game 
 		draw_game()
+		SURFACE_MAIN.blit(side_panel_surface, (int(panel_x), int(panel_y)))
 		SURFACE_MAIN.blit(local_inventory_surface, (int(menu_x), int(menu_y)))
 			
 		CLOCK.tick(constants.GAME_FPS)
@@ -2569,27 +2628,31 @@ def gen_creature(coords):
 		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, name = selected_creature['carcass_name'])	
 	else: item_com = None
 
+
+
+
 	creature_com = com_Creature(selected_creature['creature_name'], death_function = death_monster,
 								hp = selected_creature['base_hp'],
 								damage_phys_base = selected_creature['damage_phys_base'],
 								resist_phys_base = selected_creature['resist_phys_base'],
-								xp_on_death = selected_creature['xp_on_death']
+								xp_on_death = selected_creature['xp_on_death'],
+
+								base_dodge = selected_creature['base_dodge'], 
+								base_accuracy = selected_creature['base_accuracy'],
+								base_crit_chance = selected_creature['base_crit_chance'],
+								base_crit_mult = selected_creature['base_crit_mult']
 	) 
 	
 	allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
 								hostile_list = ['wild', 'player', 'townfolk', 'guardsman'],
 								docile = selected_creature['docile'])
 
-
-	
 	#name of item when picked up
 	return_object = obj_Actor(x, y, selected_creature['creature_name'], 
 		creature = creature_com, ai = ai_com, item = item_com, icon = selected_creature['actor_icon'], 
 		icon_color = (selected_creature['icon_r'], selected_creature['icon_g'], selected_creature['icon_b']),
 		allegiance_com = allegiance_com)
-
-	#create creature's local fov map
-	
+p
 	GAME.current_objects.append(return_object)
 
 
@@ -2635,14 +2698,11 @@ def gen_scroll(coords):
 def assign_ai_script(creature_in = None):
 	if str(creature_in['ai_script_type'])== "dragon_fireball":
 		return ai_Dragon()
-		print("Assigning dragon script")
 
 	elif str(creature_in['ai_script_type']) == "flee":
 		return ai_Flee()
-		print("Assigning flee script")
 	else: 
 		return ai_Chase()
-		print("Assigning chase script")
 
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
@@ -2667,7 +2727,10 @@ def gen_player(coords):
 	creature_com = com_Creature(PLAYER_NAME,
 								damage_phys_base = 8, resist_phys_base = 3, hp = 100, #player's creature component name
 								death_function = death_player,
-								noncorporeal = False
+								noncorporeal = False,
+								base_accuracy = 90, base_dodge = 30,
+								base_crit_chance = 5, base_crit_mult = 1.5
+
 								)
 	allegiance_com = com_Allegiance(category = "player", 
 					hostile_list = ["eldritch", "wild", "draconic", "townfolk"],

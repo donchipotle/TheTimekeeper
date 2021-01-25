@@ -31,6 +31,8 @@ GEN_LEGACY_FILE = False		#dump message log text to .txt file, optional
 #Inventory
 CLOSE_AFTER_DROP = False	#quit inv menu after dropping item
 CLOSE_AFTER_USE = True
+MENU_X_OFFSET = 10
+MENU_Y_OFFSET = 10
 
 
 #ASCII ICONS
