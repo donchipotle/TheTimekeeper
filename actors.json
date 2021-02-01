@@ -35,7 +35,14 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+			"description":
+						[ 
+							{"paragraph":"The nightcrawler is a bizarre creature - or, as some would call one, an entity - which lurks far beyond the bounds of both human society and, somehow, even human understanding. To even describe its physical appearance is an endeavor that none, thus far, have been able to achieve. It is surprisingly easier to kill one than todescribe it in words understandable in the speech of Man. What matters more, perhaps, is that these things can be killed. "},
+
+							{"paragraph":"This particular one is fairly diminutive in stature and threat, though it is, after all, a Nightcrawler. Still, there are worse things lurking in the dark."}
+						]
 
 		},
 		{
@@ -72,7 +79,14 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+			"description":
+						[ 
+						{"paragraph":"The nightcrawler is a bizarre creature - or, as some would call one, an entity - which lurks far beyond the bounds of both human society and, somehow, even human understanding. To even describe its physical appearance is an endeavor that none, thus far, have been able to achieve. It is surprisingly easier to kill one than todescribe it in words understandable in the speech of Man. What matters more, perhaps, is that these things can be killed. "},
+
+						{"paragraph":"There are many Nightcrawlers weaker than one such as this, and many somehow stronger. Do not engage without adequate armaments or experience."}
+						]
 		},
 		{
 			"creature_name": "Nightcrawler Sentinel",
@@ -108,7 +122,15 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+			"description":
+			[ 
+			{"paragraph":"The nightcrawler is a bizarre creature - or, as some would call one, an entity - which lurks far beyond the bounds of both human society and, somehow, even human understanding. To even describe its physical appearance is an endeavor that none, thus far, have been able to achieve. It is surprisingly easier to kill one than todescribe it in words understandable in the speech of Man. What matters more, perhaps, is that these things can be killed. "},
+
+
+			{"paragraph":"There are few creatures lurking in the dark that are deadlier than one of these. Massive, slimy and disorienting to gaze upon, these pose an alarmingly dangerous threat to anyone who engages them in combat. Do not expect to survive."}
+			]
 
 		},
 		{
@@ -145,7 +167,13 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+
+			"description":
+			[ 
+			{"paragraph":"Perhaps the objective zenith of adorableness, otters are marvelous little balls of wonder that exist simply because they do. Many people own them as pets, and we can all consider ourselves all blessed that they exist. Don't even think about hurting one."}
+			]
 		},
 		{
 			"creature_name": "Golden Dragon",
@@ -182,7 +210,13 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+
+			"description":
+			[ 
+			{"paragraph":"Hi"}
+			]
 
 		},
 		{
@@ -219,7 +253,19 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+			"description":
+			[ 
+			{"paragraph":"The nightcrawler is a bizarre creature - or, as some would call one, an entity - which lurks far beyond the bounds of both human society and, somehow, even human understanding. To even describe its physical appearance is an endeavor that none, thus far, have been able to achieve. It is surprisingly easier to kill one than todescribe it in words understandable in the speech of Man. What matters more, perhaps, is that these things can be killed. "},
+
+
+			{"paragraph":"Whether you took a wrong turn while drunken or you deliberately delved too greedily and too deeply, you crossed paths with what could very easily and will very likely be your death."},
+			{"paragraph":"Do not piss these things off."}
+			]
+
+
+
 		},
 		{
 			"creature_name": "Minor Mistform",
@@ -255,7 +301,13 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+
+			"description":
+			[ 
+			{"paragraph":""}
+			]
 		},
 		{
 			"creature_name": "Major Mistform",
@@ -291,7 +343,14 @@
 			"base_accuracy":100,
 			"base_dodge":20,
 			"base_crit_chance":5,
-			"base_crit_mult":1.5
+			"base_crit_mult":1.5,
+
+
+
+			"description":
+			[ 
+			{"paragraph":""}
+			]
 		}
 
 	]

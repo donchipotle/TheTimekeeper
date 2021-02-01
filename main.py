@@ -48,9 +48,6 @@ class struc_Map:
 		self.map_rooms = map_rooms
 		self.map_objects = map_objects
 
-#class struc_Abilities:
-#	def __init__(self, celerity = ):
-
 
 class struc_Direction:
 	def __init__(self, x = 0, y = 0):
@@ -109,8 +106,6 @@ class obj_Actor:
 		last_x = 0,
 		last_y = 0,
 
-
-
 		num_turns = 0, 
 		icon = "x", 
 		icon_color = constants.COLOR_WHITE,
@@ -136,17 +131,15 @@ class obj_Actor:
 		self.icon = icon
 		self.icon_color = icon_color
 		self.static = static
-
 		self.discovered = discovered
-
 		self.creature = creature
+
 		if creature: 
 			self.creature = creature
 			self.creature.owner = self
 
 		self.ai = ai
 		if self.ai:
-			#self.ai = ai
 			self.ai.owner = self
 
 		self.container = container
@@ -192,6 +185,7 @@ class obj_Actor:
 		self.trap_com = trap_com
 		if self.trap_com:
 			self.trap_com.owner = self
+
 
 
 
@@ -528,12 +522,9 @@ class com_Creature:
 	def move(self, dx, dy):
 		new_x = self.owner.x
 		new_y = self.owner.y
-
 		next_x = self.owner.x + dx
 		next_y = self.owner.y + dy
 
-		#if self.owner == PLAYER:
-			#print(str(next_x) + "," + str(next_y))
 
 		#check if creature is trying to move off the map
 		if next_x >= 0 and next_x <= (GAME.current_map_x - 1):
@@ -556,8 +547,9 @@ class com_Creature:
 
 					#else, check if hostile
 					if self.owner.allegiance_com and target.allegiance_com:
-						if (self.owner == PLAYER): self.attack(target)
-						return
+						if (self.owner == PLAYER): 
+							self.attack(target)
+							return
 
 						#check if target's category is in the list of hostile categories, if so, attack
 						for allegiance_type in self.owner.allegiance_com.hostile_list:
@@ -703,12 +695,14 @@ class com_Container:
 
 class com_Item:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", category = "misc", 
-		use_function = None, value = None, slot = None):
+		use_function = None, value = None, slot = None, 
+		description = "There is no description for this item."):
 		self.weight = weight
 		self.volume = volume
 		self.name = name
 		self.value = value
 		self.use_function = use_function
+		self.description = description
 
 		#pick up this item
 	def pick_up(self, actor):
@@ -756,12 +750,15 @@ class com_Equipment:
 	def __init__(self, 
 		damage_phys_bonus = 0, resist_phys_bonus = 0,
 		damage_fire_bonus = 0, resist_fire_bonus = 0, 
-		slot = None, name = None):
+		slot = None, name = None,
+		description = "There is no description for this item."):
 		self.damage_phys_bonus = damage_phys_bonus
 		self.resist_phys_bonus = resist_phys_bonus
 
 		self.damage_fire_bonus = damage_fire_bonus
 		self.resist_fire_bonus = resist_fire_bonus
+
+		self.description = description
 
 		self.name = name
 		self.slot = slot
@@ -874,7 +871,6 @@ class com_Trap:
 	def affect_receiver(receiver = None):
 		#self.trap_effect
 
-
 		#default, damage the receiver
 		if receiver.creature:
 			receiver.creature.take_damage
@@ -893,8 +889,7 @@ def ai_designate_targets(actor = None):
 	map_make_local_fov(GAME.current_map, actor_in = (actor), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
 	libtcod.map_compute_fov(actor.creature.local_fov, actor.x, actor.y, 
 								actor.creature.local_line_of_sight, 
-								constants.FOV_LIGHT_WALLS, 
-								constants.FOV_ALGO)
+								constants.FOV_LIGHT_WALLS, constants.FOV_ALGO)
 
 	for obj in GAME.current_objects:
 		if obj.creature:
@@ -904,18 +899,21 @@ def ai_designate_targets(actor = None):
 	if (len(actor.creature.proximate_actors)) == 0: return "no actors"
 
 	for obj in actor.creature.proximate_actors:
-		if obj.allegiance_com:
-			for obj.allegiance_com.category in actor.allegiance_com.hostile_list:	
-				distance_to_target = actor.distance_to(obj)
-				target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
-				actor.creature.proximate_hostiles.append(target)
-									
-	if (len(actor.creature.proximate_hostiles)) == 0: return "no actors"
+		if obj.allegiance_com and actor.allegiance_com:
+			print("Potential target, " + obj.name_object + "'s category is " + str(obj.allegiance_com.category[0]))
+			print("Examining actor, (" + actor.name_object + ")'s' hostile list is " + str(actor.allegiance_com.hostile_list))
 
+			# I literally have no idea why everything in this game is a list of lists, but hallelujah, it works now
+			for category in actor.allegiance_com.hostile_list[0]:
+				if category in obj.allegiance_com.category[0]:			# I literally have no idea why everything in this game is a list of lists, but hallelujah, it works now
+					distance_to_target = actor.distance_to(obj)
+					target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
+					actor.creature.proximate_hostiles.append(target)
+					print(obj.name_object + " is hostile to " + actor.name_object)
+								
+	if (len(actor.creature.proximate_hostiles)) == 0: return "no actors"
 	actor.creature.proximate_hostiles = sorted(actor.creature.proximate_hostiles, key=lambda target: target.distance)
-	#actor.creature.target = (actor.creature.proximate_hostiles)[0]
 	target = (actor.creature.proximate_hostiles)[0]
-	#return (actor.creature.target.actor[0])
 	return target	
 
 class ai_Confuse:
@@ -946,8 +944,9 @@ class ai_Chase:
 		monster = self.owner
 
 		target_actor = (ai_designate_targets(actor = monster))
-		#targ
+
 		if target_actor == "no actors":
+			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
 			return
 
 		else:
@@ -975,19 +974,26 @@ class ai_Townfolk_Wander:
 
 class ai_Town_Guardsman_Patrol:
 	def take_turn(self):
-		guard = self
+		monster = self.owner
 
-	#patrol for targets
+		target_actor = (ai_designate_targets(actor = monster))
+		#targ
+		if target_actor == "no actors":
+			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
 
-		#get list of all npcs in actor's line of sight
+			return
 
-		#if any NPCs are listed as hostile, set all as potential targets
+		else:
+			#if (target.distance)[0] >= 2.0:		#no idea why this is a tuple lol
+			if monster.distance_to(target_actor.actor[0]) >= 2.0:
+				monster.move_towards(target_actor.actor[0])
 
-		#prioritize most important target
+			elif target_actor.actor[0].creature.current_hp > 0:
+				monster.creature.attack(target_actor.actor[0])
 
-
-
-	#engage most important target
+		monster.creature.local_fov = None
+		monster.creature.proximate_hostiles = []
+		monster.creature.proximate_actors = []
 
 class com_AI:
 	def take_turn(self):
@@ -1004,7 +1010,6 @@ class ai_Ally_Follow:
 				self.owner.move_towards(PLAYER)
 			else:
 				self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
-			#move towards the player if far away (out of weapon reach)
 
 class ai_Static:
 	def take_turn(self):
@@ -1047,9 +1052,6 @@ class ai_Dragon:
 
 					if monster.distance_to(target_actor.actor[0]) < 3:
 						self.owner.move_towards(target_actor.actor[0])	
-
-def ai_seek_target():
-	print("Placeholder")
 
 
 
@@ -1275,11 +1277,8 @@ def map_create_town():
 			current_center = new_building.center
 			center_x, center_y = new_building.center
 
-			#put player in the first room
 			if len(list_of_buildings) != 0:
 				previous_center = list_of_buildings[-1].center
-				##dig tunnels
-				#map_create_tunnels(current_center, previous_center, new_map)
 
 			list_of_buildings.append(new_building)
 
@@ -1287,10 +1286,13 @@ def map_create_town():
 
 	gen_trap((2,2))
 
+	#for i in range(1, 45):
+	#	map_tryplace_guard()
 
-	#create FOV map		
+	#for i in range(1, 20):
+	#	map_tryplace_monster()
+	
 	map_make_fov(new_map)
-	print("map creation finished")
 	return (new_map, list_of_buildings)
 
 def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH, house_y = constants.HOUSE_INTERIOR_MIN_HEIGHT):
@@ -1323,6 +1325,19 @@ def map_tryplace_player(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP
 			 		
 			break	
 
+def map_tryplace_guard(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
+	for i in range(1, 2000):
+		
+		x = random.randint(1, map_x_in - 2)
+		y = random.randint(1, map_y_in - 2)
+
+		if GAME.current_map[x][y].block_path == False:
+		
+			gen_town_guard((x, y))
+			 	
+			break
+		break	
+
 def map_tryplace_stairs(map_in, map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT, in_key = None): #add key or something later idk tho
 	#I don't even know what is real anymore
 
@@ -1338,14 +1353,19 @@ def map_tryplace_stairs(map_in, map_x_in = constants.MAP_WIDTH, map_y_in = const
 
 def map_tryplace_shopkeeper(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
 		for i in range(1, 2000):
-		
 			x = random.randint(1, map_x_in - 2)
 			y = random.randint(1, map_y_in - 2)
-			print("Attempt #" + str(i) + " to to place player at " + str(x) + "," + str(y))
 
-		#	if GAME.current_map[x][y].block_path == False:
-		#	
-			#break
+
+def map_tryplace_monster(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
+	for i in range(1, 2000):
+		
+		x = random.randint(1, map_x_in - 2)
+		y = random.randint(1, map_y_in - 2)
+		if GAME.current_map[x][y].block_path == False:
+			gen_creature((x, y))
+		break
+
 
 def map_place_objects(room_list, is_first_map = None):
 	for room in room_list:
@@ -1649,16 +1669,6 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
     # draw the text onto the display surface.
     display_surface.blit(text_surf, text_rect)
 
-def draw_paragraph(display_surface, text_to_display, font, coords, text_color, back_color = None, center = False, line_length = 15):
-    # get both the surface and rectangle of the desired message
-    text_surf, text_rect = helper_text_objects(text_to_display, font, text_color, back_color)
-    
-    if not center: text_rect.topleft = coords
-
-    else: text_rect.center = coords
-
-    # draw the text onto the display surface.
-    display_surface.blit(text_surf, text_rect)
    
 def draw_debug():
 	if settings.DISPLAY_FPS :
@@ -1701,7 +1711,6 @@ def draw_messages():
 				- (constants.NUM_MESSAGES * text_height)) - 20) * .85
 
     # get both the surface and rectangle of the desired message
-
 	for i, (message, color) in enumerate(to_draw):
 		draw_text(SURFACE_MAIN, 
 			message, 
@@ -2002,7 +2011,6 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 			game_message(msg, constants.COLOR_RED)
 
 
-
 #i.e. lightning
 def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, penetrate_walls = False, msg = "The spell hits the target."):
 
@@ -2119,7 +2127,6 @@ def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_b
                                             incoming_color)
 
     return Text_surface, Text_surface.get_rect()
-
 
 
 def helper_text_height(font):
@@ -2359,6 +2366,89 @@ def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
 			game_message("There is nothing to open there.")
 			print("obj.door.interact() not called")
 
+
+# draw some text into an area of a surface
+# automatically wraps words
+# returns any text that didn't get blitted
+def drawText(surface, text, color, rect, font, aa=False, bkg=None):
+    rect = pygame.Rect(rect)
+    y = rect.top
+    lineSpacing = -2
+
+    # get the height of the font
+    fontHeight = font.size("Tg")[1]
+
+    indent = True
+    while text:
+        i = 1
+
+        # determine if the row of text will be outside our area
+        if y + fontHeight > rect.bottom:
+            break
+
+        # determine maximum width of line
+        while font.size(text[:i])[0] < rect.width and i < len(text):
+            i += 1
+
+        # if we've wrapped the text, then adjust the wrap to the last word      
+        if i < len(text): 
+            i = text.rfind(" ", 0, i) + 1
+
+        # render the line and blit it to the surface
+        if bkg:
+            image = font.render(text[:i], 1, color, bkg)
+            image.set_colorkey(bkg)
+        else:
+            image = font.render(text[:i], aa, color)
+
+        surface.blit(image, (rect.left, y))
+        y += fontHeight + lineSpacing
+
+        # remove the text we just blitted
+        text = text[i:]
+       # print(str(i))
+
+    return text
+
+def draw_paragraph(surface, text, color, rect, font, aa=False, bkg=None, indent = True):
+    rect = pygame.Rect(rect)
+    y = rect.top
+    lineSpacing = -2
+
+    # get the height of the font
+    fontHeight = font.size("Tg")[1]
+
+    while text:
+        i = 1
+
+        # determine if the row of text will be outside our area
+        if y + fontHeight > rect.bottom:
+            break
+
+        # determine maximum width of line
+        while font.size(text[:i])[0] < rect.width and i < len(text):
+            i += 1
+
+        # if we've wrapped the text, then adjust the wrap to the last word      
+        if i < len(text): 
+            i = text.rfind(" ", 0, i) + 1
+
+        # render the line and blit it to the surface
+        if bkg:
+            image = font.render(text[:i], 1, color, bkg)
+            image.set_colorkey(bkg)
+        else:
+            image = font.render(text[:i], aa, color)
+
+        surface.blit(image, (rect.left, y))
+        y += fontHeight + lineSpacing
+
+        # remove the text we just blitted
+        text = text[i:]
+        #print(str(i))
+
+    return text
+
 #def player_attempts_lock(event_in):
 
 #really messy, clean up later
@@ -2368,17 +2458,19 @@ def menu_inventory():
 
 	window_width = constants.CAM_WIDTH
 	window_height = constants.CAM_HEIGHT
-
-	#panel listing inventory items
-	menu_width = 700
+	side_panel_width = 800
+	side_panel_height = 850
+	menu_width = 600
 	menu_height = 850
-	menu_x = (window_width * 1.6/ 2) - (menu_width / 2)
+
+	menu_x = (window_width * 1/ 2) - (side_panel_width )
 	menu_y = (window_height * 1.02 / 2.3) - (menu_height / 2)
 
 	#panel for stats and description
-	side_panel_width = 400
-	side_panel_height = 850
-	panel_x = (window_width * 1/ 2) - (side_panel_width / 2)
+	#side_panel_width = 400
+
+	#panel_x = (window_width * 1/ 2) - (side_panel_width / 2)
+	panel_x = (window_width * 1.6/ 2) - (menu_width / 2)
 	panel_y = (window_height * 1.02 / 2.3) - (side_panel_height / 2)
 
 	menu_text_font = constants.FONT_MESSAGE_TEXT
@@ -2398,36 +2490,20 @@ def menu_inventory():
 		events_list = pygame.event.get()
 
 		mouse_x, mouse_y = pygame.mouse.get_pos()
-		if settings.DEBUG_MOUSE_POSITON == True:
-			print(mouse_x, mouse_y)
 
 		delta_x = mouse_x - menu_x
 		delta_y = mouse_y - menu_y
 
-		mouse_in_window = (delta_x > 0 and 
-						   delta_y > 0 and
-						   delta_x < menu_width and
-						   delta_y < menu_height)
+		mouse_in_window = (delta_x > 0 and delta_y > 0 and delta_x < menu_width and delta_y < menu_height)
 
 		#replace conversation -> int function later
 		mouse_line_selection = int(delta_y / menu_text_height)
-
-		if settings.DEBUG_MOUSE_IN_INVENTORY:
-			if mouse_in_window == True:
-				print(mouse_line_selection)
-
-		if settings.DEBUG_MOUSE_DELTA == True:
-			if delta_x > 0 and delta_y > 0:
-				print(delta_x, delta_y)
-
-					#create buttons for the right side of the menu
-		
 
 		for event in events_list:
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_i:
 					menu_close = True
-					COLOR_GRAY = (100, 100, 100)
+					#COLOR_GRAY = (100, 100, 100)
 
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if (event.button == 1):
@@ -2435,6 +2511,43 @@ def menu_inventory():
 						mouse_line_selection <= len(print_list) - 1):
 						PLAYER.container.inventory[mouse_line_selection].item.use()
 
+		show_description = False			
+
+		#draw every line in the list
+		for line, (name) in enumerate(print_list):
+			if line == mouse_line_selection and mouse_in_window == True:
+				draw_text(local_inventory_surface,
+					name,
+					menu_text_font,
+					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
+				show_description = True
+
+			else:
+				draw_text(local_inventory_surface,
+					name, menu_text_font,
+					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE)
+
+			if show_description:
+				description_text = {}
+				i = 0
+				for paragraph in PLAYER.container.inventory[mouse_line_selection].item.description:
+					#apparently setitem's performance sucks so change later idk
+					description_text.__setitem__(i, str(PLAYER.container.inventory[mouse_line_selection].item.description[i]))
+					i+= 1
+			
+
+				#reset panel
+				side_panel_surface.fill(constants.COLOR_D_GRAY)
+				#for paragraph in description_text:
+				drawText(side_panel_surface, text = ("     " + str(description_text)), 
+							color = constants.COLOR_WHITE, rect = ((10,  10), (600, 1000)), 
+							font = constants.FONT_MESSAGE_TEXT, aa= False, bkg=None)
+				#	i += 0
+
+				#new method to print w/ paragraphs
+
+
+		for event in events_list:
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
 				if len(PLAYER.container.inventory) > 0:
 					#check if item is equipment, and, if so, unequip it
@@ -2448,38 +2561,22 @@ def menu_inventory():
 					if settings.CLOSE_AFTER_DROP:
 						return "no-action"
 
-					
-		#draw every line in the list
-		for line, (name) in enumerate(print_list):
-			if line == mouse_line_selection and mouse_in_window == True:
-				draw_text(local_inventory_surface,
-					name,
-					menu_text_font,
-					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
 
-				#draw the description on the second panel
-				draw_text(side_panel_surface,
-					name,
-					menu_text_font,
-					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET), constants.COLOR_WHITE)
 
-			else:
-				draw_text(local_inventory_surface,
-					name, menu_text_font,
-					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE)
-
-		button_height = 80
-		button_width = 100
-		equipment_button = ui_Button(local_inventory_surface, 
-								"Equipment", 
-								(1000, 1000),
-								(100, 100)
-								)
 
 		#render game 
 		draw_game()
 		SURFACE_MAIN.blit(side_panel_surface, (int(panel_x), int(panel_y)))
 		SURFACE_MAIN.blit(local_inventory_surface, (int(menu_x), int(menu_y)))
+
+				#draw buttons	
+		button_height = 80
+		button_width = 100
+		equipment_button = ui_Button(local_inventory_surface, 
+								"Equipment", 
+								(1, 10),
+								(100, 100)
+								)
 			
 		CLOCK.tick(constants.GAME_FPS)
 		pygame.display.update()
@@ -2619,14 +2716,24 @@ def gen_equipment(coords):
 def gen_creature(coords):
 	global GAME_CREATURE_POOL, GAME
 	selected_creature = random.choice(GAME_CREATURE_POOL)
-	#print(selected_creature['resist_phys_base'])
 	x, y = coords
 
 	ai_com = (assign_ai_script(creature_in = selected_creature))
 
 	if (selected_creature['noncorporeal'] == False):
-		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, name = selected_creature['carcass_name'])	
+		item_description = []
+		#for paragraph in selected_creature['description']:
+		#	item_description.append(str(paragraph))
+
+		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, 
+			description = selected_creature['description'],
+			#description = item_description,
+
+			name = selected_creature['carcass_name'])	
 	else: item_com = None
+	#print(str(selected_creature['description']))
+
+	#if item_com: str(item_com.description[0])
 
 
 
@@ -2643,7 +2750,8 @@ def gen_creature(coords):
 								base_crit_mult = selected_creature['base_crit_mult']
 	) 
 	
-	allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
+	#allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
+	allegiance_com = com_Allegiance(category = str(selected_creature['allegiance_category']),
 								hostile_list = ['wild', 'player', 'townfolk', 'guardsman'],
 								docile = selected_creature['docile'])
 
@@ -2652,8 +2760,34 @@ def gen_creature(coords):
 		creature = creature_com, ai = ai_com, item = item_com, icon = selected_creature['actor_icon'], 
 		icon_color = (selected_creature['icon_r'], selected_creature['icon_g'], selected_creature['icon_b']),
 		allegiance_com = allegiance_com)
-p
+
 	GAME.current_objects.append(return_object)
+
+def gen_town_guard(coords):
+	x, y = coords
+
+	#container_com = com_Container()
+	creature_com = com_Creature(name_instance = "Town Guard",
+								damage_phys_base = 12, resist_phys_base = 3, hp = 37, #player's creature component name
+								death_function = death_monster,
+								noncorporeal = False)
+
+	ai_com = ai_Town_Guardsman_Patrol()
+	allegiance_com = com_Allegiance(category = "guardsman", hostile_list = ['wild', 'eldritch', 'draconic'])
+	
+
+	#assign (assume lol) gender and create a name accordingly
+	creature_com.gender = helper_dice(upper_bound = 2, bias = -1)
+	creature_com.name_instance = ("guardsman " + assign_random_name(gender_in = creature_com.gender))
+
+	npc = obj_Actor(x, y, "Some random person.",  
+						creature = creature_com,
+						ai = ai_com,
+						icon = " @ ", icon_color = constants.COLOR_GRAY,
+						allegiance_com = allegiance_com,
+						)
+
+	GAME.current_objects.append(npc)
 
 
 def gen_shopkeeper():
@@ -2661,6 +2795,7 @@ def gen_shopkeeper():
 	ai_com = ai_Townfolk_Wander()
 
 	creature_com = com_Creature("shopkeeper")
+	print("Hi")
 
 
 def gen_scroll(coords):
@@ -2679,7 +2814,6 @@ def gen_scroll(coords):
 						value = (damage, m_range),
 			 			name = selected_scroll['scroll_name'])
 
-#msg = selected_scroll['damage_message']
 
 	elif selected_scroll['attack_type'] == "beam":
 		item_com = com_Item(use_function = beam_damage,
@@ -3050,10 +3184,6 @@ def game_direction_prompt(event_in, not_in_menu = True):
 		elif event_in.key == pygame.K_KP9:
 			target_coords = (1, -1)
 			print("KP9")
-#		else:
-#			target_coords = (0, 0)
-#			print("No directional input.")
-
 		not_in_menu = False
 		return target_coords
 
@@ -3116,10 +3246,6 @@ def game_json_loader():
 	with open('male_names.json') as malname: malname_archive = json.load(malname)
 
 	with open('female_names.json') as femname: femname_archive = json.load(femname)
-
-#
-
-
 	global GAME_EQUIPMENT_POOL, GAME_CREATURE_POOL, GAME_SCROLL_POOL, GAME_SURNAME_POOL, GAME_MALNAME_POOL, GAME_FEMNAME_POOL
 	GAME_EQUIPMENT_POOL = []
 	GAME_CREATURE_POOL = []

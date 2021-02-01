@@ -89,18 +89,15 @@ Mod9 = False
 #
 Mod10 = False
 
-
-
+TEST = "By the riverside the man burned each page - all but one. The single diminutive page that had escaped with a great gust of wind. It made him shudder – that he had come so close to destroying was the one that held the key to the power he and his partner had harnessed. He was frightened, and he hoped that maybe, just maybe, the page would find itself beneath a bush in the woods, decaying away in the mud, never to again be seen by human eyes. So the man had wished."
 
 	###debug
 
-ENABLE_DEBUG = True
-DISPLAY_FPS = True
+ENABLE_DEBUG = False
+DISPLAY_FPS = False
 
-DEBUG_MOUSE_POSITON = False
-DEBUG_MOUSE_DELTA = False
 DEBUG_PRINT_TURNS = False
-DEBUG_MOUSE_IN_INVENTORY = False
+
 
 
 #background image for the main menu _ optionally remove
