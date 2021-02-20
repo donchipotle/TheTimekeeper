@@ -30,7 +30,6 @@ class struc_Tile:
 		self.transparent = False
 		self.is_diggable = True
 
-
 class struc_Map:
 	def __init__(self, 
 		player_X = 0, player_Y = 0, 
@@ -48,19 +47,16 @@ class struc_Map:
 		self.map_rooms = map_rooms
 		self.map_objects = map_objects
 
-
 class struc_Direction:
 	def __init__(self, x = 0, y = 0):
 		self.x = x,
 		self.y = y
-
 
 class struc_Target:
 	def __init__(self, actor = None, distance = 0, threat_level = 0):
 		self.actor = actor,
 		self.distance = distance,
 		self.threat_level = threat_level
-
 
 class struc_Damage:
 	def __init__(self, fire = 0, electricity = 0, poison = 0, frost = 0, magic = 0,
@@ -90,8 +86,6 @@ class struc_Resistance:
 		self.bludgeoning_resist = bludgeoning_resist
 		self.slashing_resist = slashing_resist
 
-
-
 class obj_Actor:
 	def __init__(self, x, y, 
 		name_object,
@@ -106,9 +100,7 @@ class obj_Actor:
 		last_x = 0,
 		last_y = 0,
 
-		num_turns = 0, 
-		icon = "x", 
-		icon_color = constants.COLOR_WHITE,
+		num_turns = 0, icon = "x", icon_color = constants.COLOR_WHITE,
 		equipment = None,
 		interact_function = None,
 		stairs = None,
@@ -185,10 +177,6 @@ class obj_Actor:
 		self.trap_com = trap_com
 		if self.trap_com:
 			self.trap_com.owner = self
-
-
-
-
 
 	@property
 	def display_name(self):
@@ -313,7 +301,6 @@ class obj_Game:
 					map_to_save = (PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects)
 					self.existing_maps[GAME.current_key] = map_to_save
 					print("Saved first map at key " + GAME.current_key)
-
 
 					#----------------------create new map with that key   -------------------------------------------------
 					self.current_objects = [PLAYER] 
@@ -505,7 +492,6 @@ class com_Creature:
 		self.proximate_actors = proximate_actors
 		self.proximate_hostiles = proximate_hostiles
 
-		print(str(self.name_instance) + "'local FOV has been created.")
 
 		#add new damage types and stuff later
 	def take_damage(self, damage_received, attacker):
@@ -889,7 +875,7 @@ def ai_designate_targets(actor = None):
 	map_make_local_fov(GAME.current_map, actor_in = (actor), fov_x = GAME.current_map_x - 1, fov_y = GAME.current_map_y - 1)
 	libtcod.map_compute_fov(actor.creature.local_fov, actor.x, actor.y, 
 								actor.creature.local_line_of_sight, 
-								constants.FOV_LIGHT_WALLS, constants.FOV_ALGO)
+								constants.FOV_LIGHT_WALLS, constants.FOV_AI_ALGO)
 
 	for obj in GAME.current_objects:
 		if obj.creature:
@@ -900,8 +886,8 @@ def ai_designate_targets(actor = None):
 
 	for obj in actor.creature.proximate_actors:
 		if obj.allegiance_com and actor.allegiance_com:
-			print("Potential target, " + obj.name_object + "'s category is " + str(obj.allegiance_com.category[0]))
-			print("Examining actor, (" + actor.name_object + ")'s' hostile list is " + str(actor.allegiance_com.hostile_list))
+			#print("Potential target, " + obj.name_object + "'s category is " + str(obj.allegiance_com.category[0]))
+			#print("Examining actor, (" + actor.name_object + ")'s' hostile list is " + str(actor.allegiance_com.hostile_list))
 
 			# I literally have no idea why everything in this game is a list of lists, but hallelujah, it works now
 			for category in actor.allegiance_com.hostile_list[0]:
@@ -909,7 +895,7 @@ def ai_designate_targets(actor = None):
 					distance_to_target = actor.distance_to(obj)
 					target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
 					actor.creature.proximate_hostiles.append(target)
-					print(obj.name_object + " is hostile to " + actor.name_object)
+				#	print(obj.name_object + " is hostile to " + actor.name_object)
 								
 	if (len(actor.creature.proximate_hostiles)) == 0: return "no actors"
 	actor.creature.proximate_hostiles = sorted(actor.creature.proximate_hostiles, key=lambda target: target.distance)
@@ -1286,11 +1272,11 @@ def map_create_town():
 
 	gen_trap((2,2))
 
-	#for i in range(1, 45):
-	#	map_tryplace_guard()
+#	for i in range(1, 70):
+#		map_tryplace_guard()
 
-	#for i in range(1, 20):
-	#	map_tryplace_monster()
+#	for i in range(1, 40):
+#		map_tryplace_monster()
 	
 	map_make_fov(new_map)
 	return (new_map, list_of_buildings)
@@ -1614,18 +1600,39 @@ def map_find_radius(coords, radius):
 			tile_list.append((x, y))
 	return tile_list
 
-def map_tile_query(query_x, query_y, exclude_query_player = False):
+def map_tile_query(query_x, query_y, exclude_query_player = False, accept_nothing = False, distant_query = False):
 	objects_at_player_tile = map_objects_at_coords(query_x, query_y, exclude_player = exclude_query_player)
+	query_result = "nothing."
 
-	if len(objects_at_player_tile) == 1:
-		for obj in objects_at_player_tile:
-			if obj.item:
-				game_message("You see here " + obj.item.name)
-			if obj.equipment:
-				game_message("You see here " + obj.equipment.name)
+	if (query_x > 0 and query_x < GAME.current_map_x): 
+		if (query_y > 0 and query_y < GAME.current_map_y):
+			tile_is_wall = (GAME.current_map[query_x][query_y].block_path == True)
+		#else: return
+	else: return
 
-	elif len(objects_at_player_tile) > 1:
-		game_message("You see here multiple objects.")
+	if tile_is_wall: query_result = " a wall. Very astute."
+
+	if not tile_is_wall:
+		if len(objects_at_player_tile) == 1:
+			for obj in objects_at_player_tile:
+				if obj.item:
+					query_result = obj.item.name
+				if obj.equipment:
+					query_result = obj.equipment.name
+				if obj.creature:
+					query_result = obj.creature.name_instance
+				if not obj.creature:
+					query_result = obj.name_object
+			
+		elif len(objects_at_player_tile) > 1: query_result = " multiple objects."
+ 
+	if not distant_query:
+		if not accept_nothing and query_result == "nothing.": return
+		first_half = "You see at your feet "
+
+	else : first_half = "You see "
+
+	game_message(first_half + query_result)
 
 #drawing functions
 def draw_game():
@@ -1669,7 +1676,6 @@ def draw_text(display_surface, text_to_display, font, coords, text_color, back_c
     # draw the text onto the display surface.
     display_surface.blit(text_surf, text_rect)
 
-   
 def draw_debug():
 	if settings.DISPLAY_FPS :
 	    draw_text(SURFACE_MAIN,
@@ -2001,15 +2007,14 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 				if damage_to_deal > 0:
 					creature_to_damage.creature.take_damage(damage_to_deal, attacker = caster)
 				else:
-					if creature_to_damage.creature.name:
-						game_message(creature_to_damage.creature.name + " is unfazed.")
+					if creature_to_damage.creature.name_instance:
+						game_message(creature_to_damage.creature.name_instance + " is unfazed.")
 
 				if creature_to_damage is not PLAYER:
 					creature_hit = True
 
 		if creature_hit:
 			game_message(msg, constants.COLOR_RED)
-
 
 #i.e. lightning
 def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, penetrate_walls = False, msg = "The spell hits the target."):
@@ -2505,11 +2510,11 @@ def menu_inventory():
 					menu_close = True
 					#COLOR_GRAY = (100, 100, 100)
 
-			if event.type == pygame.MOUSEBUTTONDOWN:
-				if (event.button == 1):
-					if (mouse_in_window and 
-						mouse_line_selection <= len(print_list) - 1):
-						PLAYER.container.inventory[mouse_line_selection].item.use()
+#			if event.type == pygame.MOUSEBUTTONDOWN:
+#				if (event.button == 1):
+#					if (mouse_in_window and 
+#						mouse_line_selection <= len(print_list) - 1):
+#						PLAYER.container.inventory[mouse_line_selection].item.use()
 
 		show_description = False			
 
@@ -2528,13 +2533,13 @@ def menu_inventory():
 					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE)
 
 			if show_description:
-				description_text = {}
+			#	description_text = []
 				i = 0
-				for paragraph in PLAYER.container.inventory[mouse_line_selection].item.description:
+				#for paragraph in PLAYER.container.inventory[mouse_line_selection].item.description:
 					#apparently setitem's performance sucks so change later idk
-					description_text.__setitem__(i, str(PLAYER.container.inventory[mouse_line_selection].item.description[i]))
-					i+= 1
-			
+				#description_text.__setitem__(i, str(PLAYER.container.inventory[mouse_line_selection].item.description[i]))
+					#i+= 1
+				description_text = str(PLAYER.container.inventory[mouse_line_selection].item.description)
 
 				#reset panel
 				side_panel_surface.fill(constants.COLOR_D_GRAY)
@@ -2561,8 +2566,11 @@ def menu_inventory():
 					if settings.CLOSE_AFTER_DROP:
 						return "no-action"
 
-
-
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				if (event.button == 1):
+					if (mouse_in_window and 
+						mouse_line_selection <= len(print_list) - 1):
+						PLAYER.container.inventory[mouse_line_selection].item.use()
 
 		#render game 
 		draw_game()
@@ -3066,7 +3074,7 @@ def game_handle_keys():
 	
 	#check for mod key (shift)
 	MOD_KEY = (keys_list[pygame.K_RSHIFT] or keys_list[pygame.K_LSHIFT])
-	MOD_KEY2 = (keys_list[pygame.K_q])
+	#MOD_KEY2 = (keys_list[pygame.K_q])
 	
 	for event in events_list:
 		if event.type == pygame.QUIT: return "QUIT"	
@@ -3094,21 +3102,9 @@ def game_handle_keys():
 			if event.key == pygame.K_i:
 				menu_inventory()
 				if settings.Mod2 == False:
-					return "no-action"
-					
-
-			#figure out what stuff is or something
-			if MOD_KEY2 and event.key == pygame.MOUSEBUTTONDOWN:
-				print("Hi")
-							#if event.type == pygame.MOUSEBUTTONDOWN:
-				
-
-				#	if settings.Mod2 == True:
-				#		return "no-action"
+					return "no-action"	
+					#is this second return even necessary? idk anymore
 				return "no-action"
-			if MOD_KEY2:
-				return "no-action"
-					
 
 			#fire projectiles and stuff
 			if event.key == pygame.K_f:
@@ -3121,6 +3117,13 @@ def game_handle_keys():
 				print("Open door function - receiving input.")
 
 			FOV_CALCULATE = True
+
+			if event.key == pygame.K_q:
+				print("Started querying tile.")
+				x, y = menu_tile_select(coords_origin = None, max_range = None, 
+					radius = None, penetrate_walls = True, pierce_creature = True)
+				map_tile_query(x, y, accept_nothing = True, distant_query = True)
+				print("Finished quertying tile.")
 	
 			#key L, turn on tile selection. change later as needed
 			if MOD_KEY and event.key == pygame.K_PERIOD:
@@ -3128,18 +3131,9 @@ def game_handle_keys():
 				#reuse this kind of thing later 		
 				list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
 				for obj in list_of_objects:
-					if obj.stairs:
-						obj.stairs.use()
-
-						print("Using stairs.")
-					if obj.exitportal:
-						print("Using portal. I think.")
-						obj.exitportal.use()
-						return "player-moved"
 					if obj.exit_point:
 						obj.exit_point.use()
 						return "player-moved"
-
 			return "player-moved"
 	return "no-action"
 

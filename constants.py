@@ -59,6 +59,7 @@ COLOR_DEFAULT_BG = COLOR_D_GRAY
 
 #FOV settings, multiple options to consider
 FOV_ALGO = libtcod.FOV_SHADOW 
+FOV_AI_ALGO = libtcod.FOV_BASIC
 #FOV_ALGO = libtcod.FOV_BASIC
 FOV_LIGHT_WALLS = True
 TORCH_RADIUS = 10
