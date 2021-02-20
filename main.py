@@ -13,6 +13,8 @@ import constants
 import settings
 import helpers
 
+import components
+
 #for 'dice' rolls, move when that function is moved too
 import random
 #for generating random crap for map keys
@@ -828,15 +830,15 @@ class com_Door:
 
 	print("Placeholder")
 
-class com_Allegiance:
-	def __init__(self, category = "undefined", protect_list = "", hostile_list = [], docile = True):
+#class com_Allegiance:
+#	def __init__(self, category = "undefined", protect_list = "", hostile_list = [], docile = True):
 		#list of targets whose attackers the npc will attack
-		self.category = category,
-		self.protect_list = protect_list,
+#		self.category = category,
+#		self.protect_list = protect_list,
 		#list of categories which the npc will not
-		self.hostile_list = hostile_list,
+#		self.hostile_list = hostile_list,
 		#npc has not yet been provoked into attacking
-		self.docile = docile
+#		self.docile = docile
 
 class com_Shopkeep:
 	def __init__(self, category = "general", funds = 100, stock = []):
@@ -1270,16 +1272,20 @@ def map_create_town():
 
 	distribute_equipment(num_attempts = 20, map_in = new_map)
 
+
+
+	#for i in range(1, 70):
+	#	map_tryplace_guard()
+
+	#for i in range(1, 10):
+	#	map_tryplace_monster()
+	
 	gen_trap((2,2))
 
-#	for i in range(1, 70):
-#		map_tryplace_guard()
-
-#	for i in range(1, 40):
-#		map_tryplace_monster()
-	
 	map_make_fov(new_map)
 	return (new_map, list_of_buildings)
+
+
 
 def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH, house_y = constants.HOUSE_INTERIOR_MIN_HEIGHT):
 	#initialize empty map, flooded with empty tiles
@@ -1621,8 +1627,8 @@ def map_tile_query(query_x, query_y, exclude_query_player = False, accept_nothin
 					query_result = obj.equipment.name
 				if obj.creature:
 					query_result = obj.creature.name_instance
-				if not obj.creature:
-					query_result = obj.name_object
+				#if not obj.creature:
+				#	query_result = obj.name_object
 			
 		elif len(objects_at_player_tile) > 1: query_result = " multiple objects."
  
@@ -1632,7 +1638,7 @@ def map_tile_query(query_x, query_y, exclude_query_player = False, accept_nothin
 
 	else : first_half = "You see "
 
-	game_message(first_half + query_result)
+	game_message(str(first_half) + query_result)
 
 #drawing functions
 def draw_game():
@@ -2758,8 +2764,7 @@ def gen_creature(coords):
 								base_crit_mult = selected_creature['base_crit_mult']
 	) 
 	
-	#allegiance_com = com_Allegiance(category = selected_creature['allegiance_category'],
-	allegiance_com = com_Allegiance(category = str(selected_creature['allegiance_category']),
+	allegiance_com = components.AllegianceComponent(category = str(selected_creature['allegiance_category']),
 								hostile_list = ['wild', 'player', 'townfolk', 'guardsman'],
 								docile = selected_creature['docile'])
 
@@ -2781,7 +2786,7 @@ def gen_town_guard(coords):
 								noncorporeal = False)
 
 	ai_com = ai_Town_Guardsman_Patrol()
-	allegiance_com = com_Allegiance(category = "guardsman", hostile_list = ['wild', 'eldritch', 'draconic'])
+	allegiance_com = components.AllegianceComponent(category = "guardsman", hostile_list = ['wild', 'eldritch', 'draconic'])
 	
 
 	#assign (assume lol) gender and create a name accordingly
@@ -2874,7 +2879,7 @@ def gen_player(coords):
 								base_crit_chance = 5, base_crit_mult = 1.5
 
 								)
-	allegiance_com = com_Allegiance(category = "player", 
+	allegiance_com = components.AllegianceComponent(category = "player", 
 					hostile_list = ["eldritch", "wild", "draconic", "townfolk"],
 					docile = False
 					)
@@ -2899,7 +2904,7 @@ def gen_town_folk(coords):
 								noncorporeal = False)
 
 	ai_com = ai_Townfolk_Wander()
-	allegiance_com = com_Allegiance(category = "townfolk")
+	allegiance_com = components.AllegianceComponent(category = "townfolk")
 
 	#assign (assume lol) gender and create a name accordingly
 	creature_com.gender = helper_dice(upper_bound = 2, bias = -1)
