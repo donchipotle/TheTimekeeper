@@ -24,7 +24,15 @@
 			"dodge_bonus":5,
 			"accuracy_bonus":5,
 			"critical_chance":-5,
-			"critical_damage":1
+			"critical_damage":1,
+
+		"base_damages":
+			{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+			"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+		"base_resistances":	
+			{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+			"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		
 		{
@@ -52,7 +60,15 @@
 			"dodge_bonus":0,
 			"accuracy_bonus":0,
 			"critical_chance":0,
-			"critical_damage":1
+			"critical_damage":1,
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		
 		{
@@ -80,7 +96,17 @@
 			"dodge_bonus":0,
 			"accuracy_bonus": 5,
 			"critical_chance":1,
-			"critical_damage":1.1
+			"critical_damage":1.1,
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+
+
 		},
 		
 		{
@@ -108,7 +134,16 @@
 			"dodge_bonus":8,
 			"accuracy_bonus":2,
 			"critical_chance":0,
-			"critical_damage":1
+			"critical_damage":1,
+
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		{
 			"name":"Longsword",
@@ -135,7 +170,17 @@
 			"dodge_bonus":10,
 			"accuracy_bonus":3,
 			"critical_chance":1,
-			"critical_damage":1.5
+			"critical_damage":1.5,
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+	
+
 		},
 
 		{
@@ -163,7 +208,16 @@
 			"dodge_bonus":8,
 			"accuracy_bonus":2,
 			"critical_chance":-1,
-			"critical_damage":1
+			"critical_damage":1,
+
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		{
 			"name":"Combat Boots",
@@ -190,7 +244,15 @@
 			"dodge_bonus":2,
 			"accuracy_bonus":2,
 			"critical_chance":0,
-			"critical_damage":1
+			"critical_damage":1,
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		{
 			"name":"Ars Enchantica chainmail",
@@ -217,7 +279,15 @@
 			"dodge_bonus":8,
 			"accuracy_bonus":2,
 			"critical_chance":1,
-			"critical_damage":1
+			"critical_damage":1,
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		{
 			"name":"Leather Armor",
@@ -244,7 +314,16 @@
 			"dodge_bonus":10,
 			"accuracy_bonus":10,
 			"critical_chance":0,
-			"critical_damage":1
+			"critical_damage":1,
+
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 
 		},
 		{
@@ -272,7 +351,17 @@
 			"dodge_bonus":6,
 			"accuracy_bonus":7,
 			"critical_chance":0,
-			"critical_damage":1
+			"critical_damage":1,
+
+
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		{
 			"name":"Guiding Star helmet",
@@ -299,7 +388,16 @@
 			"dodge_bonus":5,
 			"accuracy_bonus":5,
 			"critical_chance":0,
-			"critical_damage":1
+			"critical_damage":1,
+
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
 		{
 			"name":"The Southern Star",
@@ -326,7 +424,17 @@
 			"dodge_bonus":5,
 			"accuracy_bonus":5,
 			"critical_chance":5,
-			"critical_damage":1
+			"critical_damage":1,
+
+
+
+			"base_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"base_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		}
 	
 	]

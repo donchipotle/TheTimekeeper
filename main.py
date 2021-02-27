@@ -13,6 +13,7 @@ import constants
 import settings
 import helpers
 
+import structures
 import components
 
 #for 'dice' rolls, move when that function is moved too
@@ -60,33 +61,7 @@ class struc_Target:
 		self.distance = distance,
 		self.threat_level = threat_level
 
-class struc_Damage:
-	def __init__(self, fire = 0, electricity = 0, poison = 0, frost = 0, magic = 0,
-				ballistic = 0, piercing = 0, bludgeoning = 0, slashing = 0):
-		self.fire = fire
-		self.electricity = electricity
-		self.poison = poison
-		self.frost = frost
-		self.magic = magic
 
-		self.ballistic = ballistic
-		self.piercing = piercing
-		self.bludgeoning = bludgeoning
-		self.slashing = slashing
-
-class struc_Resistance:
-	def __init__(self, fire_resist = 0, electricity_resist = 0, poison_resist = 0, frost_resist = 0, magic_resist = 0,
-				ballistic_resist = 0, piercing_resist = 0, bludgeoning_resist = 0, slashing_resist = 0):
-		self.fire_resist = fire_resist
-		self.electricity_resist = electricity_resist
-		self.poison_resist = poison_resist
-		self.frost_resist = frost_resist
-		self.magic_resist = magic_resist
-
-		self.ballistic_resist = ballistic_resist
-		self.piercing_resist = piercing_resist
-		self.bludgeoning_resist = bludgeoning_resist
-		self.slashing_resist = slashing_resist
 
 class obj_Actor:
 	def __init__(self, x, y, 
@@ -373,7 +348,6 @@ class obj_Building:
 		objects_intersect = (self.x1 <= other.x2 and self.x2 >= other.x1 and
                              self.y1 <= other.y2 and self.y2 >= other.y1)
 
-		#return objects_intersect
 		return objects_intersect
 
 	#the center of each building
@@ -443,11 +417,12 @@ class obj_Camera:
 
 ###############################################################################################################################
 #components
-
+#structures.Resistance,
+#structures.Damage,
 class com_Creature:
 	def __init__(self, name_instance, 
 		hp = 10, 
-		base_damage = 2, base_armor_phys = 0, 
+	    base_armor_phys = 0, 
 		death_function = None, money = 0,
 
 		damage_phys_base = 1,
@@ -465,6 +440,9 @@ class com_Creature:
 		proximate_actors = [],
 		proximate_hostiles = [],
 		target = struc_Target(),
+
+		resistances = 	{},	
+		base_damages = 	{},	
 
 		gender = 0, base_xp = 1, xp_on_death = 10):
 
@@ -493,6 +471,8 @@ class com_Creature:
 		self.local_line_of_sight = local_line_of_sight
 		self.proximate_actors = proximate_actors
 		self.proximate_hostiles = proximate_hostiles
+		self.resistances = resistances
+		self.base_damages = base_damages
 
 
 		#add new damage types and stuff later
@@ -522,7 +502,6 @@ class com_Creature:
 
 				#is there are target where the actor iss attempting to movie
 				if target:
-					#print(str(target.name_object))
 
 					#check if moving to a trap
 					if target.trap_com:
@@ -544,10 +523,7 @@ class com_Creature:
 							if str(target.allegiance_com.category) == allegiance_type: 
 								self.attack(target)
 						
-						#else: print("Target is not hostile, not attacking.")
-				
 					else:print("One or both actors does not have an allegiance component.")
-
 
 				#move this code to a separate function
 				if not tile_is_wall and target is None:
@@ -567,19 +543,20 @@ class com_Creature:
 	def attack(self, target):
 		chance_to_hit = self.base_accuracy - target.creature.base_dodge
 
-		if random.randint(0,100) < chance_to_hit:
-			#do the damage
-			damage_dealt = self.damage_physical - target.creature.resist_physical
-			print(damage_dealt)
 
-			#multiply the damage, if done by a player
+		if random.randint(0,100) < chance_to_hit:
+
+			#do the damage
+			#damage_dealt = self.damage_physical - target.creature.resist_physical
+			damage_dealt = damage_target(self, damage_in = self.base_damages, target = target)
+
+
 			hit_was_critical = False
 			if random.randint(0,100) < self.base_crit_chance:
 				damage_dealt = damage_dealt * self.base_crit_mult
 				hit_was_critical = True
 
 			if (damage_dealt <= 0): game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
-
 			else:
 				if hit_was_critical: game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage in a critical hit."), constants.COLOR_WHITE)
 				else: 
@@ -663,6 +640,7 @@ class com_Creature:
 			if resist_fire_base:
 				fire_resistance += resist_fire_base
 		return fire_resistance
+
 
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
@@ -773,6 +751,21 @@ class com_Equipment:
 	def unequip(self):
 		self.equipped = False
 
+#putting this here for the time being, gonna move it later
+def update_bonuses(actor, stat_base, stat_bonus_name):
+	stat = stat_base
+	
+	object_bonuses = []
+
+	if self.owner.container:
+		object_bonuses = [obj.equipment.stat_bonus_name
+								for obj in self.owner.container.equipped_items]
+
+	for stat_base in object_bonuses:
+		if stat_base:
+			final_stat += stat_base
+	return final_stat
+
 class com_Exit_Point:
 	def __init__(self, require_input, next_map_key = "", static = True, target_map_type = "dungeon"):
 		self.require_input = require_input,
@@ -830,15 +823,7 @@ class com_Door:
 
 	print("Placeholder")
 
-#class com_Allegiance:
-#	def __init__(self, category = "undefined", protect_list = "", hostile_list = [], docile = True):
-		#list of targets whose attackers the npc will attack
-#		self.category = category,
-#		self.protect_list = protect_list,
-		#list of categories which the npc will not
-#		self.hostile_list = hostile_list,
-		#npc has not yet been provoked into attacking
-#		self.docile = docile
+
 
 class com_Shopkeep:
 	def __init__(self, category = "general", funds = 100, stock = []):
@@ -1040,6 +1025,33 @@ class ai_Dragon:
 
 					if monster.distance_to(target_actor.actor[0]) < 3:
 						self.owner.move_towards(target_actor.actor[0])	
+
+
+def damage_target(attacker, damage_in, target):
+	final_damage = 0
+
+	#attacker.base_damages
+	#check what damage types are being used and check them against the target's resistances. subtract and return total
+
+	#worry about equipment later, base damage for now
+	if damage_in and target.creature.resistances:
+		print("Both attacker and target have damage/res respectively")
+		print("Attacker is " + attacker.name_instance + ", with " + str(attacker.base_damages))
+		print("Target is " + target.name_object + ", with " +  str(target.creature.resistances))
+
+	#	for damage_type, dam_value in attacker.base_damages[0].items():
+		for damage_type, dam_value in damage_in.items():
+			if not (dam_value == 0):
+				#for res_type, res_value in target.creature.resistances[0].items():
+				for res_type, res_value in target.creature.resistances.items():
+					if damage_type == res_type:
+						print("damage type " + str(damage_type) + ", " + str(dam_value) + " vs " + str(res_value) )
+						damage = dam_value - res_value
+						if (damage > 0):
+							final_damage += damage
+
+
+	return final_damage
 
 
 
@@ -1344,9 +1356,10 @@ def map_tryplace_stairs(map_in, map_x_in = constants.MAP_WIDTH, map_y_in = const
 			break
 
 def map_tryplace_shopkeeper(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
-		for i in range(1, 2000):
-			x = random.randint(1, map_x_in - 2)
-			y = random.randint(1, map_y_in - 2)
+	print("Placing shopkeeper.")
+	for i in range(1, 2000):
+		x = random.randint(1, map_x_in - 2)
+		y = random.randint(1, map_y_in - 2)
 
 
 def map_tryplace_monster(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_HEIGHT):
@@ -2516,12 +2529,6 @@ def menu_inventory():
 					menu_close = True
 					#COLOR_GRAY = (100, 100, 100)
 
-#			if event.type == pygame.MOUSEBUTTONDOWN:
-#				if (event.button == 1):
-#					if (mouse_in_window and 
-#						mouse_line_selection <= len(print_list) - 1):
-#						PLAYER.container.inventory[mouse_line_selection].item.use()
-
 		show_description = False			
 
 		#draw every line in the list
@@ -2595,8 +2602,7 @@ def menu_inventory():
 		CLOCK.tick(constants.GAME_FPS)
 		pygame.display.update()
 
-def menu_tile_select(coords_origin = None, max_range = None, 
-	radius = None, penetrate_walls = True, pierce_creature = True):
+def menu_tile_select(coords_origin = None, max_range = None, radius = None, penetrate_walls = True, pierce_creature = True):
 	#this 'menu' lets the player select a tile, for spells, etc.
 	menu_close = False
 
@@ -2678,37 +2684,20 @@ def menu_tile_select(coords_origin = None, max_range = None,
 def distribute_equipment(num_attempts = 10, map_in = None, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT):
 	global GAME_EQUIPMENT_POOL
 
-
-	#print("Equipment distributed on the map.")
-	successful_spawns = 0
-
 	for i in range (num_attempts):
 		x = libtcod.random_get_int(0, 1, map_x - 1)
 		y = libtcod.random_get_int(0, 1, map_y - 1)
 		if map_in[x][y].block_path == False:
 			gen_equipment((x, y))
-			successful_spawns += 1
-
-	#print(str(successful_spawns) + " pieces of equipment spawned ")
-
-
 
 def distribute_scrolls(num_attempts = 100, map_in = None, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT):
 	global GAME_SCROLL_POOL
-
-
-	#print("Equipment distributed on the map.")
-	successful_spawns = 0
 
 	for i in range (num_attempts):
 		x = libtcod.random_get_int(0, 1, map_x - 1)
 		y = libtcod.random_get_int(0, 1, map_y - 1)
 		if map_in[x][y].block_path == False:
 			gen_scroll((x, y))
-			successful_spawns += 1
-			print("Scroll distributed")
-
-
 
 def gen_equipment(coords):
 	print("Placing equipment")
@@ -2727,6 +2716,7 @@ def gen_equipment(coords):
 	
 	GAME.current_objects.append(return_object)
 
+
 def gen_creature(coords):
 	global GAME_CREATURE_POOL, GAME
 	selected_creature = random.choice(GAME_CREATURE_POOL)
@@ -2736,20 +2726,16 @@ def gen_creature(coords):
 
 	if (selected_creature['noncorporeal'] == False):
 		item_description = []
-		#for paragraph in selected_creature['description']:
-		#	item_description.append(str(paragraph))
-
 		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, 
 			description = selected_creature['description'],
-			#description = item_description,
 
 			name = selected_creature['carcass_name'])	
 	else: item_com = None
-	#print(str(selected_creature['description']))
 
-	#if item_com: str(item_com.description[0])
+	dam_list = 	selected_creature['base_damages']
+	
 
-
+	res_list = 	selected_creature['base_resistances']
 
 
 	creature_com = com_Creature(selected_creature['creature_name'], death_function = death_monster,
@@ -2761,9 +2747,14 @@ def gen_creature(coords):
 								base_dodge = selected_creature['base_dodge'], 
 								base_accuracy = selected_creature['base_accuracy'],
 								base_crit_chance = selected_creature['base_crit_chance'],
-								base_crit_mult = selected_creature['base_crit_mult']
+								base_crit_mult = selected_creature['base_crit_mult'],
+
+								resistances = dam_list,	
+								base_damages = res_list
+									
 	) 
-	
+	#print(str(selected_creature['base_resistances']))
+
 	allegiance_com = components.AllegianceComponent(category = str(selected_creature['allegiance_category']),
 								hostile_list = ['wild', 'player', 'townfolk', 'guardsman'],
 								docile = selected_creature['docile'])
@@ -2779,11 +2770,18 @@ def gen_creature(coords):
 def gen_town_guard(coords):
 	x, y = coords
 
+	dam_list = 	[{"fire":4,"electricity":0,"poison":0,"frost":9,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":5, "slashing":0, "eldritch":0}]
+
+	res_list = 	[{"fire":3,"electricity":3,"poison":3,"frost":3,"magic":3,
+				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}]
+
 	#container_com = com_Container()
 	creature_com = com_Creature(name_instance = "Town Guard",
 								damage_phys_base = 12, resist_phys_base = 3, hp = 37, #player's creature component name
 								death_function = death_monster,
-								noncorporeal = False)
+								noncorporeal = False,
+								base_damages = dam_list, resistances = res_list)
 
 	ai_com = ai_Town_Guardsman_Patrol()
 	allegiance_com = components.AllegianceComponent(category = "guardsman", hostile_list = ['wild', 'eldritch', 'draconic'])
@@ -2870,15 +2868,27 @@ def gen_player(coords):
 	global PLAYER, PLAYER_NAME
 	x, y = coords
 	#create the player
+	dam_list = 	{"fire":4,"electricity":0,"poison":0,"frost":9,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":5, "slashing":0, "eldritch":0}
+
+	res_list = 	{"fire":3,"electricity":3,"poison":3,"frost":3,"magic":3,
+				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}
+
+
 	container_com = com_Container()
 	creature_com = com_Creature(PLAYER_NAME,
 								damage_phys_base = 8, resist_phys_base = 3, hp = 100, #player's creature component name
 								death_function = death_player,
 								noncorporeal = False,
 								base_accuracy = 90, base_dodge = 30,
-								base_crit_chance = 5, base_crit_mult = 1.5
-
+								base_crit_chance = 5, base_crit_mult = 1.5,
+								base_damages = dam_list, resistances = res_list
 								)
+
+
+
+
+
 	allegiance_com = components.AllegianceComponent(category = "player", 
 					hostile_list = ["eldritch", "wild", "draconic", "townfolk"],
 					docile = False
@@ -2897,11 +2907,23 @@ def gen_player(coords):
 def gen_town_folk(coords):
 	x, y = coords
 
+	dam_list = 	{'fire':0,'electricity':0,'poison':0,'frost':0,'magic':0,
+				'ballistic':0, 'piercing':0, 'bludgeoning':5, 'slashing':0, 'eldritch':0}
+
+	res_list = 	{'fire':3,'electricity':3,'poison':3,'frost':3,'magic':3,
+				'ballistic':3, 'piercing':3, 'bludgeoning':3, 'slashing':3, 'eldritch':3}
+
+	print(str(dam_list))
+	print(str(res_list))
+
+
 	container_com = com_Container()
 	creature_com = com_Creature(name_instance = "Townfolk",
 								damage_phys_base = 8, resist_phys_base = 3, hp = 10, #player's creature component name
 								death_function = death_monster,
-								noncorporeal = False)
+								noncorporeal = False,
+								resistances = res_list,
+								base_damages = dam_list)
 
 	ai_com = ai_Townfolk_Wander()
 	allegiance_com = components.AllegianceComponent(category = "townfolk")
