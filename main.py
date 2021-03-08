@@ -61,6 +61,7 @@ class obj_Actor:
 		name_object,
 		creature = None, 
 		ai = None, 
+		ai_active = False,
 
 		container = None, 
 		item = None, 
@@ -118,6 +119,8 @@ class obj_Actor:
 			self.item = com_Item()
 			self.item.owner = self
 
+		self.ai_active = ai_active
+
 		self.stairs = stairs
 		if self.stairs:
 			self.stairs.owner = self
@@ -169,6 +172,9 @@ class obj_Actor:
 				center = True)
 			if self.static: 
 				self.discovered = True
+
+			if self.ai_active == False:
+				self.ai_active = True
 
 		elif self.static and self.discovered:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
@@ -972,7 +978,6 @@ def damage_target(attacker, damage_in, target):
 
 
 def reset_stats(actor_in):
-#	dict_in
 	actor_in.creature.net_resistances = {}
 	actor_in.creature.net_damages = {}
 
@@ -986,7 +991,6 @@ def update_stats(actor_to_update):
 
 	#iterate through all equipped items in the actor's inventory
 	for gear in actor_to_update.container.equipped_items:
-		
 		#check for nonzero bonuses/penalties incurred by item
 		for damage_type, dam_value in gear.equipment.dam_bonus.items():
 			if dam_value != 0:
@@ -996,18 +1000,7 @@ def update_stats(actor_to_update):
 
 		for resist_type, res_value in gear.equipment.res_bonus.items():
 			if res_value != 0:
-				print("net value is " + str(actor_to_update.creature.net_resistances[resist_type]))
-				print("bonus is " + str(gear.equipment.res_bonus[resist_type]))
 				actor_to_update.creature.net_resistances[resist_type] += gear.equipment.res_bonus[resist_type]
-				print("new net is " + str(actor_to_update.creature.net_resistances[resist_type]))
-				
-				
-	print (str(len((actor_to_update.container.equipped_items))))
-
-
-	print("Final damage resistances are " + str(actor_to_update.creature.net_resistances))
-
-
 
 
 def death_monster(monster):
@@ -1084,7 +1077,7 @@ def death_player(player):
 #map functions
 def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, walk_nodes = 8, steps_per_node = 800):
 	#initialize empty map, flooded with unwalkable tiles
-	new_map = [[struc_Tile(True) for y in range(1, dungeon_x)]  
+	new_map = [[structures.Tile(True) for y in range(1, dungeon_x)]  
 									for x in range (1, dungeon_y)]
 
 	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x -1, map_y = dungeon_y -1)								
@@ -1977,7 +1970,7 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 			if creature_to_damage: 
 				#allow flexibility for damage types later
 				#damage_to_deal -= creature_to_damage.creature.resist_fire
-				damage_to_deal -= creature_to_damage.net_resistances[damage_type]
+				damage_to_deal -= creature_to_damage.creature.net_resistances[damage_type]
 
 				if damage_to_deal > 0:
 					creature_to_damage.creature.take_damage(damage_to_deal, attacker = caster)
@@ -2096,15 +2089,10 @@ class ui_Button:
 def helper_text_objects(incoming_text, incoming_font, incoming_color, incoming_bg):
     # if there is a background color, render with that.
     if incoming_bg:
-        Text_surface = incoming_font.render(incoming_text,
-                                            False,
-                                            incoming_color,
-                                            incoming_bg)
+        Text_surface = incoming_font.render(incoming_text, False, incoming_color, incoming_bg)
 
     else:  # otherwise, render without a background.
-        Text_surface = incoming_font.render(incoming_text,
-                                            False,
-                                            incoming_color)
+        Text_surface = incoming_font.render(incoming_text, False, incoming_color)
 
     return Text_surface, Text_surface.get_rect()
 
@@ -3028,8 +3016,9 @@ def game_main_loop():
 		
 		if player_action != "no-action":
 			for obj in GAME.current_objects:
-				if obj.ai: 
-					obj.ai.take_turn()
+				if obj.ai:
+					if obj.ai_active: 
+						obj.ai.take_turn()
 
 		if settings.DEBUG_PRINT_TURNS == True and player_action != "no-action":
 			GAME.turns_elapsed += 1

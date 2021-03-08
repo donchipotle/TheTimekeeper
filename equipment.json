@@ -52,9 +52,10 @@
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+			"bonus_resistances":
+				{"fire":2,"electricity":2,"poison":4,"frost":3,"magic":4,
+				"ballistic":1, "piercing":1, "bludgeoning":1, "slashing":2, "eldritch":4}	
+				
 		},
 		
 		{
@@ -78,11 +79,12 @@
 
 			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+				"ballistic":0, "piercing":0, "bludgeoning":1, "slashing":0, "eldritch":0},
 
-			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+			"bonus_resistances":
+				{"fire":3,"electricity":3,"poison":1,"frost":2,"magic":2,
+				"ballistic":1, "piercing":1, "bludgeoning":1, "slashing":2, "eldritch":1}
+				
 
 
 		},
@@ -111,8 +113,8 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":3,"electricity":3,"poison":2,"frost":3,"magic":3,
+				"ballistic":1, "piercing":1, "bludgeoning":2, "slashing":1, "eldritch":2}
 		},
 		{
 			"name":"Longsword",
@@ -135,11 +137,11 @@
 
 			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+				"ballistic":0, "piercing":4, "bludgeoning":0, "slashing":12, "eldritch":0},
 
 			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":1, "eldritch":0}
 	
 
 		},
@@ -168,8 +170,9 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":1,"electricity":2,"poison":3,"frost":3,"magic":2,
+				"ballistic":0, "piercing":0, "bludgeoning":1, "slashing":1, "eldritch":1}
+
 		},
 		{
 			"name":"Combat Boots",
@@ -195,8 +198,8 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":3,"electricity":3,"poison":2,"frost":1,"magic":1,
+				"ballistic":1, "piercing":1, "bludgeoning":2, "slashing":1, "eldritch":1}
 		},
 		{
 			"name":"Ars Enchantica chainmail",
@@ -222,8 +225,8 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":3,"electricity":1,"poison":1,"frost":2,"magic":3,
+				"ballistic":3, "piercing":3, "bludgeoning":1, "slashing":5, "eldritch":2}
 		},
 		{
 			"name":"Leather Armor",
@@ -249,8 +252,8 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":3,"electricity":2,"poison":1,"frost":0,"magic":1,
+				"ballistic":2, "piercing":2, "bludgeoning":4, "slashing":2, "eldritch":2}
 
 		},
 		{
@@ -277,8 +280,8 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":5,"electricity":2,"poison":4,"frost":3,"magic":3,
+				"ballistic":2, "piercing":3, "bludgeoning":2, "slashing":4, "eldritch":5}
 
 		},
 		{
@@ -305,8 +308,8 @@
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
-				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+				{"fire":3,"electricity":1,"poison":0,"frost":2,"magic":3,
+				"ballistic":2, "piercing":1, "bludgeoning":2, "slashing":3, "eldritch":1}
 		},
 		{
 			"name":"The Southern Star",
@@ -329,7 +332,7 @@
 
 			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":20, "eldritch":0},
 
 			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
