@@ -24,14 +24,7 @@ import string
 #json handling
 import json
 
-#structures
-class struc_Tile:
-	def __init__(self, block_path): #add more variables like blocking projectiles, blocking sight, DoT, etc.
-		self.block_path = block_path
-		self.explored = False
-		#for things like cages, fences, other permeable barriers
-		self.transparent = False
-		self.is_diggable = True
+
 
 class struc_Map:
 	def __init__(self, 
@@ -417,22 +410,16 @@ class obj_Camera:
 
 ###############################################################################################################################
 #components
-#structures.Resistance,
-#structures.Damage,
+
 class com_Creature:
 	def __init__(self, name_instance, 
 		hp = 10, 
-	    base_armor_phys = 0, 
 		death_function = None, money = 0,
 
-		damage_phys_base = 1,
-		resist_phys_base = 1,
 		base_dodge = 20,
 		base_accuracy = 100,
 		base_crit_chance = 5,
 		base_crit_mult = 1.5,
-
-		resist_fire_base = 1,
 
 		noncorporeal = False,
 
@@ -441,8 +428,10 @@ class com_Creature:
 		proximate_hostiles = [],
 		target = struc_Target(),
 
-		resistances = 	{},	
-		base_damages = 	{},	
+		base_damages = {},
+		base_resistances = {},
+		net_resistances = 	{},	
+		net_damages = 	{},	
 
 		gender = 0, base_xp = 1, xp_on_death = 10):
 
@@ -459,9 +448,6 @@ class com_Creature:
 		self.noncorporeal = noncorporeal
 
 		#combat stats
-		self.damage_phys_base = damage_phys_base
-		self.resist_phys_base = resist_phys_base
-		self.resist_fire_base = resist_fire_base
 
 		self.base_accuracy = base_accuracy
 		self.base_dodge = base_dodge
@@ -471,8 +457,11 @@ class com_Creature:
 		self.local_line_of_sight = local_line_of_sight
 		self.proximate_actors = proximate_actors
 		self.proximate_hostiles = proximate_hostiles
-		self.resistances = resistances
+
 		self.base_damages = base_damages
+		self.base_resistances = base_resistances
+		self.net_resistances = base_resistances
+		self.net_damages = base_damages
 
 
 		#add new damage types and stuff later
@@ -492,7 +481,6 @@ class com_Creature:
 		new_y = self.owner.y
 		next_x = self.owner.x + dx
 		next_y = self.owner.y + dy
-
 
 		#check if creature is trying to move off the map
 		if next_x >= 0 and next_x <= (GAME.current_map_x - 1):
@@ -548,7 +536,7 @@ class com_Creature:
 
 			#do the damage
 			#damage_dealt = self.damage_physical - target.creature.resist_physical
-			damage_dealt = damage_target(self, damage_in = self.base_damages, target = target)
+			damage_dealt = damage_target(self, damage_in = self.net_damages, target = target)
 
 
 			hit_was_critical = False
@@ -596,51 +584,6 @@ class com_Creature:
 			if bonus: dodge += bonus
 
 		return dodge
-
-	@property
-	def damage_physical(self):
-		physical_damage = self.damage_phys_base
-		object_bonuses = []
-
-		if self.owner.container:
-			object_bonuses = [obj.equipment.damage_phys_bonus 
-			for obj in self.owner.container.equipped_items]
-
-		for damage_phys_bonus in object_bonuses:
-			if damage_phys_bonus:
-				physical_damage += damage_phys_bonus
-
-		return physical_damage
-
-	@property
-	def resist_physical(self):
-		physical_resistance = self.resist_phys_base
-
-		object_bonuses = []
-		if self.owner.container:
-			object_bonuses = [obj.equipment.resist_phys_bonus
-								for obj in self.owner.container.equipped_items]
-
-		for resist_phys_base in object_bonuses:
-			if resist_phys_base:
-				physical_resistance += resist_phys_base
-
-		return physical_resistance
-
-
-	@property 
-	def resist_fire(self):
-		fire_resistance = self.resist_fire_base
-
-		object_bonuses = []
-		if self.owner.container:
-			object_bonuses = [obj.equipment.resist_fire_bonus
-								for obj in self.owner.container.equipped_items]
-		for resist_fire_base in object_bonuses:
-			if resist_fire_base:
-				fire_resistance += resist_fire_base
-		return fire_resistance
-
 
 class com_Container:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
@@ -714,17 +657,13 @@ class com_Item:
 #add more bonuses later
 class com_Equipment:
 	def __init__(self, 
-		damage_phys_bonus = 0, resist_phys_bonus = 0,
-		damage_fire_bonus = 0, resist_fire_bonus = 0, 
 		slot = None, name = None,
+		dam_bonus = {}, res_bonus = {},
 		description = "There is no description for this item."):
-		self.damage_phys_bonus = damage_phys_bonus
-		self.resist_phys_bonus = resist_phys_bonus
-
-		self.damage_fire_bonus = damage_fire_bonus
-		self.resist_fire_bonus = resist_fire_bonus
 
 		self.description = description
+		self.dam_bonus = dam_bonus
+		self.res_bonus = res_bonus
 
 		self.name = name
 		self.slot = slot
@@ -733,6 +672,7 @@ class com_Equipment:
 	def toggle_equip(self):
 		if self.equipped:
 			self.unequip()
+			update_stats(actor_to_update = PLAYER)
 
 		else:
 			self.equip()
@@ -751,20 +691,7 @@ class com_Equipment:
 	def unequip(self):
 		self.equipped = False
 
-#putting this here for the time being, gonna move it later
-def update_bonuses(actor, stat_base, stat_bonus_name):
-	stat = stat_base
-	
-	object_bonuses = []
 
-	if self.owner.container:
-		object_bonuses = [obj.equipment.stat_bonus_name
-								for obj in self.owner.container.equipped_items]
-
-	for stat_base in object_bonuses:
-		if stat_base:
-			final_stat += stat_base
-	return final_stat
 
 class com_Exit_Point:
 	def __init__(self, require_input, next_map_key = "", static = True, target_map_type = "dungeon"):
@@ -824,7 +751,6 @@ class com_Door:
 	print("Placeholder")
 
 
-
 class com_Shopkeep:
 	def __init__(self, category = "general", funds = 100, stock = []):
 		self.category = category,
@@ -848,8 +774,6 @@ class com_Trap:
 		if receiver.creature:
 			receiver.creature.take_damage
 		print("Placeholder")
-
-
 
 
 
@@ -1029,29 +953,60 @@ class ai_Dragon:
 
 def damage_target(attacker, damage_in, target):
 	final_damage = 0
-
-	#attacker.base_damages
 	#check what damage types are being used and check them against the target's resistances. subtract and return total
+	if damage_in and target.creature.net_resistances:
+	#	print("Both attacker and target have damage/res respectively")
+	#	print("Attacker is " + attacker.name_instance + ", with " + str(attacker.base_damages))
+	#	print("Target is " + target.name_object + ", with " +  str(target.creature.resistances))
 
-	#worry about equipment later, base damage for now
-	if damage_in and target.creature.resistances:
-		print("Both attacker and target have damage/res respectively")
-		print("Attacker is " + attacker.name_instance + ", with " + str(attacker.base_damages))
-		print("Target is " + target.name_object + ", with " +  str(target.creature.resistances))
-
-	#	for damage_type, dam_value in attacker.base_damages[0].items():
 		for damage_type, dam_value in damage_in.items():
 			if not (dam_value == 0):
-				#for res_type, res_value in target.creature.resistances[0].items():
-				for res_type, res_value in target.creature.resistances.items():
+				for res_type, res_value in target.creature.net_resistances.items():
 					if damage_type == res_type:
-						print("damage type " + str(damage_type) + ", " + str(dam_value) + " vs " + str(res_value) )
+					#	print("damage type " + str(damage_type) + ", " + str(dam_value) + " vs " + str(res_value) )
 						damage = dam_value - res_value
 						if (damage > 0):
 							final_damage += damage
 
-
 	return final_damage
+
+
+def reset_stats(actor_in):
+#	dict_in
+	actor_in.creature.net_resistances = {}
+	actor_in.creature.net_damages = {}
+
+	for restype, resvalue in (actor_in.creature.base_resistances.items()):
+		actor_in.creature.net_resistances[restype] = actor_in.creature.base_resistances[restype]
+	for damtype, damvalue in (actor_in.creature.base_damages.items()):
+		actor_in.creature.net_damages[damtype] = actor_in.creature.base_damages[damtype]
+
+def update_stats(actor_to_update):
+	reset_stats(actor_in = actor_to_update)
+
+	#iterate through all equipped items in the actor's inventory
+	for gear in actor_to_update.container.equipped_items:
+		
+		#check for nonzero bonuses/penalties incurred by item
+		for damage_type, dam_value in gear.equipment.dam_bonus.items():
+			if dam_value != 0:
+
+				print(str(damage_type) + "," + str(dam_value))
+				actor_to_update.creature.net_damages[damage_type] += gear.equipment.dam_bonus[damage_type]
+
+		for resist_type, res_value in gear.equipment.res_bonus.items():
+			if res_value != 0:
+				print("net value is " + str(actor_to_update.creature.net_resistances[resist_type]))
+				print("bonus is " + str(gear.equipment.res_bonus[resist_type]))
+				actor_to_update.creature.net_resistances[resist_type] += gear.equipment.res_bonus[resist_type]
+				print("new net is " + str(actor_to_update.creature.net_resistances[resist_type]))
+				
+				
+	print (str(len((actor_to_update.container.equipped_items))))
+
+
+	print("Final damage resistances are " + str(actor_to_update.creature.net_resistances))
+
 
 
 
@@ -1179,7 +1134,7 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT, total_rooms = constants.MAP_MAX_NUM_ROOMS):
 
 	#initialize empty map, flooded with unwalkable tiles
-	new_map = [[struc_Tile(True) for y in range(0, dungeon_x)]  
+	new_map = [[structures.Tile(True) for y in range(0, dungeon_x)]  
 									for x in range (0, dungeon_y)]
 
 	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x - 1, map_y = dungeon_y - 1)								
@@ -1240,7 +1195,7 @@ def map_make_borders_undiggable(map_in, map_x, map_y):
 
 def map_create_town():
 	#initialize empty map, flooded with empty tiles
-	new_map = [[struc_Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
+	new_map = [[structures.Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
 									for x in range (0, constants.MAP_WIDTH)]
 
 	#create borders of town
@@ -1302,7 +1257,7 @@ def map_create_town():
 def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH, house_y = constants.HOUSE_INTERIOR_MIN_HEIGHT):
 	#initialize empty map, flooded with empty tiles
 
-	new_map = [[struc_Tile(False) for y in range(0, house_y)]  
+	new_map = [[structures.Tile(False) for y in range(0, house_y)]  
 									for x in range (0, house_x)]
 
 	map_make_borders_undiggable(map_in = new_map, map_x = house_x, map_y = house_y)	
@@ -1484,7 +1439,7 @@ def map_create_building(new_map, new_building, has_door = True):
 			new_map[x][y].block_path = True
 
 	if has_door:
-		gen_building_door(new_map, new_building)
+		place_building_door(new_map, new_building)
 
 def map_create_tunnels(coords1, coords2, new_map):
 	#coin_flip = (libtcod.random_get_int(0, 0, 1) == 1)
@@ -1709,9 +1664,9 @@ def draw_stat_panel():
 	start_y = (int((constants.CAM_HEIGHT + 20) * .85))
 
 	stats = ("Health = " + str(PLAYER.creature.current_hp) + "/" + str(PLAYER.creature.max_hp) + 
-			", Damage / hit = " + str(PLAYER.creature.damage_physical) +
-			", vs Physical = " + str(PLAYER.creature.resist_physical) +
-			", vs Fire = " + str(PLAYER.creature.resist_fire) + 
+		#	", Damage / hit = " + str(PLAYER.creature.damage) +
+		#	", vs Physical = " + str(PLAYER.creature.resist_physical) +
+		#	", vs Fire = " + str(PLAYER.creature.resist_fire) + 
 			", XP/LVL = 1/" + str(PLAYER.creature.current_xp))
 	text_height = 0
 
@@ -2021,7 +1976,8 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 			creature_to_damage = map_check_for_creatures(x, y)
 			if creature_to_damage: 
 				#allow flexibility for damage types later
-				damage_to_deal -= creature_to_damage.creature.resist_fire
+				#damage_to_deal -= creature_to_damage.creature.resist_fire
+				damage_to_deal -= creature_to_damage.net_resistances[damage_type]
 
 				if damage_to_deal > 0:
 					creature_to_damage.creature.take_damage(damage_to_deal, attacker = caster)
@@ -2548,10 +2504,6 @@ def menu_inventory():
 			if show_description:
 			#	description_text = []
 				i = 0
-				#for paragraph in PLAYER.container.inventory[mouse_line_selection].item.description:
-					#apparently setitem's performance sucks so change later idk
-				#description_text.__setitem__(i, str(PLAYER.container.inventory[mouse_line_selection].item.description[i]))
-					#i+= 1
 				description_text = str(PLAYER.container.inventory[mouse_line_selection].item.description)
 
 				#reset panel
@@ -2571,6 +2523,7 @@ def menu_inventory():
 					#check if item is equipment, and, if so, unequip it
 					try:
 						PLAYER.container.inventory[mouse_line_selection].equipment.unequip()
+						#update_stats(actor = PLAYER)
 					except:
 						print("Meh.")
 
@@ -2584,6 +2537,7 @@ def menu_inventory():
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
 						PLAYER.container.inventory[mouse_line_selection].item.use()
+						update_stats(actor_to_update = PLAYER)
 
 		#render game 
 		draw_game()
@@ -2704,10 +2658,12 @@ def gen_equipment(coords):
 	global GAME_EQUIPMENT_POOL, GAME
 	selected_equipment = random.choice(GAME_EQUIPMENT_POOL)
 
+	dam_list = 	selected_equipment['bonus_damages']
+	res_list = 	selected_equipment ['bonus_resistances']
+
 	x, y = coords
-	equipment_com = com_Equipment(damage_phys_bonus = selected_equipment['damage_phys_bonus'], resist_phys_bonus = selected_equipment['resist_phys_bonus'],
-					damage_fire_bonus = selected_equipment['damage_fire_bonus'], resist_fire_bonus = selected_equipment['resist_fire_bonus'],
-					slot = selected_equipment['slot'], name = selected_equipment['pickup_name'],)
+	equipment_com = com_Equipment(slot = selected_equipment['slot'], name = selected_equipment['pickup_name'],
+					dam_bonus = dam_list, res_bonus = res_list)
 
 	return_object = obj_Actor(x, y, selected_equipment['name'],
 					icon = selected_equipment['icon'], 
@@ -2733,15 +2689,11 @@ def gen_creature(coords):
 	else: item_com = None
 
 	dam_list = 	selected_creature['base_damages']
-	
-
 	res_list = 	selected_creature['base_resistances']
 
 
 	creature_com = com_Creature(selected_creature['creature_name'], death_function = death_monster,
 								hp = selected_creature['base_hp'],
-								damage_phys_base = selected_creature['damage_phys_base'],
-								resist_phys_base = selected_creature['resist_phys_base'],
 								xp_on_death = selected_creature['xp_on_death'],
 
 								base_dodge = selected_creature['base_dodge'], 
@@ -2749,8 +2701,8 @@ def gen_creature(coords):
 								base_crit_chance = selected_creature['base_crit_chance'],
 								base_crit_mult = selected_creature['base_crit_mult'],
 
-								resistances = dam_list,	
-								base_damages = res_list
+								base_damages = dam_list, base_resistances = res_list,
+								net_damages = dam_list, net_resistances = res_list
 									
 	) 
 	#print(str(selected_creature['base_resistances']))
@@ -2778,10 +2730,11 @@ def gen_town_guard(coords):
 
 	#container_com = com_Container()
 	creature_com = com_Creature(name_instance = "Town Guard",
-								damage_phys_base = 12, resist_phys_base = 3, hp = 37, #player's creature component name
+								hp = 37, #player's creature component name
 								death_function = death_monster,
 								noncorporeal = False,
-								base_damages = dam_list, resistances = res_list)
+								base_damages = dam_list, base_resistances = res_list,
+								net_damages = dam_list, net_resistances = res_list)
 
 	ai_com = ai_Town_Guardsman_Patrol()
 	allegiance_com = components.AllegianceComponent(category = "guardsman", hostile_list = ['wild', 'eldritch', 'draconic'])
@@ -2868,26 +2821,25 @@ def gen_player(coords):
 	global PLAYER, PLAYER_NAME
 	x, y = coords
 	#create the player
-	dam_list = 	{"fire":4,"electricity":0,"poison":0,"frost":9,"magic":0,
+
+	dam_list = {"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":5, "slashing":0, "eldritch":0}
 
-	res_list = 	{"fire":3,"electricity":3,"poison":3,"frost":3,"magic":3,
+	res_list = {"fire":3,"electricity":3,"poison":3,"frost":3,"magic":3,
 				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}
 
 
 	container_com = com_Container()
 	creature_com = com_Creature(PLAYER_NAME,
-								damage_phys_base = 8, resist_phys_base = 3, hp = 100, #player's creature component name
+								hp = 100, #player's creature component name
 								death_function = death_player,
 								noncorporeal = False,
 								base_accuracy = 90, base_dodge = 30,
 								base_crit_chance = 5, base_crit_mult = 1.5,
-								base_damages = dam_list, resistances = res_list
+								base_damages = dam_list, base_resistances = res_list,
+								net_damages = dam_list, net_resistances = res_list
+								
 								)
-
-
-
-
 
 	allegiance_com = components.AllegianceComponent(category = "player", 
 					hostile_list = ["eldritch", "wild", "draconic", "townfolk"],
@@ -2907,23 +2859,23 @@ def gen_player(coords):
 def gen_town_folk(coords):
 	x, y = coords
 
-	dam_list = 	{'fire':0,'electricity':0,'poison':0,'frost':0,'magic':0,
+	base_dam_list = {'fire':0,'electricity':0,'poison':0,'frost':0,'magic':0,
 				'ballistic':0, 'piercing':0, 'bludgeoning':5, 'slashing':0, 'eldritch':0}
 
-	res_list = 	{'fire':3,'electricity':3,'poison':3,'frost':3,'magic':3,
+	base_res_list = {'fire':3,'electricity':3,'poison':3,'frost':3,'magic':3,
 				'ballistic':3, 'piercing':3, 'bludgeoning':3, 'slashing':3, 'eldritch':3}
 
-	print(str(dam_list))
-	print(str(res_list))
+	dam_list = base_dam_list
+	res_list = base_res_list
 
 
 	container_com = com_Container()
 	creature_com = com_Creature(name_instance = "Townfolk",
-								damage_phys_base = 8, resist_phys_base = 3, hp = 10, #player's creature component name
+								hp = 10, #player's creature component name
 								death_function = death_monster,
 								noncorporeal = False,
-								resistances = res_list,
-								base_damages = dam_list)
+								base_damages = dam_list, base_resistances = res_list,
+								net_damages = dam_list, net_resistances = res_list)
 
 	ai_com = ai_Townfolk_Wander()
 	allegiance_com = components.AllegianceComponent(category = "townfolk")
@@ -3017,7 +2969,7 @@ def gen_exit_point_door(coords,
 def gen_barrier_door(coords, default_locked, default_closed):
 	print("Temporary placeholder.")
 
-def gen_building_door(new_map, new_building):
+def place_building_door(new_map, new_building):
 	side = helper_dice(4, 0)
 	if side == 1: #top?
 		door_x_pos = round((new_building.x1 + new_building.x2) / 2)

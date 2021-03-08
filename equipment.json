@@ -15,24 +15,18 @@
 			"id": "armor000",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"resist_phys_bonus":12,
-
-			"damage_fire_bonus":0,
-			"resist_fire_bonus":5,
-
 			"dodge_bonus":5,
 			"accuracy_bonus":5,
 			"critical_chance":-5,
 			"critical_damage":1,
 
-		"base_damages":
-			{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-			"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+			"bonus_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-		"base_resistances":	
-			{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
-			"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+			"bonus_resistances":	
+				{"fire":3,"electricity":2,"poison":1,"frost":4,"magic":3,
+				"ballistic":7, "piercing":4, "bludgeoning":9, "slashing":11, "eldritch":6}
 		},
 		
 		{
@@ -49,24 +43,16 @@
 			"id": "armor001",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":0,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":1,
-
 			"dodge_bonus":0,
 			"accuracy_bonus":0,
 			"critical_chance":0,
 			"critical_damage":1,
 
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
@@ -85,24 +71,16 @@
 			"id": "armor002",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":0,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":1,
-
 			"dodge_bonus":0,
 			"accuracy_bonus": 5,
 			"critical_chance":1,
 			"critical_damage":1.1,
 
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 
@@ -123,25 +101,16 @@
 			"id": "armor003",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max" :0,
-			"resist_phys_bonus":3,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":-1,
-
 			"dodge_bonus":8,
 			"accuracy_bonus":2,
 			"critical_chance":0,
 			"critical_damage":1,
 
-
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
@@ -159,24 +128,16 @@
 			"id": "sword001",
 			"sort_class":"weapon",
 
-			"damage_phys_bonus":12,
-			"damage_phys_bonus_max" :0,
-			"resist_phys_bonus":0,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":0,
-
 			"dodge_bonus":10,
 			"accuracy_bonus":3,
 			"critical_chance":1,
 			"critical_damage":1.5,
 
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 	
@@ -197,25 +158,16 @@
 			"id": "armor004",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max" :0,
-			"resist_phys_bonus":1,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":-1,
-
 			"dodge_bonus":8,
 			"accuracy_bonus":2,
 			"critical_chance":-1,
 			"critical_damage":1,
 
-
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
@@ -233,24 +185,16 @@
 			"id": "armor005",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max" :0,
-			"resist_phys_bonus":1,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":1,
-
 			"dodge_bonus":2,
 			"accuracy_bonus":2,
 			"critical_chance":0,
 			"critical_damage":1,
 
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
@@ -268,24 +212,16 @@
 			"id": "armor006",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max" :0,
-			"resist_phys_bonus":3,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":2,
-
 			"dodge_bonus":8,
 			"accuracy_bonus":2,
 			"critical_chance":1,
 			"critical_damage":1,
 
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
@@ -303,25 +239,16 @@
 			"id": "armor007",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":8,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":3,
-
 			"dodge_bonus":10,
 			"accuracy_bonus":10,
 			"critical_chance":0,
 			"critical_damage":1,
 
-
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 
@@ -340,28 +267,19 @@
 			"id": "armor008",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":7,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":5,
-
 			"dodge_bonus":6,
 			"accuracy_bonus":7,
 			"critical_chance":0,
 			"critical_damage":1,
 
-
-
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+
 		},
 		{
 			"name":"Guiding Star helmet",
@@ -377,25 +295,16 @@
 			"id": "armor009",
 			"sort_class":"armor",
 
-			"damage_phys_bonus":0,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":2,
-
-			"damage_fire_bonus":0,
-			"damage_fire_bonus_max":1,
-			"resist_fire_bonus":5,
-
 			"dodge_bonus":5,
 			"accuracy_bonus":5,
 			"critical_chance":0,
 			"critical_damage":1,
 
-
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		},
@@ -413,26 +322,16 @@
 			"id": "sword000",
 			"sort_class":"weapon",
 
-			"damage_phys_bonus":20,
-			"damage_phys_bonus_max":0,
-			"resist_phys_bonus":1,
-
-			"damage_fire_bonus":5,
-			"damage_fire_bonus_max":0,
-			"resist_fire_bonus":5,
-
 			"dodge_bonus":5,
 			"accuracy_bonus":5,
 			"critical_chance":5,
 			"critical_damage":1,
 
-
-
-			"base_damages":
+			"bonus_damages":
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
-			"base_resistances":	
+			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
 		}
