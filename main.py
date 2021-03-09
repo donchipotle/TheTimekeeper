@@ -12,6 +12,7 @@ import os.path
 import constants
 import settings
 import helpers
+import objects
 
 import structures
 import components
@@ -23,37 +24,6 @@ import string
 
 #json handling
 import json
-
-
-
-class struc_Map:
-	def __init__(self, 
-		player_X = 0, player_Y = 0, 
-		current_key = "", 
-		map_tiles = [],
-		map_rooms = [],
-		map_objects = [],
-		x_dimension = constants.MAP_WIDTH,
-		y_dimension = constants.MAP_HEIGHT):
-
-		self.player_X = player_X
-		self.player_Y = player_Y
-		self.current_key = current_key
-		self.map_tiles = map_tiles
-		self.map_rooms = map_rooms
-		self.map_objects = map_objects
-
-class struc_Direction:
-	def __init__(self, x = 0, y = 0):
-		self.x = x,
-		self.y = y
-
-class struc_Target:
-	def __init__(self, actor = None, distance = 0, threat_level = 0):
-		self.actor = actor,
-		self.distance = distance,
-		self.threat_level = threat_level
-
 
 
 class obj_Actor:
@@ -238,7 +208,6 @@ class obj_Game:
 		
 	def transition(self):
 		global FOV_CALCULATE
-		GAME.first_map = False	#bool to start spawning 'up' staircases, when this function is called, automatically false
 
 		list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)	#get exit point the player is standing on
 		for obj in list_of_objects:
@@ -253,7 +222,6 @@ class obj_Game:
 				
 					map_make_fov(self.current_map, self.next_map_x, self.next_map_y) #, self.current_map.x_dimension, self.current_map.y_dimension)
 
-					#TEMP_FOV
 
 
 				else:						#if the exit point has no key, create a new map and key, then load it
@@ -311,51 +279,7 @@ class obj_Game:
 		FOV_CALCULATE = True
 
 #this is a rectangle that lives on the map
-class obj_Room:
-	def __init__(self, coords, size): #coords are upper left corner location 
-		self.x1, self.y1 = coords
-		self.w, self.h = size
 
-		self.x2 = self.x1 + self.w
-		self.y2 = self.y1 + self.h
-
-	@property
-	def center(self):
-		center_x = int(((self.x1 + self.x2) // 2))
-		center_y = int(((self.y1 + self.y2) // 2))
-
-		return (center_x, center_y)
-
-	def intersect(self, other):
-		#return true if another obj intersects with this one
-		objects_intersect = (self.x1 <= other.x2 and self.x2 >= other.x1 and
-                             self.y1 <= other.y2 and self.y2 >= other.y1)
-
-		return objects_intersect
-
-#object that is spawned in towns
-class obj_Building:
-	def __init__(self, coords, size): #coords are upper left corner location 
-		self.x1, self.y1 = coords
-		self.w, self.h = size
-
-		self.x2 = self.x1 + self.w
-		self.y2 = self.y1 + self.h
-
-	def intersect(self, other):
-		#return true if another obj intersects with this one
-		objects_intersect = (self.x1 <= other.x2 and self.x2 >= other.x1 and
-                             self.y1 <= other.y2 and self.y2 >= other.y1)
-
-		return objects_intersect
-
-	#the center of each building
-	@property
-	def center(self):
-		center_x = ((self.x1 + self.x2) // 2)
-		center_y = ((self.y1 + self.y2) // 2)
-
-		return (center_x, center_y)
 
 #the player's viewport - level is spatially mapped to it
 class obj_Camera:
@@ -432,7 +356,7 @@ class com_Creature:
 		local_line_of_sight = 7,
 		proximate_actors = [],
 		proximate_hostiles = [],
-		target = struc_Target(),
+		target = structures.Target(),
 
 		base_damages = {},
 		base_resistances = {},
@@ -810,7 +734,7 @@ def ai_designate_targets(actor = None):
 			for category in actor.allegiance_com.hostile_list[0]:
 				if category in obj.allegiance_com.category[0]:			# I literally have no idea why everything in this game is a list of lists, but hallelujah, it works now
 					distance_to_target = actor.distance_to(obj)
-					target = struc_Target(actor = obj, distance = (distance_to_target), threat_level = 0)
+					target = structures.Target(actor = obj, distance = (distance_to_target), threat_level = 0)
 					actor.creature.proximate_hostiles.append(target)
 				#	print(obj.name_object + " is hostile to " + actor.name_object)
 								
@@ -1137,17 +1061,15 @@ def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT
 	list_of_rooms = []
 	num = 0
 	for num in range(total_rooms):
-		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH,  
-										constants.ROOM_MAX_WIDTH)
-		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, 
-										constants.ROOM_MAX_HEIGHT)
+		w = libtcod.random_get_int(0, constants.ROOM_MIN_WIDTH,  constants.ROOM_MAX_WIDTH)
+
+		h = libtcod.random_get_int(0,constants.ROOM_MIN_HEIGHT, constants.ROOM_MAX_HEIGHT)
 
 		x = libtcod.random_get_int(0, 2, dungeon_x - w - 2)
-
 		y = libtcod.random_get_int(0, 2, dungeon_y - h - 2)
 
 		#create room
-		new_room = obj_Room((x, y), (w, h))
+		new_room = objects.Room((x, y), (w, h))
 		failed = False
 
 		#check for interference (overlapping with any others)
@@ -1175,6 +1097,12 @@ def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT
 	print("map creation finished")
 	return (new_map, list_of_rooms, dungeon_x, dungeon_y)
 
+
+def map_create_overworld():
+	#initialize empty map, flooded with empty tiles
+	new_map = [[structures.Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
+									for x in range (0, constants.MAP_WIDTH)]
+
 def map_make_borders_undiggable(map_in, map_x, map_y):
 	for i in range(0, map_x):
 		map_in[i][0].block_path = True
@@ -1186,8 +1114,7 @@ def map_make_borders_undiggable(map_in, map_x, map_y):
 		map_in[0][i].is_diggable = False
 		map_in[map_x -1][i].block_path = True
 
-def map_create_town():
-	#initialize empty map, flooded with empty tiles
+def map_create_town():	#initialize empty map, flooded with empty tiles
 	new_map = [[structures.Tile(False) for y in range(0, constants.MAP_HEIGHT)]  
 									for x in range (0, constants.MAP_WIDTH)]
 
@@ -1209,7 +1136,7 @@ def map_create_town():
 		y = libtcod.random_get_int(0, 8, constants.MAP_HEIGHT - h - 8)
 
 		#create room
-		new_building = obj_Building((x, y), (w, h))
+		new_building = objects.Building((x, y), (w, h))
 
 		failed = False
 
@@ -1330,10 +1257,7 @@ def map_place_objects(room_list, is_first_map = None):
 		if first_room: PLAYER.x, PLAYER.y = room.center
 
 		if first_room: 
-			if is_first_map == False:
-				gen_exit_point_stairs(room.center, downwards = False)	#create stairs back up to last map
-			else:
-				gen_weapon_sword(room.center)
+			gen_exit_point_stairs(room.center, downwards = False)	#create stairs back up to last map
 	
 		if last_room:
 			gen_exit_point_stairs(room.center, downwards = True)
@@ -1418,8 +1342,7 @@ def map_place_door_on_walls(x = 0, y = 0, map_in = None):
 	gen_exit_point_door(coords = (door_x_pos, door_y_pos), target_key = GAME.current_key)
 	PLAYER.x, PLAYER.y = (door_x_pos, door_y_pos)
 
-def map_create_overworld():
-	print("Placeholder")
+
 
 def map_create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
@@ -2313,8 +2236,8 @@ def menu_main():
 
 def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
 
-	adjusted_coords = struc_Direction()
-	to_open_coords = struc_Direction()
+	adjusted_coords = structures.Direction()
+	to_open_coords = structrues.Direction()
 
 	adjusted_coords.x, adjusted_coords.y = game_direction_prompt(event_in, not_in_menu = False)
 
@@ -3048,7 +2971,7 @@ def game_handle_keys():
 		if event.type == pygame.QUIT: return "QUIT"	
 
 		if event.type == pygame.KEYDOWN:
-			move_coords = struc_Direction()
+			move_coords = structures.Direction()
 			move_coords.x, move_coords.y = game_direction_prompt(event_in = event)
 			if (move_coords.x,  move_coords.y) != (0, 0):
 				PLAYER.creature.move(move_coords.x, move_coords.y)
@@ -3107,7 +3030,7 @@ def game_handle_keys():
 
 def game_direction_prompt(event_in, not_in_menu = True):
 	#return a direction picked from using the numpad, used for moving, firing projectiles, or interacting with doors
-	target_coords = struc_Direction(x = 0, y = 0)
+	target_coords = structures.Direction(x = 0, y = 0)
 	target_coords = (0, 0)
 
 	while not_in_menu:

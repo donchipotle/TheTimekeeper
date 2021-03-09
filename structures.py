@@ -1,3 +1,6 @@
+import constants
+
+
 class Damage:
 	def __init__(self, fire = 0, electricity = 0, poison = 0, frost = 0, magic = 0,
 				ballistic = 0, piercing = 0, bludgeoning = 0, slashing = 0, eldritch = 0):
@@ -36,3 +39,33 @@ class Tile:
 		#for things like cages, fences, other permeable barriers
 		self.transparent = False
 		self.is_diggable = True
+
+
+
+class Map:
+	def __init__(self, 
+		player_X = 0, player_Y = 0, 
+		current_key = "", 
+		map_tiles = [],
+		map_rooms = [],
+		map_objects = [],
+		x_dimension = constants.MAP_WIDTH,
+		y_dimension = constants.MAP_HEIGHT):
+
+		self.player_X = player_X
+		self.player_Y = player_Y
+		self.current_key = current_key
+		self.map_tiles = map_tiles
+		self.map_rooms = map_rooms
+		self.map_objects = map_objects
+
+class Direction:
+	def __init__(self, x = 0, y = 0):
+		self.x = x,
+		self.y = y
+
+class Target:
+	def __init__(self, actor = None, distance = 0, threat_level = 0):
+		self.actor = actor,
+		self.distance = distance,
+		self.threat_level = threat_level
