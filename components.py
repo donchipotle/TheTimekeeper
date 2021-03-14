@@ -51,13 +51,11 @@ class ItemComponent:
 		if self.owner.equipment:
 			self.owner.equipment.toggle_equip()
 			return
-		else: 
-			print("This item cannot be equipped.")
+		else: print("This item cannot be equipped.")
 		
 		if self.use_function:
 			result = self.use_function(self.current_container.owner, self.value)
 		
-			if result is not None:
-				print("use_function failed")
+			if result is not None: print("use_function failed")
 			else:
 				self.current_container.inventory.remove(self.owner)

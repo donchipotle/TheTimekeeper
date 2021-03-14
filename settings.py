@@ -93,8 +93,8 @@ TEST = "By the riverside the man burned each page - all but one. The single dimi
 
 	###debug
 
-ENABLE_DEBUG = False
-DISPLAY_FPS = False
+ENABLE_DEBUG = True
+DISPLAY_FPS = True
 
 DEBUG_PRINT_TURNS = False
 

@@ -33,14 +33,17 @@ class Resistance:
 
 		#structures
 class Tile:
-	def __init__(self, block_path): #add more variables like blocking projectiles, blocking sight, DoT, etc.
+	def __init__(self, block_path, tile_icon = ".", is_diggable = True, transparent = False, explored = False,
+		visible_tile_color = constants.COLOR_WHITE,
+		explored_tile_color = constants.COLOR_GRAY): 
+
 		self.block_path = block_path
-		self.explored = False
-		#for things like cages, fences, other permeable barriers
-		self.transparent = False
-		self.is_diggable = True
-
-
+		self.explored = explored
+		self.transparent = transparent
+		self.is_diggable = is_diggable
+		self.tile_icon = tile_icon
+		self.visible_tile_color = visible_tile_color
+		self.explored_tile_color = explored_tile_color
 
 class Map:
 	def __init__(self, 
@@ -69,3 +72,8 @@ class Target:
 		self.actor = actor,
 		self.distance = distance,
 		self.threat_level = threat_level
+
+class ScreenStatus:
+	def __init__(self, inventory_open = False, message_log_open = False,):
+		self.inventory_open = inventory_open,
+		self.message_log_open = message_log_open

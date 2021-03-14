@@ -46,3 +46,7 @@ class Building:
 		center_y = ((self.y1 + self.y2) // 2)
 
 		return (center_x, center_y)
+
+
+
+
