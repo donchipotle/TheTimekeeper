@@ -19,7 +19,8 @@ import helpers
 import objects
 import structures
 import components
-
+import map_utilities
+import actor_utilities
 
 
 class obj_Actor:
@@ -175,6 +176,7 @@ class obj_Actor:
 		delta_y = self.y - other.y 
 		distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
 
+		if distance == 0: distance = 1 
 		delta_x = int(round(delta_x / distance))
 		delta_y = int(round(delta_y / distance))
 
@@ -244,6 +246,7 @@ class obj_Game:
 
 					if self.next_map_type == "house": 
 						self.current_map, self.current_rooms = map_create_house_interior()
+						PLAYER.x, PLAYER.y = (door_x_pos, door_y_pos)
 
 					if self.next_map_type == "cave":
 						self.current_map, self.next_map_x, self.next_map_y = map_random_walk()
@@ -568,7 +571,7 @@ class com_Equipment:
 	def toggle_equip(self):
 		if self.equipped:
 			self.unequip()
-			update_stats(actor_to_update = PLAYER)
+			actor_utilities.update_stats(actor_to_update = PLAYER)
 
 		else:
 			self.equip()
@@ -703,7 +706,16 @@ def ai_designate_targets(actor = None):
 	if (len(actor.creature.proximate_hostiles)) == 0: return "no actors"
 	actor.creature.proximate_hostiles = sorted(actor.creature.proximate_hostiles, key=lambda target: target.distance)
 	target = (actor.creature.proximate_hostiles)[0]
+
+	#reset everything
+	actor.creature.local_fov = None
+	actor.creature.proximate_hostiles = []
+	actor.creature.proximate_actors = []
+
 	return target	
+
+
+
 
 class ai_Confuse:
 	def __init__(self, old_ai, num_turns = 5):
@@ -728,7 +740,6 @@ class ai_Chase:
 		monster = self.owner
 
 		target_actor = (ai_designate_targets(actor = monster))
-
 		if target_actor == "no actors":
 			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
 			return
@@ -748,8 +759,14 @@ class ai_Chase:
 class ai_Flee:
 	def take_turn(self):
 		monster = self.owner
-		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
-			self.owner.move_away(PLAYER)
+		target_actor = (ai_designate_targets(actor = monster))
+
+		if target_actor == "no actors":
+			monster.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			return
+
+		else:		#no idea why this is a tuple lol
+			monster.move_away(target_actor.actor[0])
 
 class ai_Townfolk_Wander:
 	def take_turn(self):
@@ -772,9 +789,6 @@ class ai_Town_Guardsman_Patrol:
 			elif target_actor.actor[0].creature.current_hp > 0:
 				monster.creature.attack(target_actor.actor[0])
 
-		monster.creature.local_fov = None
-		monster.creature.proximate_hostiles = []
-		monster.creature.proximate_actors = []
 
 class com_AI:
 	def take_turn(self):
@@ -809,14 +823,14 @@ class ai_Dragon:
 		if target_actor == "no actors":
 			return
 
-		target_coords = target_actor.actor[0].x, target_actor.actor[0].y
-		if libtcod.map_is_in_fov(FOV_MAP, monster.x, monster.y):
+		else:
+			target_coords = target_actor.actor[0].x, target_actor.actor[0].y
 			#move towards the player if far away (out of spell reach)		
 			# move towards the player if far away 
+
 			if monster.distance_to(target_actor.actor[0]) >= 8:
 				self.owner.move_towards(target_actor.actor[0])
 			#if target is alive, attack
-			#elif target_actor.actor[0].creature.current_hp > 0:
 			elif target_actor.actor[0].creature.current_hp > 0:
 				#cast fireball
 				if monster.distance_to(target_actor.actor[0]) > 3:
@@ -824,7 +838,6 @@ class ai_Dragon:
 					#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
 					aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, 
 						penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
-
 
 				else: # if within blast radius, engage in melee
 					if monster.distance_to(target_actor.actor[0]) < 2:
@@ -849,30 +862,6 @@ def damage_target(attacker, damage_in, target):
 
 	return final_damage
 
-
-def reset_stats(actor_in):
-	actor_in.creature.net_resistances = {}
-	actor_in.creature.net_damages = {}
-
-	for restype, resvalue in (actor_in.creature.base_resistances.items()):
-		actor_in.creature.net_resistances[restype] = actor_in.creature.base_resistances[restype]
-	for damtype, damvalue in (actor_in.creature.base_damages.items()):
-		actor_in.creature.net_damages[damtype] = actor_in.creature.base_damages[damtype]
-
-def update_stats(actor_to_update):
-	reset_stats(actor_in = actor_to_update)
-
-	#iterate through all equipped items in the actor's inventory
-	for gear in actor_to_update.container.equipped_items:
-		#check for nonzero bonuses/penalties incurred by item
-		for damage_type, dam_value in gear.equipment.dam_bonus.items():
-			if dam_value != 0:
-				#print(str(damage_type) + "," + str(dam_value))
-				actor_to_update.creature.net_damages[damage_type] += gear.equipment.dam_bonus[damage_type]
-
-		for resist_type, res_value in gear.equipment.res_bonus.items():
-			if res_value != 0:
-				actor_to_update.creature.net_resistances[resist_type] += gear.equipment.res_bonus[resist_type]
 
 
 def death_monster(monster):
@@ -960,7 +949,7 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 	y_l_bound = int(dungeon_y * .45)
 	y_u_bound = int(dungeon_y * .55)
 
-	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x -1, map_y = dungeon_y -1)
+	map_utilities.make_borders_undiggable(map_in = new_map, map_x = dungeon_x -1, map_y = dungeon_y -1)
 	first_node = True
 
 	#random walk that propagates out from assigned nodes
@@ -991,7 +980,7 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 	map_place_objects_dungeon(map_in = new_map, map_x =  dungeon_x -1, map_y =  dungeon_y -1)
 	distribute_equipment(num_attempts = 4, map_in = new_map, map_x = dungeon_x -1, map_y = dungeon_y -1)
 
-	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x - 1, map_y = dungeon_y - 1)
+	map_utilities.make_borders_undiggable(map_in = new_map, map_x = dungeon_x - 1, map_y = dungeon_y - 1)
 	map_make_fov(new_map, fov_x = dungeon_x -1, fov_y = dungeon_y -1)
 
 	return (new_map, dungeon_x, dungeon_y)
@@ -1003,7 +992,7 @@ def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT
 								for y in range(0, dungeon_x)]  
 									for x in range (0, dungeon_y)]
 
-	map_make_borders_undiggable(map_in = new_map, map_x = dungeon_x - 1, map_y = dungeon_y - 1)								
+	map_utilities.make_borders_undiggable(map_in = new_map, map_x = dungeon_x - 1, map_y = dungeon_y - 1)								
 						
 	# generate new room
 	list_of_rooms = []
@@ -1028,14 +1017,14 @@ def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT
 
 		if not failed:
 			#place room
-			map_create_room(new_map, new_room)
+			map_utilities.create_room(new_map, new_room)
 			current_center = new_room.center
 			center_x, center_y = new_room.center
 
 			#put player in the first room
 			if len(list_of_rooms) != 0:
 				previous_center = list_of_rooms[-1].center
-				map_create_tunnels(current_center, previous_center, new_map)
+				map_utilities.create_tunnels(current_center, previous_center, new_map)
 
 			list_of_rooms.append(new_room)	
 
@@ -1044,47 +1033,53 @@ def map_create(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_HEIGHT
 	print("map creation finished")
 	return (new_map, list_of_rooms, dungeon_x, dungeon_y)
 
+def create_building(new_map, new_building, has_door = True):
+	for x in range(new_building.x1, new_building.x2):
+		for y in range(new_building.y1, new_building.y2):
+			new_map[x][y].block_path = True
+			new_map[x][y].transparent = False
+			new_map[x][y].visible_tile_color = constants.COLOR_L_BROWN
+			new_map[x][y].explored_tile_color = constants.COLOR_BROWN
+			new_map[x][y].tile_icon = "#"
+
+	if has_door:
+		place_building_door(new_map, new_building)
 
 def map_create_overworld():
 	#initialize empty map, flooded with empty tiles
-	new_map = [[structures.Tile(False) for y in range(0, constants.OVERWORLD_HEIGHT)]  
+	new_map = [[structures.Tile(block_path = False, tile_icon = "~", transparent = True,
+							visible_tile_color = constants.COLOR_BLUE, explored_tile_color = constants.COLOR_BLUE)
+							 for y in range(0, constants.OVERWORLD_HEIGHT)]  
 									for x in range (0, constants.OVERWORLD_WIDTH)]
+
+	noise_scale = 0.1 
+	bias = 130
+
+	#generate land vs perlin noise
+
+	for y in range(0, constants.OVERWORLD_HEIGHT):
+		for x in range (0, constants.OVERWORLD_WIDTH):
+
+			b_noise = random.randint(0, round((255 * noise_scale) + bias, 0) )
+
+
+			new_map[x][y].tile_icon = "#"
+			new_map[x][y].visible_tile_color = (0, 0, b_noise )
+			new_map[x][y].explored_tile_color = (0, 0, b_noise )
+
+#					new_map[point_x][point_y].block_path = False
+#					new_map[point_x][point_y].is_diggable = True
+#					new_map[point_x][point_y].transparent = True
+#					new_map[point_x][point_y].visible_tile_color = constants.COLOR_WHITE
+#					new_map[point_x][point_y].explored_tile_color = constants.COLOR_L_GRAY
+#					new_map[point_x][point_y].tile_icon = "."
+
 
 
 	map_make_fov(new_map)
 	return (new_map)
 
-def map_make_borders_undiggable(map_in, map_x, map_y):
-	for i in range(0, map_x):
-		map_in[i][0].block_path = True
-		map_in[i][0].is_diggable = False
-		map_in[i][0].transparent = False
-		map_in[i][0].visible_tile_color = constants.COLOR_L_BROWN
-		map_in[i][0].explored_tile_color = constants.COLOR_BROWN
-		map_in[i][0].tile_icon = "#"
 
-		map_in[i][map_y -1].block_path = True
-		map_in[i][map_y -1].block_path = True
-		map_in[i][map_y -1].is_diggable = False
-		map_in[i][map_y -1].transparent = False
-		map_in[i][map_y -1].visible_tile_color = constants.COLOR_L_BROWN
-		map_in[i][map_y -1].explored_tile_color = constants.COLOR_BROWN
-		map_in[i][map_y -1].tile_icon = "#"
-
-	for i in range(0, map_y):
-		map_in[0][i].block_path = True
-		map_in[0][i].is_diggable = False
-		map_in[0][i].transparent = False
-		map_in[0][i].visible_tile_color = constants.COLOR_L_BROWN
-		map_in[0][i].explored_tile_color = constants.COLOR_BROWN
-		map_in[0][i].tile_icon = "#"
-
-		map_in[map_x -1][i].block_path = True
-		map_in[map_x -1][i].is_diggable = False
-		map_in[map_x -1][i].transparent = False
-		map_in[map_x -1][i].visible_tile_color = constants.COLOR_L_BROWN
-		map_in[map_x -1][i].explored_tile_color = constants.COLOR_BROWN
-		map_in[map_x -1][i].tile_icon = "#"
 
 def map_create_town():	#initialize empty map, flooded with empty tiles
 	new_map = [[structures.Tile(block_path = False, tile_icon = ".", transparent = True, 
@@ -1093,7 +1088,7 @@ def map_create_town():	#initialize empty map, flooded with empty tiles
 										for x in range (0, constants.MAP_WIDTH)]
 
 	#create borders of town
-	map_make_borders_undiggable(map_in = new_map, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT)
+	map_utilities.make_borders_undiggable(map_in = new_map, map_x = constants.MAP_WIDTH, map_y = constants.MAP_HEIGHT)
 	
 	# generate new buildings
 	list_of_buildings = []
@@ -1122,7 +1117,7 @@ def map_create_town():	#initialize empty map, flooded with empty tiles
 
 		if not failed:
 			#place room
-			map_create_building(new_map, new_building)
+			create_building(new_map, new_building)
 			current_center = new_building.center
 			center_x, center_y = new_building.center
 
@@ -1302,66 +1297,13 @@ def map_place_door_on_walls(x = 0, y = 0, map_in = None):
 	map_clear_tile(map_in, door_x_pos, door_y_pos)
 
 	gen_exit_point_door(coords = (door_x_pos, door_y_pos), target_key = GAME.current_key)
-	PLAYER.x, PLAYER.y = (door_x_pos, door_y_pos)
+	
 
 
-def map_create_room(new_map, new_room):
-	for x in range(new_room.x1, new_room.x2):
-		for y in range(new_room.y1, new_room.y2):
-			map_clear_tile(map_in = new_map, tileX = x, tileY = y)
 
-def map_create_building(new_map, new_building, has_door = True):
-	for x in range(new_building.x1, new_building.x2):
-		for y in range(new_building.y1, new_building.y2):
-			new_map[x][y].block_path = True
-			new_map[x][y].transparent = False
-			new_map[x][y].visible_tile_color = constants.COLOR_L_BROWN
-			new_map[x][y].explored_tile_color = constants.COLOR_BROWN
-			new_map[x][y].tile_icon = "#"
 
-	if has_door:
-		place_building_door(new_map, new_building)
 
-def map_clear_tile(map_in, tileX, tileY):
-		map_in[tileX][tileY].block_path = False
-		map_in[tileX][tileY].is_diggable = False
-		map_in[tileX][tileY].transparent = True
-		map_in[tileX][tileY].visible_tile_color = constants.COLOR_WHITE
-		map_in[tileX][tileY].explored_tile_color = constants.COLOR_L_GRAY
-		map_in[tileX][tileY].tile_icon = "."
 
-def map_create_tunnels(coords1, coords2, new_map):
-	#coin_flip = (libtcod.random_get_int(0, 0, 1) == 1)
-	coin_flip = 0
-
-	x1, y1 = coords1
-	x2, y2 = coords2
-
-	if coin_flip:
-		for x in range(int(min(int(x1), int(x2))), int(max(int(x1), int(x2)) + 1)):
-			map_clear_tile(map_in = new_map, tileX = int(x), tileY = int(y1))
-
-		for y in range(min(y1, y2), max(y1, y2) + 1):
-			map_clear_tile(map_in = new_map, tileX = int(x2), tileY = int(y))
-	else:
-		for y in range(min(int(y1), int(y2)), max(int(y1), int(y2)) +1):
-			map_clear_tile(map_in = new_map, tileX = int(x1), tileY = int(y))
-
-		for x in range(min(int(x1), int(x2)), max(x1, x2) +1):
-			map_clear_tile(map_in = new_map, tileX = int(x), tileY = int(y2))
-
-	if coin_flip:
-		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
-			map_clear_tile(map_in = new_map, tileX = int(x), tileY = int(y1))
-
-		for y in range(min(int(y1), int(y2)), max(int(y1), int(y2)) +1):
-			map_clear_tile(map_in = new_map, tileX = int(x2), tileY = int(y))
-	else: 
-		for y in range(min(int(y1), int(y2)), max(int(y1), int(y2)) +1):
-			map_clear_tile(map_in = new_map, tileX = int(x1), tileY = int(y1))
-
-		for x in range(min(int(x1), int(x2)), max(int(x1), int(x2)) +1):
-			map_clear_tile(map_in = new_map, tileX = int(x), tileY = int(y1))
 
 def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MAP_HEIGHT):
 	global FOV_MAP
@@ -1506,21 +1448,15 @@ def draw_game():
 	SURFACE_BOTTOM_PANEL.fill(constants.COLOR_BLACK)
 
 	CAMERA.update()
-
 	#draw the map
 	draw_map(GAME.current_map)
 
 	#draw all objects in the game
-	for obj in GAME.current_objects:
-		obj.draw()
+	for obj in GAME.current_objects: obj.draw()
 
-									#these numbers are the starting offset, for left/top padding
 	SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)
 					
-
-	#fix at some point idk tho
-	if settings.ENABLE_DEBUG == True:
-		draw_debug()
+	if settings.ENABLE_DEBUG == True: draw_debug()
 
 	draw_messages()
 	draw_stat_panel()
@@ -2388,7 +2324,7 @@ def menu_inventory():
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
 						PLAYER.container.inventory[mouse_line_selection].item.use()
-						update_stats(actor_to_update = PLAYER)
+						actor_utilities.update_stats(actor_to_update = PLAYER)
 
 		#render game 
 		draw_game()
