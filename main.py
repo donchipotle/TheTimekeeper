@@ -35,14 +35,10 @@ class obj_Actor:
 		description = "No description for this actor.", 
 		state = None,
 
-		last_x = 0,
-		last_y = 0,
-
 		num_turns = 0, icon = "x", icon_color = constants.COLOR_WHITE,
 		equipment = None,
 		interact_function = None,
 		stairs = None,
-		exitportal = None,
 		static = False,		
 		discovered = False,
 		exit_point = False,
@@ -91,10 +87,6 @@ class obj_Actor:
 		self.stairs = stairs
 		if self.stairs:
 			self.stairs.owner = self
-
-		self.exitportal = exitportal
-		if self.exitportal:
-			self.exitportal.owner = self
 
 		self.state = state   		#potentially legacy
 
@@ -276,60 +268,13 @@ class obj_Game:
 
 
 #the player's viewport - level is spatially mapped to it
-class obj_Camera:
-	def __init__(self):
-		self.width = constants.CAM_WIDTH
-		self.height = constants.CAM_HEIGHT
-		self.x, self.y = (0,0)
 
-	def update(self): #include some code to move along with the selection cursor
-		target_x = PLAYER.x * constants.CELL_WIDTH + constants.CELL_HALF_WIDTH
-		target_y = PLAYER.y * constants.CELL_HEIGHT + constants.CELL_HALF_HEIGHT
-		distance_x, distance_y = self.map_dist((target_x, target_y))
-
-		self.x += int(distance_x * settings.CAM_LERP_X)
-		self.y += int(distance_y * settings.CAM_LERP_Y)
-
-	@property
-	def rectangle(self):
-		pos_rect = pygame.Rect((0,0), (constants.CAM_WIDTH, constants.CAM_HEIGHT))
-		pos_rect.center = (self.x, self.y)
-		return pos_rect
-
-	@property 
-	def map_address(self):
-		map_x = self.x / constants.CELL_WIDTH
-		map_y = self.y / constants.CELL_HEIGHT
-		return (map_x, map_y)
-
-	def map_dist(self, coords):
-		new_x, new_y = coords
-		dist_x = new_x - self.x
-		dist_y = new_y - self.y
-		return(dist_x, dist_y)
-
-	def cam_dist(self, coords):
-		win_x, win_y = coords
-		dist_x = win_x - (self.width / 2)
-		dist_y = win_y - (self.height / 2)
-		return (dist_x, dist_y)
-
-	def win_to_map(self, coords):  #
-		target_x, target_y = coords
-		#convert window coords -> distance from camera
-		cam_d_x, cam_d_y = self.cam_dist((target_x, target_y))
-		#distance from cam -> map coord
-		map_p_x = self.x + cam_d_x
-		map_p_y = self.y + cam_d_y
-
-		return((map_p_x, map_p_y))
 
 ###############################################################################################################################
 #components
 
 class com_Creature:
-	def __init__(self, name_instance, 
-		hp = 10, 
+	def __init__(self, name_instance, hp = 10, 
 		death_function = None, money = 0,
 
 		base_dodge = 20,
@@ -442,7 +387,7 @@ class com_Creature:
 
 		if random.randint(0,100) < chance_to_hit:
 			#do the damage
-			damage_dealt = damage_target(self, damage_in = self.net_damages, target = target)
+			damage_dealt = actor_utilities.damage_target(self, damage_in = self.net_damages, target = target)
 
 			hit_was_critical = False
 			if random.randint(0,100) < self.base_crit_chance:
@@ -541,9 +486,9 @@ class com_Item:
 		elif self.name_object: item_name = self.name_object
 		game_message(self.current_container.owner.creature.name + " drops " + item_name + ".")
 
-	def use(self):
+	def use(self, actor_in):
 		if self.owner.equipment:
-			self.owner.equipment.toggle_equip()
+			self.owner.equipment.toggle_equip(actor_in)
 			return
 		else: 
 			print("This item cannot be equipped.")
@@ -568,10 +513,10 @@ class com_Equipment:
 		self.slot = slot
 		self.equipped = False
 
-	def toggle_equip(self):
+	def toggle_equip(self, actor_in = None):
 		if self.equipped:
-			self.unequip()
-			actor_utilities.update_stats(actor_to_update = PLAYER)
+			self.equipped = False
+			actor_utilities.update_stats(actor_to_update = actor_in)
 
 		else:
 			self.equip()
@@ -585,10 +530,6 @@ class com_Equipment:
 				return
 		self.equipped = True
 		game_message("Equipped in " + (str(self.slot)) + ".")
-
-	def unequip(self):
-		self.equipped = False
-
 
 
 class com_Exit_Point:
@@ -847,20 +788,7 @@ class ai_Dragon:
 						self.owner.move_towards(target_actor.actor[0])	
 
 
-def damage_target(attacker, damage_in, target):
-	final_damage = 0
-	#check what damage types are being used and check them against the target's resistances. subtract and return total
-	if damage_in and target.creature.net_resistances:
-		for damage_type, dam_value in damage_in.items():
-			if not (dam_value == 0):
-				for res_type, res_value in target.creature.net_resistances.items():
-					if damage_type == res_type:
-					#	print("damage type " + str(damage_type) + ", " + str(dam_value) + " vs " + str(res_value) )
-						damage = dam_value - res_value
-						if (damage > 0):
-							final_damage += damage
 
-	return final_damage
 
 
 
@@ -902,7 +830,6 @@ def death_player(player):
 					(x, y + 75),
 					constants.COLOR_YINZER, center = True)
 
-
 		else: 
 			draw_text(SURFACE_MAIN, "You have died.",
 				constants.FONT_TITLE_SCREEN1,
@@ -914,11 +841,9 @@ def death_player(player):
 				(x, y + 75),
 				constants.COLOR_WHITE, center = True)
 
-
 		for event in pygame.event.get():
 			if event.type == pygame.KEYDOWN:
 				screen_open = False
-
 
 		pygame.display.update()
 	pygame.time.wait(1000)
@@ -1061,7 +986,6 @@ def map_create_overworld():
 		for x in range (0, constants.OVERWORLD_WIDTH):
 
 			b_noise = random.randint(0, round((255 * noise_scale) + bias, 0) )
-
 
 			new_map[x][y].tile_icon = "#"
 			new_map[x][y].visible_tile_color = (0, 0, b_noise )
@@ -1316,7 +1240,6 @@ def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MA
 
 def map_make_local_fov(incoming_map, actor_in = None, fov_x = constants.MAP_WIDTH - 1, fov_y = constants.MAP_HEIGHT - 1):
 	global GAME
-
 	actor_in.creature.local_fov = libtcod.map.Map(fov_x, fov_y)
 
 	for y in range(int(fov_y)):
@@ -1447,7 +1370,7 @@ def draw_game():
 	SURFACE_MAP.fill(constants.COLOR_BLACK)
 	SURFACE_BOTTOM_PANEL.fill(constants.COLOR_BLACK)
 
-	CAMERA.update()
+	CAMERA.update(follow_actor = PLAYER)
 	#draw the map
 	draw_map(GAME.current_map)
 
@@ -1781,7 +1704,7 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 		point_selected = PLAYER.x, PLAYER.y
 
 	if point_selected:
-		game_message(caster.creature.name_instance + " casts Conflagration.")#" casts Alenko-Kharyalov Conflagration.")
+		game_message(caster.creature.name_instance + " casts Conflagration.")
 		#get sequence of tiles
 		tiles_to_damage = map_find_radius(point_selected, to_hit_radius)
 		creature_hit = False
@@ -1795,7 +1718,8 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 			if creature_to_damage: 
 				#allow flexibility for damage types later
 				#damage_to_deal -= creature_to_damage.creature.resist_fire
-				damage_to_deal -= creature_to_damage.creature.net_resistances[damage_type]
+				#damage_to_deal -= creature_to_damage.creature.net_resistances[damage_type]
+				damage_to_deal -= creature_to_damage.creature.net_resistances["fire"]
 
 				if damage_to_deal > 0:
 					creature_to_damage.creature.take_damage(damage_to_deal, attacker = caster)
@@ -2230,7 +2154,7 @@ def draw_paragraph(surface, text, color, rect, font, aa=False, bkg=None, indent 
 
 
 #really messy, clean up later
-def menu_inventory():
+def menu_inventory(owning_actor = None):
 	menu_close = False
 	window_width = constants.CAM_WIDTH
 	window_height = constants.CAM_HEIGHT
@@ -2323,7 +2247,7 @@ def menu_inventory():
 				if (event.button == 1):
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
-						PLAYER.container.inventory[mouse_line_selection].item.use()
+						PLAYER.container.inventory[mouse_line_selection].item.use(PLAYER)
 						actor_utilities.update_stats(actor_to_update = PLAYER)
 
 		#render game 
@@ -2383,7 +2307,7 @@ def menu_tile_select(coords_origin = None, max_range = None, radius = None, pene
 			#update drawing the game map
 			SURFACE_MAIN.fill(constants.COLOR_DEFAULT_BG)
 			SURFACE_MAP.fill(constants.COLOR_BLACK)
-			CAMERA.update()
+			CAMERA.update(follow_actor = PLAYER)
 			draw_map(GAME.current_map)
 			for obj in GAME.current_objects:
 				obj.draw()
@@ -2555,7 +2479,6 @@ def gen_scroll(coords):
 	m_range = 8
 
 	if selected_scroll['attack_type'] == "aoe":
-		#(caster = None, damage_type = "fire", target_range = 15, to_hit_radius = 4, penetrate_walls = False)
 		item_com = com_Item(use_function = aoe_damage,
 						value = (damage, m_range),
 			 			name = selected_scroll['scroll_name'])
@@ -2629,7 +2552,9 @@ def gen_player(coords):
 						icon = " @ ", icon_color = constants.COLOR_WHITE,
 						allegiance_com = allegiance_com
 						)
-	PLAYER_SPAWNED = True
+
+	
+
 
 	GAME.current_objects.append(PLAYER)
 	
@@ -2678,13 +2603,9 @@ def assign_random_name(gender_in = 0):
 		firstname = random.choice(GAME_MALNAME_POOL)['firstname']
 	#if gender_in == 1:
 	else:
-		#firstname = random.choice(GAME_FEMNAME_POOL)['firstname']
 		firstname = random.choice(GAME_FEMNAME_POOL)['firstname']
 
 	lastname = (random.choice(GAME_SURNAME_POOL))['surname']
-
-	#return (str(namechoice['firstname']) + " " + str(random.choice(GAME_SURNAME_POOL)['surname']))
-	#return (str(namechoice['firstname']) + " " + str((random.choice(GAME_SURNAME_POOL))['surname']))
 	return(str(firstname) + " " + str(lastname))
 
 
@@ -2948,7 +2869,8 @@ def game_new():
 	global GAME, PLAYER_NAME
 	#start a new game and map, and player with nonsense coords to be placed elsewhere
 	PLAYER_NAME = helper_text_prompt(True)	#prompt the player for a name
-	gen_player((0,0))
+
+	#gen_player((0,0))
 	
 	PLAYER.creature.name = PLAYER_NAME
 	print ("Player.creature.name is = " + PLAYER.creature.name)
@@ -3034,10 +2956,14 @@ def game_initialize():
 
 	SURFACE_BOTTOM_PANEL = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
 
-	CAMERA = obj_Camera()
 
 	#create GAME object to store game state
 	GAME = obj_Game()
+
+	gen_player((0,0))
+	CAMERA = objects.Camera(follow_actor = PLAYER)
+
+	
 	game_json_loader()
 
 	CLOCK = pygame.time.Clock()

@@ -322,7 +322,7 @@
 			"static":true,
 			"slot": "Main Hand",
 			"rarity":0,
-			"id": "sword000",
+			"id": "sword003",
 			"sort_class":"weapon",
 
 			"dodge_bonus":5,
@@ -337,7 +337,34 @@
 			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
 				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
-		}
-	
+		},
+
+		{
+		"name": "Crystalline Plate of ",
+			"pickup_name":"a shimmering cuirass of crystal.",
+			"weight":25,
+			"icon":" ] ",
+			"icon_r":255,
+			"icon_g":255,
+			"icon_b":255,
+			"static": true,
+			"slot": "Armor",
+			"rarity":0,
+			"id": "armor010",
+			"sort_class":"armor",
+
+			"dodge_bonus":0,
+			"accuracy_bonus":0,
+			"critical_chance":0,
+			"critical_damage":1,
+
+			"bonus_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
+
+			"bonus_resistances":
+				{"fire":2,"electricity":2,"poison":4,"frost":3,"magic":4,
+				"ballistic":1, "piercing":1, "bludgeoning":1, "slashing":2, "eldritch":4}	
+	}
 	]
 }

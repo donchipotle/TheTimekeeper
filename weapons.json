@@ -43,7 +43,7 @@
 	"dodge_bonus":5,
 	"accuracy_bonus": 15,
 	"critical_chance": 10,
-	"critical_damage": 1.6
+	"critical_damage": 1.6,
 
 
 		"base_damages":
