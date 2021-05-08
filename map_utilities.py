@@ -1,13 +1,12 @@
 import tcod as libtcod
 import constants
+import random
 
 
 def create_room(new_map, new_room):
 	for x in range(new_room.x1, new_room.x2):
 		for y in range(new_room.y1, new_room.y2):
 			clear_tile(map_in = new_map, tileX = x, tileY = y)
-
-
 
 def clear_tile(map_in, tileX, tileY):
 		map_in[tileX][tileY].block_path = False
@@ -16,8 +15,6 @@ def clear_tile(map_in, tileX, tileY):
 		map_in[tileX][tileY].visible_tile_color = constants.COLOR_WHITE
 		map_in[tileX][tileY].explored_tile_color = constants.COLOR_L_GRAY
 		map_in[tileX][tileY].tile_icon = "."
-
-
 
 def create_tunnels(coords1, coords2, new_map):
 	coin_flip = (libtcod.random_get_int(0, 0, 1) == 1)
@@ -82,3 +79,4 @@ def make_borders_undiggable(map_in, map_x, map_y):
 		map_in[map_x -1][i].visible_tile_color = constants.COLOR_L_BROWN
 		map_in[map_x -1][i].explored_tile_color = constants.COLOR_BROWN
 		map_in[map_x -1][i].tile_icon = "#"
+

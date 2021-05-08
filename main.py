@@ -21,6 +21,7 @@ import structures
 import components
 import map_utilities
 import actor_utilities
+import misc_utils
 
 
 class obj_Actor:
@@ -202,7 +203,7 @@ class obj_Game:
 
 					(PLAYER.x, PLAYER.y, self.current_map, self.current_rooms, self.current_objects) = self.existing_maps[obj.exit_point.next_map_key]
 					#get the dimensions of the next map (recursive list) and feed it to the FOV
-					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+					self.next_map_x, self.next_map_y = misc_utils.get_map_dimensions(self.current_map)
 				
 					map_make_fov(self.current_map, self.next_map_x, self.next_map_y) #, self.current_map.x_dimension, self.current_map.y_dimension)
 
@@ -238,7 +239,8 @@ class obj_Game:
 
 					if self.next_map_type == "house": 
 						self.current_map, self.current_rooms = map_create_house_interior()
-						PLAYER.x, PLAYER.y = (door_x_pos, door_y_pos)
+						#PLAYER.x, PLAYER.y = map_place_door_on_walls(door_x_pos, door_y_pos)
+						
 
 					if self.next_map_type == "cave":
 						self.current_map, self.next_map_x, self.next_map_y = map_random_walk()
@@ -249,7 +251,7 @@ class obj_Game:
 					if self.next_map_type == "overworld":
 						self.current_map = map_create_overworld()
 						
-					self.next_map_x, self.next_map_y = helper_2d_list_dimensions(self.current_map)
+					self.next_map_x, self.next_map_y = misc_utils.get_map_dimensions(self.current_map)
 					
 					#set the first exit point in the new map (where the player is located) to point back to the old one
 					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
@@ -868,7 +870,6 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 								for y in range(0, dungeon_x)]  
 									for x in range (0, dungeon_y)]
 
-
 	x_l_bound = int(dungeon_x * .35)
 	x_u_bound = int(dungeon_x * .55)
 	y_l_bound = int(dungeon_y * .45)
@@ -898,8 +899,6 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 					new_map[point_x][point_y].visible_tile_color = constants.COLOR_WHITE
 					new_map[point_x][point_y].explored_tile_color = constants.COLOR_L_GRAY
 					new_map[point_x][point_y].tile_icon = "."
-
-	
 
 	map_tryplace_stairs(map_in = new_map, map_x_in = dungeon_x -1, map_y_in = dungeon_y -1)
 	map_place_objects_dungeon(map_in = new_map, map_x =  dungeon_x -1, map_y =  dungeon_y -1)
@@ -1064,7 +1063,7 @@ def map_create_house_interior(house_x = constants.HOUSE_INTERIOR_MIN_WIDTH, hous
 	new_map = [[structures.Tile(False) for y in range(0, house_y)]  
 									for x in range (0, house_x)]
 
-	map_make_borders_undiggable(map_in = new_map, map_x = house_x, map_y = house_y)	
+	map_utilities.make_borders_undiggable(map_in = new_map, map_x = house_x, map_y = house_y)	
 
 	#putting this here so the flippin interpreter doesn't whine at me about stuff idk man
 	list_of_buildings = []
@@ -1218,9 +1217,12 @@ def map_place_door_on_walls(x = 0, y = 0, map_in = None):
 		door_y_pos = round((0 + y) / 2)
 		door_x_pos = x -1 
 
-	map_clear_tile(map_in, door_x_pos, door_y_pos)
+	map_utilities.clear_tile(map_in, door_x_pos, door_y_pos)
 
 	gen_exit_point_door(coords = (door_x_pos, door_y_pos), target_key = GAME.current_key)
+
+	PLAYER.x = door_x_pos
+	PLAYER.y = door_y_pos
 	
 
 
@@ -1540,7 +1542,7 @@ def draw_map(map_to_draw):
 	#crudely clamp values
 	if render_w_min < 0: render_w_min = 0
 	if render_h_min < 0: render_h_min = 0
-	x, y = helper_2d_list_dimensions(GAME.current_map)
+	x, y = misc_utils.get_map_dimensions(GAME.current_map)
 	
 	#previously used GAME.current_map_x and y instead of x/y
 	if render_w_max > x: render_w_max = x
@@ -1920,8 +1922,6 @@ def helper_gen_random_key(length):
 	return result_str
 
 #gets the dimensions of an array, particularly maps
-def helper_2d_list_dimensions(array):
-  return [len(array)]+helper_2d_list_dimensions(array[0]) if(type(array) == list) else []
 
 
 def ynq_prompt(): #prompt the player to select Yes, No or Quit
@@ -2038,7 +2038,8 @@ def menu_main():
 
 		if settings.DRAW_MENU_BACKGROUND and settings.MAIN_MENU_BG_IMAGE: 
 			SURFACE_MAIN.blit(settings.MAIN_MENU_BG_IMAGE, (0,0))
-		else:SURFACE_MAIN.fill(constants.COLOR_BLACK)   
+
+		else: SURFACE_MAIN.fill(constants.COLOR_BLACK)   
 
 		#clear
 		draw_text(SURFACE_MAIN, title_text, constants.FONT_TITLE_SCREEN1,
