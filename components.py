@@ -59,3 +59,20 @@ class ItemComponent:
 			if result is not None: print("use_function failed")
 			else:
 				self.current_container.inventory.remove(self.owner)
+
+class Container:
+	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
+		self.inventory = inventory
+		self.max_volume = volume
+		if inventory: self.inventory = inventory
+		else: self.inventory = []
+		
+	@property 
+	def volume(self):
+		return 0.0
+
+	@property
+	def equipped_items(self):
+		list_of_equipped_items = [obj for obj in self.inventory 
+									if obj.equipment and obj.equipment.equipped ]
+		return list_of_equipped_items

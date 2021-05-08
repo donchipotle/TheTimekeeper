@@ -122,26 +122,27 @@ class obj_Actor:
 			else:
 				return self.name_object
 
-	def draw(self):
+	def draw(self, map_surface = None, local_fov = None):
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 
-		if is_visible:
+
+		if self.static and self.discovered:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
 				center = True)
+
+		if is_visible:
 			if self.static: 
 				self.discovered = True
-
 			if self.ai_active == False:
 				self.ai_active = True
 
-		elif self.static and self.discovered:
 			draw_text(SURFACE_MAP, text_to_display = self.icon, font = constants.FONT_RENDER_TEXT, 
 				coords = ((self.x * constants.CELL_WIDTH) + 16 , (self.y * constants.CELL_HEIGHT) + 16), 
 				text_color = self.icon_color, 
 				center = True)
-	
+			
 
 	def distance_to(self, other):
 		delta_x = other.x - self.x
@@ -436,22 +437,7 @@ class com_Creature:
 
 		return dodge
 
-class com_Container:
-	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
-		self.inventory = inventory
-		self.max_volume = volume
-		if inventory: self.inventory = inventory
-		else: self.inventory = []
-		
-	@property 
-	def volume(self):
-		return 0.0
 
-	@property
-	def equipped_items(self):
-		list_of_equipped_items = [obj for obj in self.inventory 
-									if obj.equipment and obj.equipment.equipped ]
-		return list_of_equipped_items
 
 class com_Item:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", category = "misc", 
@@ -1377,7 +1363,7 @@ def draw_game():
 	draw_map(GAME.current_map)
 
 	#draw all objects in the game
-	for obj in GAME.current_objects: obj.draw()
+	for obj in GAME.current_objects: obj.draw(map_surface = SURFACE_MAIN)
 
 	SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)
 					
@@ -2072,47 +2058,7 @@ def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
 			game_message("There is nothing to open there.")
 			print("obj.door.interact() not called")
 
-# draw some text into an area of a surface
-# automatically wraps words, returns any text that didn't get blitted
-def drawText(surface, text, color, rect, font, aa=False, bkg=None):
-    rect = pygame.Rect(rect)
-    y = rect.top
-    lineSpacing = -2
 
-    # get the height of the font
-    fontHeight = font.size("Tg")[1]
-
-    indent = True
-    while text:
-        i = 1
-
-        # determine if the row of text will be outside our area
-        if y + fontHeight > rect.bottom:
-            break
-
-        # determine maximum width of line
-        while font.size(text[:i])[0] < rect.width and i < len(text):
-            i += 1
-
-        # if we've wrapped the text, then adjust the wrap to the last word      
-        if i < len(text): 
-            i = text.rfind(" ", 0, i) + 1
-
-        # render the line and blit it to the surface
-        if bkg:
-            image = font.render(text[:i], 1, color, bkg)
-            image.set_colorkey(bkg)
-        else:
-            image = font.render(text[:i], aa, color)
-
-        surface.blit(image, (rect.left, y))
-        y += fontHeight + lineSpacing
-
-        # remove the text we just blitted
-        text = text[i:]
-       # print(str(i))
-
-    return text
 
 def draw_paragraph(surface, text, color, rect, font, aa=False, bkg=None, indent = True):
     rect = pygame.Rect(rect)
@@ -2221,7 +2167,7 @@ def menu_inventory(owning_actor = None):
 				#reset panel
 				side_panel_surface.fill(constants.COLOR_D_GRAY)
 				#for paragraph in description_text:
-				drawText(side_panel_surface, text = ("     " + str(description_text)), 
+				misc_utils.draw_wrapped_text(side_panel_surface, text = ("     " + str(description_text)), 
 							color = constants.COLOR_WHITE, rect = ((10,  10), (600, 1000)), 
 							font = constants.FONT_MESSAGE_TEXT, aa= False, bkg=None)
 				#	i += 0
@@ -2235,7 +2181,7 @@ def menu_inventory(owning_actor = None):
 					#check if item is equipment, and, if so, unequip it
 					try:
 						PLAYER.container.inventory[mouse_line_selection].equipment.unequip()
-						#update_stats(actor = PLAYER)
+			
 					except:
 						print("Meh.")
 
@@ -2311,7 +2257,8 @@ def menu_tile_select(coords_origin = None, max_range = None, radius = None, pene
 			CAMERA.update(follow_actor = PLAYER)
 			draw_map(GAME.current_map)
 			for obj in GAME.current_objects:
-				obj.draw()
+				#potentially replace this global later?
+				obj.draw(map_surface = SURFACE_MAIN)
 
 		#draw rect at mouse position over game screen, marking tile targeted
 			for (tile_x, tile_y) in valid_tiles:
@@ -2324,9 +2271,7 @@ def menu_tile_select(coords_origin = None, max_range = None, radius = None, pene
 			if radius:
 				area_effect = map_find_radius(valid_tiles[-1], radius)
 				for (tile_x, tile_y) in area_effect:
-					draw_tile_rect(coords = (tile_x, tile_y),
-						tile_color = constants.COLOR_ORANGE,
-						tile_alpha = 150)
+					draw_tile_rect(coords = (tile_x, tile_y), tile_color = constants.COLOR_ORANGE, tile_alpha = 150)
 
 			#these numbers are the starting offset, for left/top padding
 			SURFACE_MAIN.blit(SURFACE_MAP, (0, 0), CAMERA.rectangle)				
@@ -2436,7 +2381,6 @@ def gen_town_guard(coords):
 	res_list = 	[{"fire":3,"electricity":3,"poison":3,"frost":3,"magic":3,
 				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}]
 
-	#container_com = com_Container()
 	creature_com = com_Creature(name_instance = "Town Guard",
 								hp = 37, #player's creature component name
 								death_function = death_monster,
@@ -2530,7 +2474,7 @@ def gen_player(coords):
 				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}
 
 
-	container_com = com_Container()
+	container_com = components.Container()
 	creature_com = com_Creature(PLAYER_NAME,
 								hp = 100, #player's creature component name
 								death_function = death_player,
@@ -2571,7 +2515,7 @@ def gen_town_folk(coords):
 	dam_list = base_dam_list
 	res_list = base_res_list
 
-	container_com = com_Container()
+	container_com = components.Container()
 	creature_com = com_Creature(name_instance = "Townfolk",
 								hp = 10, #player's creature component name
 								death_function = death_monster,
