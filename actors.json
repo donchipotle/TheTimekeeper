@@ -478,6 +478,59 @@
 			{"paragraph":"Hi"}
 			]
 
+		},
+		{
+			"creature_name":"Ethritic ",
+			"carcass_name":"the slimy carcass of a Lesser Nightcrawler",
+			"carcass_value": 10,
+			"carcass_heal_amount": 5,
+			"creature_id":"creature_001",
+
+			"base_hp": 13,
+			"damage_phys_base": 5,
+			"damage_fire_base": 0,
+			"resist_phys_base": 4,
+			"resist_fire_base": 3,
+			"xp_on_death": 10,
+
+			"base_damages":
+					{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+					"ballistic":0, "piercing":2, "bludgeoning":0, "slashing":2, "eldritch":5},
+
+			"base_resistances":	
+				{"fire":3,"electricity":2,"poison":2,"frost":4,"magic":5,
+				"ballistic":2, "piercing":2, "bludgeoning":5, "slashing":1, "eldritch":12},
+
+
+			"ai_script_type": "chase",
+			"allegiance_category": "eldritch",
+
+			"allegiance_hostile_list":
+						[ 
+							{"name":"player"},
+							{"name":"townfolk"}
+						],
+			"docile": false,
+			"noncorporeal":true,
+
+			"actor_name":"Lesser Nightcrawler",
+			"icon_r": 192,
+			"icon_g": 192,
+			"icon_b": 192,
+			"actor_icon": "Ж ",
+
+			"base_accuracy":100,
+			"base_dodge":20,
+			"base_crit_chance":5,
+			"base_crit_mult":1.5,
+
+			"description":
+						[ 
+							{"paragraph":"The nightcrawler is a bizarre creature - or, as some would call one, an entity - which lurks far beyond the bounds of both human society and, somehow, even human understanding. To even describe its physical appearance is an endeavor that none, thus far, have been able to achieve. It is surprisingly easier to kill one than todescribe it in words understandable in the speech of Man. What matters more, perhaps, is that these things can be killed. "},
+
+							{"paragraph":"This particular one is fairly diminutive in stature and threat, though it is, after all, a Nightcrawler. Still, there are worse things lurking in the dark."}
+						]
+
 		}
 
 	]

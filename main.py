@@ -80,7 +80,7 @@ class obj_Actor:
 		self.equipment = equipment
 		if self.equipment:
 			self.equipment.owner = self
-			self.item = com_Item()
+			self.item = components.Item()
 			self.item.owner = self
 
 		self.ai_active = ai_active
@@ -269,8 +269,9 @@ class obj_Game:
 
 		FOV_CALCULATE = True
 
+	def game_message(self, game_msg, msg_color = constants.COLOR_WHITE):
+		self.message_history.append((game_msg, msg_color))
 
-#the player's viewport - level is spatially mapped to it
 
 
 ###############################################################################################################################
@@ -279,6 +280,8 @@ class obj_Game:
 class com_Creature:
 	def __init__(self, name_instance, hp = 10, 
 		death_function = None, money = 0,
+
+		category = "",
 
 		base_dodge = 20,
 		base_accuracy = 100,
@@ -397,13 +400,13 @@ class com_Creature:
 				damage_dealt = damage_dealt * self.base_crit_mult
 				hit_was_critical = True
 
-			if (damage_dealt <= 0): game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
+			if (damage_dealt <= 0): GAME.game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
 			else:
-				if hit_was_critical: game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage in a critical hit."), constants.COLOR_WHITE)
+				if hit_was_critical: GAME.game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage in a critical hit."), constants.COLOR_WHITE)
 				else: 
-					game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
+					GAME.game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
 					target.creature.take_damage(damage_dealt, attacker = self.owner)
-		else: game_message((self.name_instance + " fails to hit " + target.creature.name_instance + " and does no damage."), constants.COLOR_WHITE)
+		else: GAME.game_message((self.name_instance + " fails to hit " + target.creature.name_instance + " and does no damage."), constants.COLOR_WHITE)
 			
 
 	def heal(self, value):
@@ -439,55 +442,7 @@ class com_Creature:
 
 
 
-class com_Item:
-	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", category = "misc", 
-		use_function = None, value = None, slot = None, 
-		description = "There is no description for this item."):
-		self.weight = weight
-		self.volume = volume
-		self.name = name
-		self.value = value
-		self.use_function = use_function
-		self.description = description
 
-		#pick up this item
-	def pick_up(self, actor):
-		if actor.container:
-			if self.owner.equipment: item_name = self.owner.equipment.name
-			elif self.name: item_name = self.owner.item.name
-			elif self.name_object: item_name = self.name_object
-			game_message(actor.creature.name + " picked up " + item_name + ".")
-
-			actor.container.inventory.append(self.owner)
-			GAME.current_objects.remove(self.owner)
-			self.current_container = actor.container
-		
-	def drop(self, new_x, new_y):
-		GAME.current_objects.append(self.owner)
-		self.current_container.inventory.remove(self.owner)
-		#place object at the coords at which it was dropped
-		self.owner.x = new_x
-		self.owner.y = new_y
-
-		if self.owner.equipment: item_name = self.owner.equipment.name
-		elif self.name: item_name = self.owner.item.name
-		elif self.name_object: item_name = self.name_object
-		game_message(self.current_container.owner.creature.name + " drops " + item_name + ".")
-
-	def use(self, actor_in):
-		if self.owner.equipment:
-			self.owner.equipment.toggle_equip(actor_in)
-			return
-		else: 
-			print("This item cannot be equipped.")
-		
-		if self.use_function:
-			result = self.use_function(self.current_container.owner, self.value)
-		
-			if result is not None:
-				print("use_function failed")
-			else:
-				self.current_container.inventory.remove(self.owner)
 
 #add more bonuses later
 class com_Equipment:
@@ -517,7 +472,7 @@ class com_Equipment:
 				#ynaq prompt to replace?
 				return
 		self.equipped = True
-		game_message("Equipped in " + (str(self.slot)) + ".")
+		GAME.game_message("Equipped in " + (str(self.slot)) + ".")
 
 
 class com_Exit_Point:
@@ -562,7 +517,7 @@ class com_Door:
 			self.door_interaction_message = "You close the door."
 			self.icon = settings.door_closed_icon
 		#if the door is open, close it
-		game_message(self.door_interaction_message)
+		GAME.game_message(self.door_interaction_message)
 
 	def lock_unlock():
 		#add a line or two to check if the door is closed first. you can't lock and open door
@@ -573,7 +528,7 @@ class com_Door:
 			is_locked = True
 			door_interaction_message = "You lock the door."
 
-		game_message(door_interaction_message, msg_color = constants.COLOR_WHITE)
+		GAME.game_message(door_interaction_message, msg_color = constants.COLOR_WHITE)
 
 	print("Placeholder")
 
@@ -659,7 +614,7 @@ class ai_Confuse:
 			self.num_turns -= 1
 		else:
 			self.owner.ai = self.old_ai
-			game_message(self.owner.display_name + " pauses and turns back to face you.")
+			GAME.game_message(self.owner.display_name + " pauses and turns back to face you.")
 
 class ai_Chase:
 	#a basic ai script which chases and tries to harm the player
@@ -782,21 +737,18 @@ class ai_Dragon:
 
 def death_monster(monster):
 	if monster.is_invulnerable != True:
-		#on death, most monsters stop moving
-		
-		game_message(monster.creature.name_instance + " is dead!", constants.COLOR_GRAY)
-		if (monster.creature.noncorporeal == False): monster.icon = settings.consumable_icon
+		#on death, monster stops moving
+		GAME.game_message(monster.creature.name_instance + " is dead!", constants.COLOR_GRAY)
+		if (monster.creature.noncorporeal == False): 
+			monster.icon = settings.consumable_icon
+
 		monster.creature = None
 		monster.ai = None
-		#GAME.actors_with_ai.remove(monster.creature)
-
-		#at some point - remove this from ai actor list so it doesn't get bloated
-		
 		monster.static = True
+		
 		#determine what to leave behind
 	else:
-		#print("Nice try. " + monster.creature.name_instance + " is invulnerable.")
-		game_message("Nice try. " + monster.creature.name_instance + " is invulnerable.", constants.COLOR_GRAY)
+		GAME.game_message("Nice try. " + monster.creature.name_instance + " is invulnerable.", constants.COLOR_GRAY)
 
 def death_player(player):
 	player.state = "STATUS_DEAD"
@@ -975,19 +927,6 @@ def map_create_overworld():
 			new_map[x][y].tile_icon = "#"
 			new_map[x][y].visible_tile_color = (0, 0, b_noise )
 			new_map[x][y].explored_tile_color = (0, 0, b_noise )
-
-#					new_map[point_x][point_y].block_path = False
-#					new_map[point_x][point_y].is_diggable = True
-#					new_map[point_x][point_y].transparent = True
-#					new_map[point_x][point_y].visible_tile_color = constants.COLOR_WHITE
-#					new_map[point_x][point_y].explored_tile_color = constants.COLOR_L_GRAY
-#					new_map[point_x][point_y].tile_icon = "."
-
-
-
-	map_make_fov(new_map)
-	return (new_map)
-
 
 
 def map_create_town():	#initialize empty map, flooded with empty tiles
@@ -1345,7 +1284,7 @@ def map_tile_query(query_x, query_y, exclude_query_player = False, accept_nothin
 
 	else : first_half = "You see "
 
-	game_message(str(first_half) + query_result)
+	GAME.game_message(str(first_half) + query_result)
 
 #drawing functions
 def draw_game():
@@ -1582,15 +1521,15 @@ def draw_map(map_to_draw):
 
 def cast_heal(caster, value):
 	if caster.creature.current_hp == caster.creature.max_hp:
-		game_message(caster.creature.name_instance + " is already at full health.")
+		GAME.game_message(caster.creature.name_instance + " is already at full health.")
 		return "cancelled"
 
 	else:
-		game_message(caster.creature.name_instance + " healed for " + str(value) + " health.")
+		GAME.game_message(caster.creature.name_instance + " healed for " + str(value) + " health.")
 		caster.creature.heal(value)
 
 		if caster.creature.current_hp >= caster.creature.max_hp:
-			game_message(caster.creature.name_instance + " is now at full health.")
+			GAME.game_message(caster.creature.name_instance + " is now at full health.")
 		
 	return None
 
@@ -1613,11 +1552,11 @@ def cast_lightning(caster, T_damage_maxrange):
 				draw_projectile((x * constants.CELL_HEIGHT), (y * constants.CELL_WIDTH), constants.COLOR_L_BLUE)
 			target = map_check_for_creatures(x, y)
 			if target: # and i != 0:
-				game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
+				GAME.game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
 				#check if spell uselessly hits wall
 				target.creature.take_damage(damage, attacker = caster)
 
-				game_message("You smell ozone.")
+				GAME.game_message("You smell ozone.")
 
 def cast_fireball(caster, T_damage_radius_range):
 	#definitions, change later
@@ -1633,7 +1572,7 @@ def cast_fireball(caster, T_damage_radius_range):
 		point_selected = PLAYER.x, PLAYER.y
 
 	if point_selected:
-		game_message(caster.creature.name_instance + " casts Conflagration.")#" casts Alenko-Kharyalov Conflagration.")
+		GAME.game_message(caster.creature.name_instance + " casts Conflagration.")#" casts Alenko-Kharyalov Conflagration.")
 		#get sequence of tiles
 		tiles_to_damage = map_find_radius(point_selected, local_radius)
 		creature_hit = False
@@ -1651,13 +1590,13 @@ def cast_fireball(caster, T_damage_radius_range):
 					creature_to_damage.creature.take_damage(damage, attacker = caster)
 				else:
 					if creature_to_damage.creature.name:
-						game_message(creature_to_damage.creature.name + " is unfazed.")
+						GAME.game_message(creature_to_damage.creature.name + " is unfazed.")
 
 				if creature_to_damage is not PLAYER:
 					creature_hit = True
 
 		if creature_hit:
-			game_message("You smell the repugnant stench of burning flesh.", constants.COLOR_RED)
+			GAME.game_message("You smell the repugnant stench of burning flesh.", constants.COLOR_RED)
 
 def cast_confusion(caster, effect_duration):
 	#select tile
@@ -1675,7 +1614,7 @@ def cast_confusion(caster, effect_duration):
 
 			target.ai = ai_Confuse(old_ai = oldai, num_turns = effect_duration)
 			target.ai.owner = target
-			game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
+			GAME.game_message(target.creature.name_instance + " stumbles around in circles.", constants.COLOR_GREEN)
 
 # i.e. fireball
 def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, to_hit_radius = 3, penetrate_walls = False, msg = "The spell hits the target."):
@@ -1692,7 +1631,7 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 		point_selected = PLAYER.x, PLAYER.y
 
 	if point_selected:
-		game_message(caster.creature.name_instance + " casts Conflagration.")
+		GAME.game_message(caster.creature.name_instance + " casts Conflagration.")
 		#get sequence of tiles
 		tiles_to_damage = map_find_radius(point_selected, to_hit_radius)
 		creature_hit = False
@@ -1713,13 +1652,13 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 					creature_to_damage.creature.take_damage(damage_to_deal, attacker = caster)
 				else:
 					if creature_to_damage.creature.name_instance:
-						game_message(creature_to_damage.creature.name_instance + " is unfazed.")
+						GAME.game_message(creature_to_damage.creature.name_instance + " is unfazed.")
 
 				if creature_to_damage is not PLAYER:
 					creature_hit = True
 
 		if creature_hit:
-			game_message(msg, constants.COLOR_RED)
+			GAME.game_message(msg, constants.COLOR_RED)
 
 #i.e. lightning
 def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range = 15, penetrate_walls = False, msg = "The spell hits the target."):
@@ -1745,11 +1684,11 @@ def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range 
 			target = map_check_for_creatures(x, y)
 			print ("Target at " + str(x) + ", " + str(y))
 			if target: # and i != 0:
-				game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
+				GAME.game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
 				#check if spell uselessly hits wall
 				target.creature.take_damage(damage_to_deal, attacker = caster)
 
-				game_message(msg, constants.COLOR_RED)
+				GAME.game_message(msg, constants.COLOR_RED)
 
 
 #def singular_effect():
@@ -1947,7 +1886,7 @@ def open_door_prompt(in_event):
 				if event.key == pygame.K_o:
 			
 					prompt_close = True
-					game_message("You decide not to open anything.")
+					GAME.game_message("You decide not to open anything.")
 				
 
 
@@ -2055,7 +1994,7 @@ def attempt_to_open_door(event_in, start_x = 0, start_y = 0):
 			obj.doorcom.interact()
 			print("obj.door.interact() called")
 		else:
-			game_message("There is nothing to open there.")
+			GAME.game_message("There is nothing to open there.")
 			print("obj.door.interact() not called")
 
 
@@ -2336,7 +2275,7 @@ def gen_creature(coords):
 
 	if (selected_creature['noncorporeal'] == False):
 		item_description = []
-		item_com = com_Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, 
+		item_com = components.Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, 
 			description = selected_creature['description'],
 
 			name = selected_creature['carcass_name'])	
@@ -2424,12 +2363,12 @@ def gen_scroll(coords):
 	m_range = 8
 
 	if selected_scroll['attack_type'] == "aoe":
-		item_com = com_Item(use_function = aoe_damage,
+		item_com = components.Item(use_function = aoe_damage,
 						value = (damage, m_range),
 			 			name = selected_scroll['scroll_name'])
 
 	elif selected_scroll['attack_type'] == "beam":
-		item_com = com_Item(use_function = beam_damage,
+		item_com = components.Item(use_function = beam_damage,
 						value = (damage, m_range),
 						name = selected_scroll['scroll_name'])
 
@@ -2451,8 +2390,7 @@ def assign_ai_script(creature_in = None):
 
 def gen_tree(coords, fruit = "None"):
 	x, y = coords
-
-	#item_com = com_Item(value = 3, use_function = cast_heal, name = "an Apple") 	 
+ 
 	ai_com = ai_Static()
 
 	#name of item when picked up
@@ -2716,7 +2654,7 @@ def game_handle_keys():
 				objects_at_player = map_objects_at_coords(PLAYER.x, PLAYER.y)
 				for obj in objects_at_player:
 					if obj.item:
-						obj.item.pick_up(PLAYER)
+						obj.item.pick_up(PLAYER, game_instance = GAME)
 						if settings.Mod2 == False:
 							return "no-action"
 							
@@ -2807,8 +2745,8 @@ def game_direction_prompt(event_in, not_in_menu = True):
 		not_in_menu = False
 		return target_coords
 
-def game_message(game_msg, msg_color = constants.COLOR_WHITE):
-	GAME.message_history.append((game_msg, msg_color))
+
+
 
 def game_new():
 	global GAME, PLAYER_NAME
