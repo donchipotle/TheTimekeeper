@@ -332,8 +332,8 @@ class com_Creature:
 		if self.current_hp <= 0:
 			if self.death_function is not None:
 				self.death_function(self.owner)
-				if attacker == PLAYER:
-					PLAYER.creature.current_xp += self.xp_on_death
+				
+				attacker.creature.current_xp += self.xp_on_death
 
 
 	def move(self, dx, dy):
@@ -448,15 +448,7 @@ class com_Creature:
 
 
 
-class com_Exit_Point:
-	def __init__(self, require_input, next_map_key = "", static = True, target_map_type = "dungeon"):
-		self.require_input = require_input,
-		self.next_map_key = next_map_key
-		self.static = True
-		self.target_map_type = target_map_type
 
-	def use(self):
-		GAME.transition()
 
 #physical door that can be opened or closed
 class com_Door:
@@ -2477,7 +2469,7 @@ def gen_exit_point_stairs(coords, downwards, target_type = None):
 	else:
 		map_type = target_type
 	
-	exit_point_com = com_Exit_Point(require_input = True, target_map_type = map_type)
+	exit_point_com = components.Exit_Point_Component(require_input = True, target_map_type = map_type)
 
 
 	if downwards:
@@ -2504,7 +2496,7 @@ def gen_exit_point_door(coords,
 	else:
 		map_type = target_type
 
-	exit_point_com = com_Exit_Point(require_input = True, target_map_type = map_type, next_map_key = target_key)
+	exit_point_com = components.Exit_Point_Component(require_input = True, target_map_type = map_type, next_map_key = target_key)
 	door_com = com_Door(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
 	
 	if closed_by_default:
@@ -2669,7 +2661,7 @@ def game_handle_keys():
 				list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
 				for obj in list_of_objects:
 					if obj.exit_point:
-						obj.exit_point.use()
+						obj.exit_point.use(game_instance = GAME)
 						return "player-moved"
 			return "player-moved"
 	return "no-action"

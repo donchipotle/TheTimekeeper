@@ -168,3 +168,13 @@ class EquipmentComponent:
 				return
 		self.equipped = True
 		game_instance.game_message("Equipped in " + (str(self.slot)) + ".")
+
+class Exit_Point_Component:
+	def __init__(self, require_input, next_map_key = "", static = True, target_map_type = "dungeon"):
+		self.require_input = require_input,
+		self.next_map_key = next_map_key
+		self.static = True
+		self.target_map_type = target_map_type
+
+	def use(self, game_instance = None):
+		game_instance.transition()
