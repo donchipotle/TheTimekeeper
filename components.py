@@ -92,25 +92,36 @@ class Item:
 		#pick up this item
 	def pick_up(self, actor, game_instance = None):
 		if actor.container:
-			if self.owner.equipment: item_name = self.owner.equipment.name
-			elif self.name: item_name = self.owner.item.name
-			elif self.name_object: item_name = self.name_object
-			#game_message(actor.creature.name + " picked up " + item_name + ".")
+			if self.owner.equipment: 
+				item_name = self.owner.equipment.name
+
+			elif self.name: 
+				item_name = self.owner.item.name
+			elif self.name_object: 
+
+				item_name = self.name_object
+			game_instance.game_message(actor.creature.name + " picked up " + item_name + ".")
 
 			actor.container.inventory.append(self.owner)
 			game_instance.current_objects.remove(self.owner)
 			self.current_container = actor.container
 		
 	def drop(self, new_x, new_y, game_instance = None):
-		GAME.current_objects.append(self.owner)
+		game_instance.current_objects.append(self.owner)
 		self.current_container.inventory.remove(self.owner)
 		#place object at the coords at which it was dropped
 		self.owner.x = new_x
 		self.owner.y = new_y
 
-		if self.owner.equipment: item_name = self.owner.equipment.name
-		elif self.name: item_name = self.owner.item.name
-		elif self.name_object: item_name = self.name_object
+		if self.owner.equipment: 
+			item_name = self.owner.equipment.name
+
+		elif self.name: 
+			item_name = self.owner.item.name
+
+		elif self.name_object: 
+			item_name = self.name_object
+
 		game_instance.game_message(self.current_container.owner.creature.name + " drops " + item_name + ".")
 
 	def use(self, actor_in, game_instance = None):

@@ -2125,7 +2125,7 @@ def menu_inventory(owning_actor = None):
 						print("Meh.")
 
 					#drop selected item
-					PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y)
+					PLAYER.container.inventory[mouse_line_selection].item.drop(PLAYER.x, PLAYER.y, game_instance = GAME)
 					if settings.CLOSE_AFTER_DROP:
 						return "no-action"
 
