@@ -80,7 +80,7 @@ class obj_Actor:
 		self.equipment = equipment
 		if self.equipment:
 			self.equipment.owner = self
-			self.item = components.Item()
+			self.item = components.ItemComponent()
 			self.item.owner = self
 
 		self.ai_active = ai_active
@@ -445,34 +445,7 @@ class com_Creature:
 
 
 #add more bonuses later
-class com_Equipment:
-	def __init__(self, slot = None, name = None,
-		dam_bonus = {}, res_bonus = {},description = "There is no description for this item."):
 
-		self.description = description
-		self.dam_bonus = dam_bonus
-		self.res_bonus = res_bonus
-		self.name = name
-		self.slot = slot
-		self.equipped = False
-
-	def toggle_equip(self, actor_in = None):
-		if self.equipped:
-			self.equipped = False
-			actor_utilities.update_stats(actor_to_update = actor_in)
-
-		else:
-			self.equip()
-
-	def equip(self):
-		all_equipped_items = self.owner.item.current_container.equipped_items
-		
-		for item in all_equipped_items:
-			if item.equipment.slot and (item.equipment.slot == self.slot):
-				#ynaq prompt to replace?
-				return
-		self.equipped = True
-		GAME.game_message("Equipped in " + (str(self.slot)) + ".")
 
 
 class com_Exit_Point:
@@ -2133,7 +2106,7 @@ def menu_inventory(owning_actor = None):
 				if (event.button == 1):
 					if (mouse_in_window and 
 						mouse_line_selection <= len(print_list) - 1):
-						PLAYER.container.inventory[mouse_line_selection].item.use(PLAYER)
+						PLAYER.container.inventory[mouse_line_selection].item.use(PLAYER, game_instance = GAME)
 						actor_utilities.update_stats(actor_to_update = PLAYER)
 
 		#render game 
@@ -2253,7 +2226,7 @@ def gen_equipment(coords):
 	res_list = 	selected_equipment ['bonus_resistances']
 
 	x, y = coords
-	equipment_com = com_Equipment(slot = selected_equipment['slot'], name = selected_equipment['pickup_name'],
+	equipment_com = components.EquipmentComponent(slot = selected_equipment['slot'], name = selected_equipment['pickup_name'],
 					dam_bonus = dam_list, res_bonus = res_list)
 
 	return_object = obj_Actor(x, y, selected_equipment['name'],
@@ -2275,7 +2248,7 @@ def gen_creature(coords):
 
 	if (selected_creature['noncorporeal'] == False):
 		item_description = []
-		item_com = components.Item(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, 
+		item_com = components.ItemComponent(value = selected_creature['carcass_heal_amount'], use_function = cast_heal, 
 			description = selected_creature['description'],
 
 			name = selected_creature['carcass_name'])	
@@ -2363,12 +2336,12 @@ def gen_scroll(coords):
 	m_range = 8
 
 	if selected_scroll['attack_type'] == "aoe":
-		item_com = components.Item(use_function = aoe_damage,
+		item_com = components.ItemComponent(use_function = aoe_damage,
 						value = (damage, m_range),
 			 			name = selected_scroll['scroll_name'])
 
 	elif selected_scroll['attack_type'] == "beam":
-		item_com = components.Item(use_function = beam_damage,
+		item_com = components.ItemComponent(use_function = beam_damage,
 						value = (damage, m_range),
 						name = selected_scroll['scroll_name'])
 
@@ -2412,7 +2385,7 @@ def gen_player(coords):
 				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}
 
 
-	container_com = components.Container()
+	container_com = components.ContainerComponent()
 	creature_com = com_Creature(PLAYER_NAME,
 								hp = 100, #player's creature component name
 								death_function = death_player,
@@ -2453,7 +2426,7 @@ def gen_town_folk(coords):
 	dam_list = base_dam_list
 	res_list = base_res_list
 
-	container_com = components.Container()
+	container_com = components.ContainerComponent()
 	creature_com = com_Creature(name_instance = "Townfolk",
 								hp = 10, #player's creature component name
 								death_function = death_monster,

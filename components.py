@@ -1,4 +1,4 @@
-
+import actor_utilities
 
 class AllegianceComponent:
 	def __init__(self, category = "undefined", protect_list = "", hostile_list = [], docile = True):
@@ -60,7 +60,7 @@ class ItemComponent:
 			else:
 				self.current_container.inventory.remove(self.owner)
 
-class Container:
+class ContainerComponent:
 	def __init__(self, volume = 10.0, max_volume = 10.0,  inventory = None):
 		self.inventory = inventory
 		self.max_volume = volume
@@ -78,7 +78,7 @@ class Container:
 		return list_of_equipped_items
 
 
-class Item:
+class ItemComponent:
 	def __init__(self, weight = 0.0, volume = 0.0, name = "foo", category = "misc", 
 		use_function = None, value = None, slot = None, 
 		description = "There is no description for this item."):
@@ -126,7 +126,7 @@ class Item:
 
 	def use(self, actor_in, game_instance = None):
 		if self.owner.equipment:
-			self.owner.equipment.toggle_equip(actor_in)
+			self.owner.equipment.toggle_equip(actor_in, game_state = game_instance)
 			return
 		else: 
 			print("This item cannot be equipped.")
@@ -138,3 +138,33 @@ class Item:
 				print("use_function failed")
 			else:
 				self.current_container.inventory.remove(self.owner)
+
+
+class EquipmentComponent:
+	def __init__(self, slot = None, name = None,
+		dam_bonus = {}, res_bonus = {},description = "There is no description for this item."):
+
+		self.description = description
+		self.dam_bonus = dam_bonus
+		self.res_bonus = res_bonus
+		self.name = name
+		self.slot = slot
+		self.equipped = False
+
+	def toggle_equip(self, actor_in = None, game_state = None):
+		if self.equipped:
+			self.equipped = False
+			actor_utilities.update_stats(actor_to_update = actor_in)
+
+		else:
+			self.equip(game_instance = game_state)
+
+	def equip(self, game_instance = None):
+		all_equipped_items = self.owner.item.current_container.equipped_items
+		
+		for item in all_equipped_items:
+			if item.equipment.slot and (item.equipment.slot == self.slot):
+				#ynaq prompt to replace?
+				return
+		self.equipped = True
+		game_instance.game_message("Equipped in " + (str(self.slot)) + ".")
