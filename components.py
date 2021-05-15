@@ -178,3 +178,76 @@ class Exit_Point_Component:
 
 	def use(self, game_instance = None):
 		game_instance.transition()
+
+
+		#physical door that can be opened or closed
+class Door_Component:
+	def __init__(self, is_destructable = True, 
+		is_locked = False, default_locked = False,
+		is_closed = False, default_closed = False,
+		door_interaction_message = ""):
+
+		self.is_destructable = is_destructable,
+		self.default_locked = default_locked,
+		self.default_closed = default_closed,
+
+		self.is_locked = default_locked,
+		self.is_closed = default_closed,
+		self.door_interaction_message = door_interaction_message
+
+	def interact(self, game_instance = None):
+		print("com_Door.interact() called")
+
+		#if the door is closed and unlocked, open it
+		if self.is_closed == False:
+			if self.is_locked == False:
+				self.is_closed = False
+				self.door_interaction_message = "You open the door."
+				self.icon = settings.door_open_icon
+			else:
+				self.door_interaction_message = "You try to turn the knob - it is still locked."
+
+		else: #self.is_closed == True:
+			self.is_closed == False
+			self.door_interaction_message = "You close the door."
+			self.icon = settings.door_closed_icon
+		#if the door is open, close it
+		game_instance.game_message(self.door_interaction_message)
+
+	def lock_unlock(self, game_instance = None):
+		#add a line or two to check if the door is closed first. you can't lock and open door
+		if is_locked:
+			is_locked = False
+			door_interaction_message = "You unlock the door."
+		else:
+			is_locked = True
+			door_interaction_message = "You lock the door."
+
+		game_instance.game_message(door_interaction_message, msg_color = constants.COLOR_WHITE)
+
+	print("Placeholder")
+
+
+class Shopkeep_Component:
+	def __init__(self, category = "general", funds = 100, stock = []):
+		self.category = category,
+		self.funds = funds,
+		self.stock = stock
+
+class Trap_Component:
+	def __init__(self, trap_effect = None, is_active = True, is_visible = True, disarm_difficulty = 1):
+		self.trap_effect = trap_effect,
+		self.is_active = is_active,
+		self.disarm_difficulty = disarm_difficulty
+		self.is_visible = is_visible
+
+		#(trap_effect = "fire_trap", is_active = True, is_visible = True, disarm_difficulty = 1)
+
+
+	def affect_receiver(receiver = None):
+		#self.trap_effect
+
+		#default, damage the receiver
+		if receiver.creature:
+			receiver.creature.take_damage
+		print("Placeholder")

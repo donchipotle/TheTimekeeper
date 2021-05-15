@@ -386,7 +386,7 @@ class com_Creature:
 					#collapse this into a function later?
 					if self.owner == PLAYER:
 						map_tile_query(query_x = self.owner.x, query_y = self.owner.y, exclude_query_player = True)
-						
+							
 
 	def attack(self, target):
 		chance_to_hit = self.base_accuracy - target.creature.base_dodge
@@ -440,87 +440,6 @@ class com_Creature:
 
 		return dodge
 
-
-
-
-
-#add more bonuses later
-
-
-
-
-
-#physical door that can be opened or closed
-class com_Door:
-	def __init__(self, is_destructable = True, 
-		is_locked = False, default_locked = False,
-		is_closed = False, default_closed = False,
-		door_interaction_message = ""):
-
-		self.is_destructable = is_destructable,
-		self.default_locked = default_locked,
-		self.default_closed = default_closed,
-
-		self.is_locked = default_locked,
-		self.is_closed = default_closed,
-		self.door_interaction_message = door_interaction_message
-
-	def interact(self):
-		print("com_Door.interact() called")
-
-		#if the door is closed and unlocked, open it
-		if self.is_closed == False:
-			if self.is_locked == False:
-				self.is_closed = False
-				self.door_interaction_message = "You open the door."
-				self.icon = settings.door_open_icon
-			else:
-				self.door_interaction_message = "You try to turn the knob - it is still locked."
-
-		else: #self.is_closed == True:
-			self.is_closed == False
-			self.door_interaction_message = "You close the door."
-			self.icon = settings.door_closed_icon
-		#if the door is open, close it
-		GAME.game_message(self.door_interaction_message)
-
-	def lock_unlock():
-		#add a line or two to check if the door is closed first. you can't lock and open door
-		if is_locked:
-			is_locked = False
-			door_interaction_message = "You unlock the door."
-		else:
-			is_locked = True
-			door_interaction_message = "You lock the door."
-
-		GAME.game_message(door_interaction_message, msg_color = constants.COLOR_WHITE)
-
-	print("Placeholder")
-
-
-class com_Shopkeep:
-	def __init__(self, category = "general", funds = 100, stock = []):
-		self.category = category,
-		self.funds = funds,
-		self.stock = stock
-
-class com_Trap:
-	def __init__(self, trap_effect = None, is_active = True, is_visible = True, disarm_difficulty = 1):
-		self.trap_effect = trap_effect,
-		self.is_active = is_active,
-		self.disarm_difficulty = disarm_difficulty
-		self.is_visible = is_visible
-
-		#(trap_effect = "fire_trap", is_active = True, is_visible = True, disarm_difficulty = 1)
-
-
-	def affect_receiver(receiver = None):
-		#self.trap_effect
-
-		#default, damage the receiver
-		if receiver.creature:
-			receiver.creature.take_damage
-		print("Placeholder")
 
 
 
@@ -694,10 +613,6 @@ class ai_Dragon:
 
 					if monster.distance_to(target_actor.actor[0]) < 3:
 						self.owner.move_towards(target_actor.actor[0])	
-
-
-
-
 
 
 def death_monster(monster):
@@ -984,7 +899,6 @@ def map_tryplace_guard(map_x_in = constants.MAP_WIDTH, map_y_in = constants.MAP_
 		y = random.randint(1, map_y_in - 2)
 
 		if GAME.current_map[x][y].block_path == False:
-		
 			gen_town_guard((x, y))
 			 	
 			break
@@ -1114,12 +1028,6 @@ def map_place_door_on_walls(x = 0, y = 0, map_in = None):
 	PLAYER.x = door_x_pos
 	PLAYER.y = door_y_pos
 	
-
-
-
-
-
-
 
 def map_make_fov(incoming_map, fov_x = constants.MAP_WIDTH, fov_y = constants.MAP_HEIGHT):
 	global FOV_MAP
@@ -1861,6 +1769,7 @@ def open_door_prompt(in_event):
 #def lock_prompt(in_event):
 
 def menu_main():
+
 	game_initialize()
 
 	#create GAME object to store progress
@@ -2497,7 +2406,7 @@ def gen_exit_point_door(coords,
 		map_type = target_type
 
 	exit_point_com = components.Exit_Point_Component(require_input = True, target_map_type = map_type, next_map_key = target_key)
-	door_com = com_Door(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
+	door_com = components.Door_Component(is_destructable = True, is_locked = locked_by_default, is_closed = closed_by_default)
 	
 	if closed_by_default:
 		ep_door = obj_Actor(x, y, ("A closed " + material + " door. ", additional_message), 
@@ -2546,9 +2455,7 @@ def gen_trap(coords):
 	x, y = coords
 	#create the player
 
-
-	trapcom = com_Trap(trap_effect = "fire_trap", is_active = True, is_visible = True, disarm_difficulty = 1)
-
+	trapcom = components.Trap_Component(trap_effect = "fire_trap", is_active = True, is_visible = True, disarm_difficulty = 1)
 
 	trap = obj_Actor(x, y, "Fire trap",  
 						trap_com = trapcom,
@@ -2788,8 +2695,17 @@ def game_initialize():
 	global CAMERA, PLAYER, PLAYER_NAME, SCREEN_STATUS, CLOCK
 	global DUNGEON_DEPTH, SURFACE_WINDOW, SURFACE_BOTTOM_PANEL
 
+
 	pygame.init()
 	PLAYER_NAME = "Bob the Guy"
+
+
+	#init_flags = ((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)) #| pygame.OPENGL | pygame.FULLSCREEN)
+
+
+
+	print("Pygame 2.whatever actually working lol.")
+
 	SCREEN_STATUS = structures.ScreenStatus()
 
 	if constants.PermitKeyHolding == True:
@@ -2798,9 +2714,11 @@ def game_initialize():
 	#create the rendered window
 	SURFACE_WINDOW = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
 
-	SURFACE_MAIN = pygame.display.set_mode((constants.CAM_WIDTH, constants.CAM_HEIGHT))
+	SURFACE_MAIN = pygame.display.set_mode(((constants.CAM_WIDTH, constants.CAM_HEIGHT)))
+
 	SURFACE_MAP = pygame.Surface((constants.MAP_WIDTH * constants.CELL_WIDTH,
 									constants.MAP_HEIGHT * constants.CELL_HEIGHT))	
+
 
 	SURFACE_BOTTOM_PANEL = pygame.display.set_mode((int(constants.CAM_WIDTH * 1), int(constants.CAM_HEIGHT * 1)))
 
@@ -2816,6 +2734,8 @@ def game_initialize():
 
 	CLOCK = pygame.time.Clock()
 	FOV_CALCULATE = True
+
+
 
 if __name__ == '__main__':
 	menu_main()
