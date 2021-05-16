@@ -149,7 +149,7 @@ class obj_Actor:
 		delta_y = other.y - self.y
 		return math.sqrt(delta_x ** 2 + delta_y ** 2)
 
-	def move_towards(self, other):
+	def move_towards(self, other, game_instance = None):
 		
 		delta_x = other.x - self.x
 		delta_y = other.y - self.y
@@ -162,9 +162,9 @@ class obj_Actor:
 		delta_x = int(round(delta_x / distance))
 		delta_y = int(round(delta_y / distance))
 
-		self.creature.move(delta_x, delta_y)
+		self.creature.move(delta_x, delta_y, game_instance)
 
-	def move_away(self, other):
+	def move_away(self, other, game_instance = None):
 		
 		delta_x = self.x - other.x 
 		delta_y = self.y - other.y 
@@ -174,7 +174,7 @@ class obj_Actor:
 		delta_x = int(round(delta_x / distance))
 		delta_y = int(round(delta_y / distance))
 
-		self.creature.move(delta_x, delta_y)
+		self.creature.move(delta_x, delta_y, game_instance)
 
 #massive structure that stores game state data 		
 class obj_Game:
@@ -195,7 +195,8 @@ class obj_Game:
 	def transition(self):
 		global FOV_CALCULATE
 
-		list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)	#get exit point the player is standing on
+ 		#get exit point the player is standing on
+		list_of_objects = components.map_objects_at_coords(PLAYER.x, PLAYER.y, gameinstance = GAME)	
 		for obj in list_of_objects:
 			if obj.exit_point:
 			#if the exit point leads to another map, load the map
@@ -216,7 +217,7 @@ class obj_Game:
 					GAME.current_key = helper_gen_random_key(settings.MAP_KEY_LENGTH)		
 					GAME.new_key = helper_gen_random_key(settings.MAP_KEY_LENGTH)
 
-					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
+					list_of_objects = components.map_objects_at_coords(PLAYER.x, PLAYER.y, gameinstance = GAME)
 					#set the exit point key to point to the new map
 					for obj in list_of_objects:	
 						if obj.exit_point: 
@@ -251,11 +252,12 @@ class obj_Game:
 
 					if self.next_map_type == "overworld":
 						self.current_map = map_create_overworld()
+						gen_exit_point_stairs((PLAYER.x, PLAYER.y), downwards = False)
 						
 					self.next_map_x, self.next_map_y = misc_utils.get_map_dimensions(self.current_map)
 					
 					#set the first exit point in the new map (where the player is located) to point back to the old one
-					list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
+					list_of_objects = components.map_objects_at_coords(PLAYER.x, PLAYER.y, gameinstance = GAME)
 					for obj in list_of_objects:	
 						if obj.exit_point: 
 							obj.exit_point.next_map_key = GAME.current_key
@@ -277,168 +279,7 @@ class obj_Game:
 ###############################################################################################################################
 #components
 
-class com_Creature:
-	def __init__(self, name_instance, hp = 10, 
-		death_function = None, money = 0,
 
-		category = "",
-
-		base_dodge = 20,
-		base_accuracy = 100,
-		base_crit_chance = 5,
-		base_crit_mult = 1.5,
-
-		noncorporeal = False,
-		local_line_of_sight = 7,
-		proximate_actors = [],
-		proximate_hostiles = [],
-		target = structures.Target(),
-
-		base_damages = {},
-		base_resistances = {},
-		net_resistances = 	{},	
-		net_damages = 	{},	
-		gender = 0, base_xp = 1, xp_on_death = 10):
-
-		self.name_instance = name_instance
-		self.max_hp = hp
-		self.current_hp = hp
-		self.money = money
-		self.death_function = death_function
-		self.gender = gender
-		self.base_xp = base_xp
-		self.xp_on_death = xp_on_death
-		self.current_xp = base_xp
-		self.noncorporeal = noncorporeal
-
-		#combat stats
-		self.base_accuracy = base_accuracy
-		self.base_dodge = base_dodge
-		self.base_crit_chance = base_crit_chance
-		self.base_crit_mult = base_crit_mult
-		self.local_line_of_sight = local_line_of_sight
-		self.proximate_actors = proximate_actors
-		self.proximate_hostiles = proximate_hostiles
-		self.base_damages = base_damages
-		self.base_resistances = base_resistances
-		self.net_resistances = base_resistances
-		self.net_damages = base_damages
-
-		#add new damage types and stuff later
-	def take_damage(self, damage_received, attacker):
-		self.current_hp -= damage_received
-
-		#possibly change later to include the name of the attacker
-		if self.current_hp <= 0:
-			if self.death_function is not None:
-				self.death_function(self.owner)
-				
-				attacker.creature.current_xp += self.xp_on_death
-
-
-	def move(self, dx, dy):
-		new_x = self.owner.x
-		new_y = self.owner.y
-		next_x = self.owner.x + dx
-		next_y = self.owner.y + dy
-
-		#check if creature is trying to move off the map
-		if next_x > 0 and next_x <= (GAME.current_map_x - 1):
-			if next_y > 0 and next_y < (GAME.current_map_y - 1):
-				tile_is_wall = (GAME.current_map[next_x][next_y].block_path == True)
-				target = map_check_for_creatures(next_x, next_y, self.owner)
-
-				#is there are target where the actor iss attempting to movie
-				if target:
-
-					#check if moving to a trap
-					if target.trap_com:
-						print("Target is a trap.")
-						if not tile_is_wall:
-							self.owner.x = next_x
-							self.owner.y = next_y
-							target.trap_com.affect_receiver(receiver = self)
-							return
-
-					#else, check if hostile
-					if self.owner.allegiance_com and target.allegiance_com:
-						if (self.owner == PLAYER): 
-							self.attack(target)
-							return
-
-						#check if target's category is in the list of hostile categories, if so, attack
-						for allegiance_type in self.owner.allegiance_com.hostile_list:
-							if str(target.allegiance_com.category) == allegiance_type: 
-								self.attack(target)
-						
-					else:print("One or both actors does not have an allegiance component.")
-
-				#move this code to a separate function
-				if not tile_is_wall and target is None:
-					#used for checking if the owner has moved from the last tile or not
-					self.owner.last_x = self.owner.x
-					self.owner.last_y = self.owner.y
-
-					self.owner.x = next_x
-					self.owner.y = next_y
-
-					#if there are items at the player's tile, print them to the message log
-					#collapse this into a function later?
-					if self.owner == PLAYER:
-						map_tile_query(query_x = self.owner.x, query_y = self.owner.y, exclude_query_player = True)
-							
-
-	def attack(self, target):
-		chance_to_hit = self.base_accuracy - target.creature.base_dodge
-
-		if random.randint(0,100) < chance_to_hit:
-			#do the damage
-			damage_dealt = actor_utilities.damage_target(self, damage_in = self.net_damages, target = target)
-
-			hit_was_critical = False
-			if random.randint(0,100) < self.base_crit_chance:
-				damage_dealt = damage_dealt * self.base_crit_mult
-				hit_was_critical = True
-
-			if (damage_dealt <= 0): GAME.game_message(self.name_instance + " fails to do any damage " + target.creature.name_instance + " at all.")
-			else:
-				if hit_was_critical: GAME.game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage in a critical hit."), constants.COLOR_WHITE)
-				else: 
-					GAME.game_message((self.name_instance + " attacks " + target.creature.name_instance + " and does " + str(damage_dealt) + " damage."), constants.COLOR_WHITE)
-					target.creature.take_damage(damage_dealt, attacker = self.owner)
-		else: GAME.game_message((self.name_instance + " fails to hit " + target.creature.name_instance + " and does no damage."), constants.COLOR_WHITE)
-			
-
-	def heal(self, value):
-		self.current_hp += value
-		if self.current_hp > self.max_hp:
-			self.current_hp = self.max_hp
-
-	@property
-	def accuracy(self):
-		accuracy = self.base_hit_chance
-		object_bonuses = []
-		if self.owner.container:
-			object_bonuses = [obj.equipment.accuracy_bonus 
-			for obj in self.owner.container.equipped_items]
-
-		for bonus in object_bonuses: 
-			if bonus: dodge += bonus
-
-		return dodge
-
-	@property
-	def dodge(self):
-		dodge = self.base_dodge_chance
-		object_bonuses = []
-		if self.owner.container:
-			object_bonuses = [obj.equipment.dodge_bonus 
-			for obj in self.owner.container.equipped_items]
-
-		for bonus in object_bonuses: 
-			if bonus: dodge += bonus
-
-		return dodge
 
 
 
@@ -494,7 +335,7 @@ class ai_Confuse:
 
 	def take_turn(self):
 		if self.num_turns > 0:
-			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1), game_instance = GAME)
 			self.num_turns -= 1
 		else:
 			self.owner.ai = self.old_ai
@@ -509,16 +350,16 @@ class ai_Chase:
 
 		target_actor = (ai_designate_targets(actor = monster))
 		if target_actor == "no actors":
-			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1), game_instance = GAME)
 			return
 
 		else:
 			#if (target.distance)[0] >= 2.0:		#no idea why this is a tuple lol
 			if monster.distance_to(target_actor.actor[0]) >= 2.0:
-				monster.move_towards(target_actor.actor[0])
+				monster.move_towards(target_actor.actor[0], game_instance = GAME)
 
 			elif target_actor.actor[0].creature.current_hp > 0:
-				monster.creature.attack(target_actor.actor[0])
+				monster.creature.attack(target_actor.actor[0], GAME)
 
 		monster.creature.local_fov = None
 		monster.creature.proximate_hostiles = []
@@ -530,16 +371,16 @@ class ai_Flee:
 		target_actor = (ai_designate_targets(actor = monster))
 
 		if target_actor == "no actors":
-			monster.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			monster.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1), game_instance = GAME)
 			return
 
 		else:		#no idea why this is a tuple lol
-			monster.move_away(target_actor.actor[0])
+			monster.move_away(target_actor.actor[0], game_instance = GAME)
 
 class ai_Townfolk_Wander:
 	def take_turn(self):
 		#print("Townfolk taking turn")
-		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1), game_instance = GAME)
 
 class ai_Town_Guardsman_Patrol:
 	def take_turn(self):
@@ -547,7 +388,7 @@ class ai_Town_Guardsman_Patrol:
 		target_actor = (ai_designate_targets(actor = monster))
 		#targ
 		if target_actor == "no actors":
-			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+			self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1), game_instance = GAME)
 			return
 
 		else:		#no idea why this is a tuple lol
@@ -560,7 +401,7 @@ class ai_Town_Guardsman_Patrol:
 
 class com_AI:
 	def take_turn(self):
-		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1))
+		self.owner.creature.move(libtcod.random_get_int(0,-1, 1), libtcod.random_get_int(0, -1, 1), game_instance = GAME)
 
 #follow ally, idling when too close. edit later to include attacking enemies
 class ai_Ally_Follow:
@@ -597,9 +438,9 @@ class ai_Dragon:
 			# move towards the player if far away 
 
 			if monster.distance_to(target_actor.actor[0]) >= 8:
-				self.owner.move_towards(target_actor.actor[0])
+				self.owner.move_towards(target_actor.actor[0], game_instance = GAME)
 			#if target is alive, attack
-			elif target_actor.actor[0].creature.current_hp > 0:
+			elif (target_actor.actor[0].creature.current_hp) and (target_actor.actor[0].creature.current_hp > 0):
 				#cast fireball
 				if monster.distance_to(target_actor.actor[0]) > 3:
 					#replace this function with the more flexible aoe_damage function
@@ -609,10 +450,10 @@ class ai_Dragon:
 
 				else: # if within blast radius, engage in melee
 					if monster.distance_to(target_actor.actor[0]) < 2:
-						monster.creature.attack(target_actor.actor[0])
+						monster.creature.attack(target_actor.actor[0], game_instance = GAME)
 
 					if monster.distance_to(target_actor.actor[0]) < 3:
-						self.owner.move_towards(target_actor.actor[0])	
+						self.owner.move_towards(target_actor.actor[0], game_instance = GAME)	
 
 
 def death_monster(monster):
@@ -1054,41 +895,8 @@ def map_calculate_fov():
 		libtcod.map_compute_fov(FOV_MAP, PLAYER.x, PLAYER.y, 
 								constants.TORCH_RADIUS, constants.FOV_LIGHT_WALLS, constants.FOV_ALGO)
 
-def map_objects_at_coords(coords_x, coords_y, exclude_player = False):
-	object_options = [obj for obj in GAME.current_objects 
-	if obj.x == coords_x and obj.y == coords_y]
 
-	if exclude_player:
-		for obj in object_options:
-			if obj == PLAYER:
-				object_options.remove(obj)
 
-	return object_options
-
-def map_check_for_creatures(x, y, exclude_object = None):
-	target = None
-	if exclude_object:
-		#check objectlist to find creature at that location that isn't excluded
-		#include check to determine if hostile or not
-		for object in GAME.current_objects:
-			if (object is not exclude_object and 										
-				object.x == x and 
-				object.y == y and 		
-				object.creature):												
-					target = object					
-			if target:
-				return target
-	else:
-		#check objectlist to find any creature at that location ???
-		for object in GAME.current_objects:
-			if (
-			#ability to attack thin air? 										
-				object.x == x and 
-				object.y == y and 		
-				object.creature):												
-					target = object				
-			if target:
-				return target	
 
 def map_find_line(startcoords, endcoords):
 	#converts beginning/end point tuples (X, Y) into list of tiles between
@@ -1129,35 +937,6 @@ def map_find_radius(coords, radius):
 			tile_list.append((x, y))
 	return tile_list
 
-def map_tile_query(query_x, query_y, exclude_query_player = False, accept_nothing = False, distant_query = False):
-	objects_at_player_tile = map_objects_at_coords(query_x, query_y, exclude_player = exclude_query_player)
-	query_result = "nothing."
-
-	if (query_x > 0 and query_x < GAME.current_map_x): 
-		if (query_y > 0 and query_y < GAME.current_map_y):
-			tile_is_wall = (GAME.current_map[query_x][query_y].block_path == True)
-		
-	else: return
-
-	if tile_is_wall: query_result = " a wall. Very astute."
-
-	if not tile_is_wall:
-		if len(objects_at_player_tile) == 1:
-			for obj in objects_at_player_tile:
-
-				if obj.item: query_result = obj.item.name
-				if obj.equipment: query_result = obj.equipment.name
-				if obj.creature: query_result = obj.creature.name_instance
-			
-		elif len(objects_at_player_tile) > 1: query_result = " multiple objects."
- 
-	if not distant_query:
-		if not accept_nothing and query_result == "nothing.": return
-		first_half = "You see at your feet "
-
-	else : first_half = "You see "
-
-	GAME.game_message(str(first_half) + query_result)
 
 #drawing functions
 def draw_game():
@@ -1514,7 +1293,7 @@ def aoe_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range =
 			#add visual feedback to fireball, maybe even adding a trail to its destination later
 			#draw_explosion(local_radius, PLAYER.x, PLAYER.y, constants.COLOR_ORANGE)
 
-			creature_to_damage = map_check_for_creatures(x, y)
+			creature_to_damage = components.map_check_for_creatures(x, y, game_instance = GAME)
 			if creature_to_damage: 
 				#allow flexibility for damage types later
 				#damage_to_deal -= creature_to_damage.creature.resist_fire
@@ -2048,7 +1827,7 @@ def menu_tile_select(coords_origin = None, max_range = None, radius = None, pene
 					break
 				if not penetrate_walls and GAME.current_map[x][y].block_path: 	#stop at wall
 					break
-				if not pierce_creature and map_check_for_creatures(x, y):		#stop at creature
+				if not pierce_creature and components.map_check_for_creatures(x, y, gameinstance = GAME):		#stop at creature
 					break
 
 		else:
@@ -2158,7 +1937,7 @@ def gen_creature(coords):
 	dam_list = 	selected_creature['base_damages']
 	res_list = 	selected_creature['base_resistances']
 
-	creature_com = com_Creature(selected_creature['creature_name'], death_function = death_monster,
+	creature_com = components.Creature_Component(selected_creature['creature_name'], death_function = death_monster,
 								hp = selected_creature['base_hp'],
 								xp_on_death = selected_creature['xp_on_death'],
 
@@ -2194,7 +1973,7 @@ def gen_town_guard(coords):
 	res_list = 	[{"fire":3,"electricity":3,"poison":3,"frost":3,"magic":3,
 				"ballistic":3, "piercing":3, "bludgeoning":3, "slashing":3, "eldritch":3}]
 
-	creature_com = com_Creature(name_instance = "Town Guard",
+	creature_com = components.Creature_Component(name_instance = "Town Guard",
 								hp = 37, #player's creature component name
 								death_function = death_monster,
 								noncorporeal = False,
@@ -2223,7 +2002,7 @@ def gen_shopkeeper():
 	global GAME
 	ai_com = ai_Townfolk_Wander()
 
-	creature_com = com_Creature("shopkeeper")
+	creature_com = components.Creature_Component("shopkeeper")
 	print("Hi")
 
 
@@ -2287,7 +2066,7 @@ def gen_player(coords):
 
 
 	container_com = components.ContainerComponent()
-	creature_com = com_Creature(PLAYER_NAME,
+	creature_com = components.Creature_Component(PLAYER_NAME,
 								hp = 100, #player's creature component name
 								death_function = death_player,
 								noncorporeal = False,
@@ -2302,6 +2081,7 @@ def gen_player(coords):
 					hostile_list = ["eldritch", "wild", "draconic", "townfolk"],
 					docile = False
 					)
+	
 
 	PLAYER = obj_Actor(x, y, "Player",  
 						creature = creature_com,
@@ -2309,9 +2089,6 @@ def gen_player(coords):
 						icon = " @ ", icon_color = constants.COLOR_WHITE,
 						allegiance_com = allegiance_com
 						)
-
-	
-
 
 	GAME.current_objects.append(PLAYER)
 	
@@ -2328,7 +2105,7 @@ def gen_town_folk(coords):
 	res_list = base_res_list
 
 	container_com = components.ContainerComponent()
-	creature_com = com_Creature(name_instance = "Townfolk",
+	creature_com = components.Creature_Component(name_instance = "Townfolk",
 								hp = 10, #player's creature component name
 								death_function = death_monster,
 								noncorporeal = False,
@@ -2519,11 +2296,11 @@ def game_handle_keys():
 			move_coords = structures.Direction()
 			move_coords.x, move_coords.y = game_direction_prompt(event_in = event)
 			if (move_coords.x,  move_coords.y) != (0, 0):
-				PLAYER.creature.move(move_coords.x, move_coords.y)
+				PLAYER.creature.move(move_coords.x, move_coords.y, game_instance = GAME)
 
 			#pop up menu if there are multiple objects at the tile?
 			if event.key == pygame.K_COMMA:
-				objects_at_player = map_objects_at_coords(PLAYER.x, PLAYER.y)
+				objects_at_player = components.map_objects_at_coords(PLAYER.x, PLAYER.y, gameinstance = GAME)
 				for obj in objects_at_player:
 					if obj.item:
 						obj.item.pick_up(PLAYER, game_instance = GAME)
@@ -2555,17 +2332,17 @@ def game_handle_keys():
 			FOV_CALCULATE = True
 
 			if event.key == pygame.K_q:
-				print("Started querying tile.")
 				x, y = menu_tile_select(coords_origin = None, max_range = None, 
 					radius = None, penetrate_walls = True, pierce_creature = True)
-				map_tile_query(x, y, accept_nothing = True, distant_query = True)
-				print("Finished quertying tile.")
+
+				components.map_tile_query(x, y, accept_nothing = True, distant_query = True, game_instance = GAME)
+
 	
 			#key L, turn on tile selection. change later as needed
 			if MOD_KEY and event.key == pygame.K_PERIOD:
 				print("Stair/portal key pressed")
 				#reuse this kind of thing later 		
-				list_of_objects = map_objects_at_coords(PLAYER.x, PLAYER.y)
+				list_of_objects = components.map_objects_at_coords(PLAYER.x, PLAYER.y, gameinstance = GAME)
 				for obj in list_of_objects:
 					if obj.exit_point:
 						obj.exit_point.use(game_instance = GAME)

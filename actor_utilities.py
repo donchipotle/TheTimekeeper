@@ -36,3 +36,41 @@ def damage_target(attacker, damage_in, target):
 							final_damage += damage
 
 	return final_damage
+
+
+def ai_designate_targets(actor = None, game_instance = None):
+
+	map_make_local_fov(game_instance.current_map, actor_in = (actor), 
+				fov_x = game_instance.current_map_x - 1, fov_y = game_instance.current_map_y - 1)
+	
+	libtcod.map_compute_fov(actor.creature.local_fov, actor.x, actor.y, 
+								actor.creature.local_line_of_sight, 
+								constants.FOV_LIGHT_WALLS, constants.FOV_AI_ALGO)
+
+	for obj in game_instance.current_objects:
+		if obj.creature:
+			if libtcod.map_is_in_fov(actor.creature.local_fov, obj.x, obj.y) and obj != actor:
+				actor.creature.proximate_actors.append(obj)
+
+	if (len(actor.creature.proximate_actors)) == 0: return "no actors"
+
+	for obj in actor.creature.proximate_actors:
+		if obj.allegiance_com and actor.allegiance_com:
+
+			# I literally have no idea why everything in this game is a list of lists, but hallelujah, it works now
+			for category in actor.allegiance_com.hostile_list[0]:
+				if category in obj.allegiance_com.category[0]:			# ditto
+					distance_to_target = actor.distance_to(obj)
+					target = structures.Target(actor = obj, distance = (distance_to_target), threat_level = 0)
+					actor.creature.proximate_hostiles.append(target)
+								
+	if (len(actor.creature.proximate_hostiles)) == 0: return "no actors"
+	actor.creature.proximate_hostiles = sorted(actor.creature.proximate_hostiles, key=lambda target: target.distance)
+	target = (actor.creature.proximate_hostiles)[0]
+
+	#reset everything
+	actor.creature.local_fov = None
+	actor.creature.proximate_hostiles = []
+	actor.creature.proximate_actors = []
+
+	return target	
