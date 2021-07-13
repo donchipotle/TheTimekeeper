@@ -72,9 +72,12 @@ TORCH_RADIUS = 10
 FONT_RENDER_TEXT = pygame.font.Font('fonts/Azoft Sans.otf', 35)
 #FONT_RENDER_TEXT = pygame.font.Font('fonts/Fragmentcore.otf', 35)
 
-FONT_TITLE_SCREEN1 = pygame.font.Font('fonts/Lekton-Regular.ttf', 70)
-FONT_TITLE_SCREEN2 = pygame.font.Font('fonts/Lekton-Regular.ttf', 40)
-FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
+#FONT_TITLE_SCREEN1 = pygame.font.Font('fonts/Lekton-Regular.ttf', 70)
+#FONT_TITLE_SCREEN2 = pygame.font.Font('fonts/Lekton-Regular.ttf', 40)
+#FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/RoseFlinch.ttf', 35)
+FONT_TITLE_SCREEN1 = pygame.font.Font('fonts/CourierPrimeRegular.ttf', 70)
+FONT_TITLE_SCREEN2 = pygame.font.Font('fonts/CourierPrimeRegular.ttf', 40)
+FONT_DEBUG_MESSAGE = pygame.font.Font('fonts/CourierPrimeRegular.ttf', 35)
 
 #FONT_STATS = pygame.font.Font('fonts/Lekton-Regular.ttf', 40)
 FONT_STATS = pygame.font.Font('fonts/Fragmentcore.otf', 40)
@@ -84,7 +87,9 @@ FONT_CURSOR_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', CELL_HEIGHT)
 #FONT_MESSAGE_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 35)
 FONT_MESSAGE_TEXT = pygame.font.Font('fonts/Fragmentcore.otf', 35)
 
-FONT_INVENTORY_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 20)
+#FONT_INVENTORY_TEXT = pygame.font.Font('fonts/Lekton-Regular.ttf', 20)
+FONT_INVENTORY_TEXT = pygame.font.Font('fonts/CourierPrimeRegular.ttf', 20)
+
 
 #MISC
 #ArtificialLag = 75					#deprecated, should not be needed but will be left in for now

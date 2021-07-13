@@ -275,15 +275,6 @@ class obj_Game:
 		self.message_history.append((game_msg, msg_color))
 
 
-
-###############################################################################################################################
-#components
-
-
-
-
-
-
 ######################################################################################################################
 #AI scripts
 	#execute once per turn
@@ -440,20 +431,21 @@ class ai_Dragon:
 			if monster.distance_to(target_actor.actor[0]) >= 8:
 				self.owner.move_towards(target_actor.actor[0], game_instance = GAME)
 			#if target is alive, attack
-			elif (target_actor.actor[0].creature.current_hp) and (target_actor.actor[0].creature.current_hp > 0):
+			elif (target_actor.actor[0].creature.current_hp): 
+				if (target_actor.actor[0].creature.current_hp > 0):
 				#cast fireball
-				if monster.distance_to(target_actor.actor[0]) > 3:
-					#replace this function with the more flexible aoe_damage function
-					#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
-					aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, 
-						penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
+					if monster.distance_to(target_actor.actor[0]) > 3:
+						#replace this function with the more flexible aoe_damage function
+						#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
+						aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, 
+							penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
 
-				else: # if within blast radius, engage in melee
-					if monster.distance_to(target_actor.actor[0]) < 2:
-						monster.creature.attack(target_actor.actor[0], game_instance = GAME)
+					else: # if within blast radius, engage in melee
+						if monster.distance_to(target_actor.actor[0]) < 2:
+							monster.creature.attack(target_actor.actor[0], game_instance = GAME)
 
-					if monster.distance_to(target_actor.actor[0]) < 3:
-						self.owner.move_towards(target_actor.actor[0], game_instance = GAME)	
+						if monster.distance_to(target_actor.actor[0]) < 3:
+							self.owner.move_towards(target_actor.actor[0], game_instance = GAME)	
 
 
 def death_monster(monster):
@@ -552,12 +544,8 @@ def map_random_walk(dungeon_x = constants.MAP_WIDTH, dungeon_y = constants.MAP_H
 
 			if point_x > 2 and point_x < (dungeon_x -2):
 				if point_y > 2 and point_y < (dungeon_y - 2):
-					new_map[point_x][point_y].block_path = False
-					new_map[point_x][point_y].is_diggable = True
-					new_map[point_x][point_y].transparent = True
-					new_map[point_x][point_y].visible_tile_color = constants.COLOR_WHITE
-					new_map[point_x][point_y].explored_tile_color = constants.COLOR_L_GRAY
-					new_map[point_x][point_y].tile_icon = "."
+					map_utilities.clear_tile(new_map, point_x, point_y)
+
 
 	map_tryplace_stairs(map_in = new_map, map_x_in = dungeon_x -1, map_y_in = dungeon_y -1)
 	map_place_objects_dungeon(map_in = new_map, map_x =  dungeon_x -1, map_y =  dungeon_y -1)
@@ -1333,7 +1321,7 @@ def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range 
 				print ("Rendering tile at " + str(x) + ", " + str(y))
 				draw_projectile((x), (y), constants.COLOR_L_BLUE)
 				print("I like turtles")
-			target = map_check_for_creatures(x, y)
+			target = components.map_check_for_creatures(x, y, gameinstance = GAME)
 			print ("Target at " + str(x) + ", " + str(y))
 			if target: # and i != 0:
 				GAME.game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
@@ -1387,12 +1375,15 @@ class ui_Button:
 
 		for event in local_events:
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				if event.button == 1: mouse_clicked = True
+				if event.button == 1:
+				 mouse_clicked = True
 
 		if mouse_over:  #change colors and potentially accept mouse input
 			self.current_c_box = self.c_box_ho
 			self.current_c_text = self.c_text_ho
-			if mouse_clicked: return True
+
+			if mouse_clicked: 
+				return True
 		else:	#reset
 			self.current_c_box = self.c_box_default
 			self.current_c_text = self.c_text_default
@@ -1546,7 +1537,6 @@ def open_door_prompt(in_event):
 		CLOCK.tick(constants.GAME_FPS)
 
 #def lock_prompt(in_event):
-
 def menu_main():
 
 	game_initialize()
@@ -1754,8 +1744,13 @@ def menu_inventory(owning_actor = None):
 					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE)
 
 			if show_description:
-				i = 0
-				description_text = str(PLAYER.container.inventory[mouse_line_selection].item.description)
+				if PLAYER.container.inventory[mouse_line_selection].item:
+				
+					description_text = str(PLAYER.container.inventory[mouse_line_selection].item.description)
+				
+				if PLAYER.container.inventory[mouse_line_selection].equipment:
+					description_text = str(PLAYER.container.inventory[mouse_line_selection].equipment.description)
+
 				#reset panel
 				side_panel_surface.fill(constants.COLOR_D_GRAY)
 				#for paragraph in description_text:
@@ -1827,7 +1822,7 @@ def menu_tile_select(coords_origin = None, max_range = None, radius = None, pene
 					break
 				if not penetrate_walls and GAME.current_map[x][y].block_path: 	#stop at wall
 					break
-				if not pierce_creature and components.map_check_for_creatures(x, y, gameinstance = GAME):		#stop at creature
+				if not pierce_creature and components.map_check_for_creatures(x, y, game_instance = GAME):		#stop at creature
 					break
 
 		else:
@@ -1876,6 +1871,75 @@ def menu_tile_select(coords_origin = None, max_range = None, radius = None, pene
 			pygame.display.flip()
 			CLOCK.tick(constants.GAME_FPS)
 
+
+def menu_ynq_prompt(question_text = "Yes or no?"):
+	close_menu = False
+
+	events_list = pygame.event.get()
+
+	for event in events_list:
+		if event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_d:
+				close_menu = True
+
+	button_y = constants.CAM_HEIGHT * (1 / 5)
+	button_x = constants.CAM_WIDTH * (1 / 5)
+	button_offset = 100
+
+	menu_width = 600
+	menu_height = 850
+
+	panel_surface = pygame.Surface((menu_width, menu_height))
+
+	yes_button = ui_Button(SURFACE_MAIN, "YES", 
+					(200, 75),
+					(button_x, button_y),
+					font = constants.FONT_TITLE_SCREEN2)
+
+	no_button = ui_Button(SURFACE_MAIN, "NO", 
+					(200, 75),
+					(button_x + button_offset, button_y),
+					font = constants.FONT_TITLE_SCREEN2)
+
+	quit_button = ui_Button(SURFACE_MAIN, "QUIT.", 
+					(200, 75),
+					(button_x + (button_offset * 2), button_y),
+					font = constants.FONT_TITLE_SCREEN2)
+
+	while not close_menu:
+		list_of_events = pygame.event.get()
+		mouse_position = pygame.mouse.get_pos()
+
+		game_input = (list_of_events, mouse_position)
+
+		panel_surface.fill(constants.COLOR_D_GRAY)
+
+		#button updates
+		if yes_button.update(game_input):
+			close_menu = True;
+
+		if no_button.update(game_input):
+			close_menu = True;
+
+		if quit_button.update(game_input):
+			close_menu = True;
+
+
+		SURFACE_MAIN.blit(panel_surface, (int(constants.CAM_WIDTH / 2) - int(menu_width / 2), int(100)))
+
+
+		draw_text(SURFACE_MAIN, question_text, constants.FONT_TITLE_SCREEN1,
+					(1000, 500), constants.COLOR_WHITE, #constants.COLOR_BLACK, 
+					center = True)
+
+		yes_button.draw()
+		no_button.draw()
+		no_button.draw()
+
+		#update surfaces
+		pygame.display.update()
+
+
 ##########################################################################################################
 #generators
 
@@ -1905,9 +1969,12 @@ def gen_equipment(coords):
 	dam_list = 	selected_equipment['bonus_damages']
 	res_list = 	selected_equipment ['bonus_resistances']
 
+
+
 	x, y = coords
 	equipment_com = components.EquipmentComponent(slot = selected_equipment['slot'], name = selected_equipment['pickup_name'],
-					dam_bonus = dam_list, res_bonus = res_list)
+					dam_bonus = dam_list, res_bonus = res_list,
+					description = selected_equipment['item_description'])
 
 	return_object = obj_Actor(x, y, selected_equipment['name'],
 					icon = selected_equipment['icon'], 
@@ -2306,10 +2373,7 @@ def game_handle_keys():
 						obj.item.pick_up(PLAYER, game_instance = GAME)
 						if settings.Mod2 == False:
 							return "no-action"
-							
-			if event.key == pygame.K_p:
-				print("Test key triggered.")
-				return "no-action"
+
 
 			#open inventory or something idk tho
 			if event.key == pygame.K_i:
@@ -2318,6 +2382,16 @@ def game_handle_keys():
 					return "no-action"	
 					#is this second return even necessary? idk anymore
 				return "no-action"
+
+			if event.key == pygame.K_p:
+				menu_ynq_prompt()
+				if settings.Mod2 == False:
+					return "no-action"	
+					#is this second return even necessary? idk anymore
+				return "no-action"
+
+			
+
 
 			#fire projectiles and stuff
 			if event.key == pygame.K_f:
@@ -2410,8 +2484,6 @@ def game_new():
 	#setup the map the player spawns in
 	GAME.current_map, GAME.current_buildings = map_create_town()
 	map_place_objects_town(GAME.current_buildings)
-
-	#PLAYER.x, PLAYER.y = (2, 3)
 
 def game_quit_sequence():
 	game_save()

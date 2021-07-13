@@ -4,12 +4,13 @@
 		{
 			"name":"Lamellar Armor",
 			"pickup_name":"a supple cuirass of lamellar armor",
+			"item_description":"A fine suit of armor, the likes of which ought to carry most wearers through thick combat. The capable ones, anyway.",
 			"weight":14,
 			"icon":" ] ",
 			"icon_r":139,
 			"icon_g":69,
 			"icon_b":19,
-			"static":true,
+			"static": true,
 			"slot": "Armor",
 			"rarity":0,
 			"id": "armor000",
@@ -32,6 +33,7 @@
 		{
 			"name": "Temryavite Helment",
 			"pickup_name":"an ancient Temryavite helmet",
+			"item_description":"A helmet worn into battle by a typical follower of Temryava.",
 			"weight":0,
 			"icon":" ] ",
 			"icon_r":0,
@@ -61,6 +63,7 @@
 		{
 			"name":"Pax Magisteria gloves",
 			"pickup_name":"a tattered pair of Pax Magisteria guardsman gloves.",
+			"item_description":"Dull, well-worn gloves that could hardly protect against the cold let alone the slash of a blade. Fine for pulling nettles from a monk's garden.",
 			"weight":1,
 			"icon":" ] ",
 			"icon_r":192,
@@ -92,6 +95,7 @@
 		{
 			"name":"Guiding Star tunic",
 			"pickup_name":"a well-worn Guiding Star tunic",
+			"item_description":"A tunic often worn by rank-and-file of the Order of the Guiding Star. Very comfortable.",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":255,
@@ -119,6 +123,7 @@
 		{
 			"name":"Longsword",
 			"pickup_name":"a chipped and nicked longsword.",
+			"item_description":"Adequate in adept hands, a liability in any other, and to those on the receiving end, a great source of distress.",
 			"weight":5,
 			"icon":" ) ",
 			"icon_r":149,
@@ -149,6 +154,7 @@
 		{
 			"name":"Great River cloak",
 			"pickup_name":"a filthy barbarian cloak.",
+			"item_description":"Either something died in this cloak and was left in the sun for a month, or this was made from something that died and was left in the sun for a month. ",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":139,
@@ -177,6 +183,7 @@
 		{
 			"name":"Combat Boots",
 			"pickup_name":"a pair of muddy combat boots.",
+			"item_description":"Tough and sturdy, these boots are excellent for denying an oppenent with an unguarded waste any offspring.",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":139,
@@ -204,6 +211,7 @@
 		{
 			"name":"Ars Enchantica chainmail",
 			"pickup_name":"a light, glittery shirt of chainmail.",
+			"item_description":"Light and shiny, and embued with something special from the reclusive Ars Enchantica, this stuff is a miracle. It is a tragedy that whomever forged it probably didn't get a raise.",
 			"weight":10,
 			"icon":" ] ",
 			"icon_r":192,
@@ -231,6 +239,7 @@
 		{
 			"name":"Leather Armor",
 			"pickup_name":"a light suit of leather armor.",
+			"item_description":"This armor is certainly better than nothing in a pinch, but wearers often find themselves wishing they had worn nothing. At least those who survived.",
 			"weight":7,
 			"icon":" ] ",
 			"icon_r":139,
@@ -287,6 +296,7 @@
 		{
 			"name":"Guiding Star helmet",
 			"pickup_name":"a polished silver helmet emblazoned with a golden star.",
+			"item_description":"Popular among Paladins in the Order of the Guiding Star. Unpopular to everyone else due to awkward design and poor visibility.",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":139,
@@ -314,6 +324,7 @@
 		{
 			"name":"The Southern Star",
 			"pickup_name":"a silver two-handed sword.",
+			"item_description":"A sharp and versatile relic, this sword is a pointed reminder (pun intended) that some fights are best not fought.",
 			"weight":14,
 			"icon":" ) ",
 			"icon_r":139,
@@ -340,8 +351,9 @@
 		},
 
 		{
-		"name": "Crystalline Plate of ",
+		"name": "Crystalline Plate of Kirilov",
 			"pickup_name":"a shimmering cuirass of crystal.",
+			"item_description":"A heavy but formidable suit of crystal plate. Odds are that wearers of this armor will live long enough to have to buff away the scratch and scrape marks it will inevitable be covered with.",
 			"weight":25,
 			"icon":" ] ",
 			"icon_r":255,
@@ -369,6 +381,7 @@
 	{
 			"name":"The Book of Perseverance",
 			"pickup_name":"a dull steel sword.",
+			"item_description":"The description of this item is extremely long and I don't feel like writing it here yet.",
 			"weight":14,
 			"icon":" ) ",
 			"icon_r":139,
