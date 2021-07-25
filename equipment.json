@@ -95,7 +95,7 @@
 		{
 			"name":"Guiding Star tunic",
 			"pickup_name":"a well-worn Guiding Star tunic",
-			"item_description":"A tunic often worn by rank-and-file of the Order of the Guiding Star. Very comfortable.",
+			"item_description":"A tunic often worn by rank-and-file of the Order of the Guiding Star. Not very fashionable, but very comfortable.",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":255,
@@ -154,7 +154,7 @@
 		{
 			"name":"Great River cloak",
 			"pickup_name":"a filthy barbarian cloak.",
-			"item_description":"Either something died in this cloak and was left in the sun for a month, or this was made from something that died and was left in the sun for a month. ",
+			"item_description":"This cloak smells like absolute horror. Either something died in this cloak and was left in the sun for a month, or this was made from something that died and was left in the sun for a month. It's an absolute ladies magnet. Trust me.",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":139,
@@ -183,7 +183,7 @@
 		{
 			"name":"Combat Boots",
 			"pickup_name":"a pair of muddy combat boots.",
-			"item_description":"Tough and sturdy, these boots are excellent for denying an oppenent with an unguarded waste any offspring.",
+			"item_description":"Tough and sturdy with a steel toe guard, these boots are excellent at denying an opponent with an unguarded waist any offspring.",
 			"weight":2,
 			"icon":" ] ",
 			"icon_r":139,
@@ -268,6 +268,7 @@
 		{
 			"name":"Temryavite Hauberk",
 			"pickup_name":"a dull, rough hauberk bearing a green Temryavite rose.",
+			"item_description":"Temryavite heavies often don hauberks like this. It blocks a few blows and feels very cool to the touch.",
 			"weight":9,
 			"icon":"]",
 			"icon_r":149,
@@ -401,6 +402,34 @@
 			"bonus_damages":
 				{"fire":1,"electricity":1,"poison":1,"frost":0,"magic":10,
 				"ballistic":0, "piercing":7, "bludgeoning":0, "slashing":32, "eldritch":0},
+
+			"bonus_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+		},
+		{
+			"name":"Longbow",
+			"pickup_name":"a stough, supple longbow.",
+			"item_description":"Well, it's a longbow.",
+			"weight":10,
+			"icon":" ) ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static": true,
+			"slot": "Main Hand",
+			"rarity":0,
+			"id": "ranged000",
+			"sort_class":"weapon",
+
+			"dodge_bonus":5,
+			"accuracy_bonus":5,
+			"critical_chance":5,
+			"critical_damage":1.5,
+
+			"bonus_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":5, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0},
 
 			"bonus_resistances":	
 				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,

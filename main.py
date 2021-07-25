@@ -122,7 +122,7 @@ class obj_Actor:
 			else:
 				return self.name_object
 
-	def draw(self, map_surface = None, local_fov = None):
+	def draw(self, map_surface = None, local_fov = None, map_surface = None):
 		is_visible = libtcod.map_is_in_fov(FOV_MAP, self.x, self.y)
 
 
@@ -431,21 +431,22 @@ class ai_Dragon:
 			if monster.distance_to(target_actor.actor[0]) >= 8:
 				self.owner.move_towards(target_actor.actor[0], game_instance = GAME)
 			#if target is alive, attack
-			elif (target_actor.actor[0].creature.current_hp): 
-				if (target_actor.actor[0].creature.current_hp > 0):
-				#cast fireball
-					if monster.distance_to(target_actor.actor[0]) > 3:
-						#replace this function with the more flexible aoe_damage function
-						#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
-						aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, 
-							penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
+			elif (target_actor.actor[0].creature):
+				if (target_actor.actor[0].creature.current_hp): 
+					if (target_actor.actor[0].creature.current_hp > 0):
+					#cast fireball
+						if monster.distance_to(target_actor.actor[0]) > 3:
+							#replace this function with the more flexible aoe_damage function
+							#cast_fireball(caster = self.owner, T_damage_radius_range = (13, 3, 8))
+							aoe_damage(caster = self.owner, damage_type = "fire", damage_to_deal = 13, target_range = 8, to_hit_radius = 2, 
+								penetrate_walls = False, msg = "The dragon's fireball scorches everything it touches.")
 
-					else: # if within blast radius, engage in melee
-						if monster.distance_to(target_actor.actor[0]) < 2:
-							monster.creature.attack(target_actor.actor[0], game_instance = GAME)
+						else: # if within blast radius, engage in melee
+							if monster.distance_to(target_actor.actor[0]) < 2:
+								monster.creature.attack(target_actor.actor[0], game_instance = GAME)
 
-						if monster.distance_to(target_actor.actor[0]) < 3:
-							self.owner.move_towards(target_actor.actor[0], game_instance = GAME)	
+							if monster.distance_to(target_actor.actor[0]) < 3:
+								self.owner.move_towards(target_actor.actor[0], game_instance = GAME)	
 
 
 def death_monster(monster):
@@ -1156,6 +1157,54 @@ def draw_map(map_to_draw):
 							text_color = map_to_draw[x][y].explored_tile_color, back_color = constants.COLOR_BLACK,
 							center = True)
 
+
+def draw_story_screen(text):
+	prompt_close = False
+	
+	text_rect = pygame.Rect(20, 20, 900, 32)		#where the question is posed
+	
+	while not prompt_close:
+		SURFACE_MAIN.fill(constants.COLOR_BLACK)
+
+		#get keypresses and stuff
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+
+			if event.type == pygame.KEYDOWN:		
+				if event.key == pygame.K_ESCAPE:
+					prompt_close = False
+					
+				if event.key == pygame.K_RETURN:
+					prompt_close = False
+					
+
+		text_surface = constants.FONT_MESSAGE_TEXT.render(text,
+						constants.TEXT_AA, constants.COLOR_WHITE)
+
+		text_rect.w = max(constants.PROMPT_DEFAULT_WIDTH, text_surface.get_width() + constants.PROMPT_OFFSET_X)
+	
+
+		text_surface = constants.FONT_MESSAGE_TEXT.render(text, 
+					constants.TEXT_AA, constants.COLOR_WHITE)
+
+		#dynamic scaling of textbox
+##		input_rect.w = max(constants.PROMPT_DEFAULT_WIDTH,
+##							text_surface.get_width() + constants.PROMPT_OFFSET_X)
+
+		#rect that displays the player's input
+##		pygame.draw.rect(SURFACE_MAIN, constants.COLOR_GRAY, input_rect,
+##						constants.PROMPT_BORDER_THICKNESS)
+
+		#display menu
+		SURFACE_MAIN.blit(text_surface, 
+			(text_rect.x + constants.PROMPT_OFFSET_X,
+			text_rect.y + constants.PROMPT_OFFSET_Y))
+
+		pygame.display.flip()
+		CLOCK.tick(constants.GAME_FPS)
+
+
 ###############################################################################################################
 #magic
 
@@ -1321,7 +1370,7 @@ def beam_damage(caster, damage_type = "fire", damage_to_deal = 10, target_range 
 				print ("Rendering tile at " + str(x) + ", " + str(y))
 				draw_projectile((x), (y), constants.COLOR_L_BLUE)
 				print("I like turtles")
-			target = components.map_check_for_creatures(x, y, gameinstance = GAME)
+			target = components.map_check_for_creatures(x, y, game_instance = GAME)
 			print ("Target at " + str(x) + ", " + str(y))
 			if target: # and i != 0:
 				GAME.game_message(caster.creature.name_instance + " casts Alenko-Kharyalov Effect.")
@@ -1687,17 +1736,21 @@ def menu_inventory(owning_actor = None):
 	menu_close = False
 	window_width = constants.CAM_WIDTH
 	window_height = constants.CAM_HEIGHT
-	side_panel_width = 800
+	side_panel_width = 600
 	side_panel_height = 850
 	menu_width = 600
 	menu_height = 850
+	stat_panel_width = 300
+	stat_panel_height = 850
 
 	menu_x = (window_width * 1/ 2) - (side_panel_width )
 	menu_y = (window_height * 1.02 / 2.3) - (menu_height / 2)
 
 	#panel for stats and description
-	panel_x = (window_width * 1.6/ 2) - (menu_width / 2)
+	panel_x = (window_width * 1.6/ 2) - (side_panel_width / 1.5)
 	panel_y = (window_height * 1.02 / 2.3) - (side_panel_height / 2)
+
+
 
 	menu_text_font = constants.FONT_MESSAGE_TEXT
 	menu_text_height = helper_text_height(menu_text_font)
@@ -1727,22 +1780,26 @@ def menu_inventory(owning_actor = None):
 				if event.key == pygame.K_i:
 					menu_close = True
 
-		show_description = False			
+		show_description = False
+		show_stats = False			
 
 		#draw every line in the list
 		for line, (name) in enumerate(print_list):
+
 			if line == mouse_line_selection and mouse_in_window == True:
 				draw_text(local_inventory_surface,
 					name,
 					menu_text_font,
 					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE, constants.COLOR_GRAY)
 				show_description = True
+				show_stats = True
 
 			else:
 				draw_text(local_inventory_surface,
 					name, menu_text_font,
 					(settings.MENU_X_OFFSET, settings.MENU_Y_OFFSET + (line * menu_text_height)), constants.COLOR_WHITE)
 
+			#draw item descriptions
 			if show_description:
 				if PLAYER.container.inventory[mouse_line_selection].item:
 				
@@ -1762,6 +1819,9 @@ def menu_inventory(owning_actor = None):
 				#new method to print w/ paragraphs
 
 
+
+
+				#event handling
 		for event in events_list:
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
 				if len(PLAYER.container.inventory) > 0:
@@ -1779,8 +1839,7 @@ def menu_inventory(owning_actor = None):
 
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if (event.button == 1):
-					if (mouse_in_window and 
-						mouse_line_selection <= len(print_list) - 1):
+					if (mouse_in_window and mouse_line_selection <= len(print_list) - 1):
 						PLAYER.container.inventory[mouse_line_selection].item.use(PLAYER, game_instance = GAME)
 						actor_utilities.update_stats(actor_to_update = PLAYER)
 
@@ -2098,6 +2157,30 @@ def gen_scroll(coords):
 
 	GAME.current_objects.append(return_object)
 
+def gen_ammo(coords):
+	global GAME, GAME_AMMO_POOL
+	x, y = coords
+	selected_ammo = random.choice(GAME_AMMO_POOL)
+
+	damage = helper_dice(5, 6)
+	m_range = 8
+
+	if selected_scroll['attack_type'] == "aoe":
+		item_com = components.ItemComponent(use_function = aoe_damage,
+						value = (damage, m_range),
+			 			name = selected_scroll['scroll_name'])
+
+	elif selected_scroll['attack_type'] == "beam":
+		item_com = components.ItemComponent(use_function = beam_damage,
+						value = (damage, m_range),
+						name = selected_scroll['scroll_name'])
+
+
+	return_object = obj_Actor(x, y, selected_scroll['scroll_name'], item = item_com, 
+							icon = selected_scroll['icon'], icon_color = (selected_scroll['icon_r'], selected_scroll['icon_g'], selected_scroll['icon_b']))
+
+	GAME.current_objects.append(return_object)
+
 
 def assign_ai_script(creature_in = None):
 	if str(creature_in['ai_script_type'])== "dragon_fireball":
@@ -2195,6 +2278,32 @@ def gen_town_folk(coords):
 						)
 
 	GAME.current_objects.append(npc)
+
+def gen_book(coords):
+	global GAME, GAME_SCROLL_POOL
+	x, y = coords
+	selected_scroll = random.choice(GAME_SCROLL_POOL)
+
+	damage = helper_dice(5, 6)
+	m_range = 8
+
+	if selected_scroll['attack_type'] == "aoe":
+		item_com = components.ItemComponent(use_function = aoe_damage,
+						value = (damage, m_range),
+			 			name = selected_scroll['scroll_name'])
+
+	elif selected_scroll['attack_type'] == "beam":
+		item_com = components.ItemComponent(use_function = beam_damage,
+						value = (damage, m_range),
+						name = selected_scroll['scroll_name'])
+
+
+	return_object = obj_Actor(x, y, selected_scroll['scroll_name'], item = item_com, 
+							icon = selected_scroll['icon'], icon_color = (selected_scroll['icon_r'], selected_scroll['icon_g'], selected_scroll['icon_b']))
+
+	GAME.current_objects.append(return_object)
+
+
 
 #M:0, F:1, N:0
 def assign_random_name(gender_in = 0):
@@ -2395,6 +2504,14 @@ def game_handle_keys():
 
 			#fire projectiles and stuff
 			if event.key == pygame.K_f:
+				draw_story_screen("Stuff and yeah.");
+				#check player inventory for bow, crossbow, etc.
+				#if PLAYER.container
+
+				#check for suitable arrow/bolt type
+
+
+				fire_projectile(PLAYER, ranged_weapon, target, ammo_count);
 				print("Hi")
 
 			#open doors and stuff
@@ -2521,6 +2638,8 @@ def game_json_loader():
 	with open('surnames.json') as surname: surname_archive = json.load(surname)
 	with open('male_names.json') as malname: malname_archive = json.load(malname)
 	with open('female_names.json') as femname: femname_archive = json.load(femname)
+	with open('ammo.json') as ammo: ammo_archive = json.load(ammo)
+	with open('books.json') as book: book_archive = json.load(book)
 
 	global GAME_EQUIPMENT_POOL, GAME_CREATURE_POOL, GAME_SCROLL_POOL, GAME_SURNAME_POOL, GAME_MALNAME_POOL, GAME_FEMNAME_POOL
 	GAME_EQUIPMENT_POOL = []
@@ -2529,6 +2648,8 @@ def game_json_loader():
 	GAME_SURNAME_POOL = []
 	GAME_MALNAME_POOL = []
 	GAME_FEMNAME_POOL = []
+	GAME_AMMO_POOL = []
+	GAME_BOOK_POOL = []
 
 	for item in equipment_archive['equipmentlist']:GAME_EQUIPMENT_POOL.append(item)
 	for actor in actor_archive['actorlist']:GAME_CREATURE_POOL.append(actor)
@@ -2536,6 +2657,8 @@ def game_json_loader():
 	for surname in surname_archive['surnameslist']:GAME_SURNAME_POOL.append(surname)
 	for malname in malname_archive['malenameslist']:GAME_MALNAME_POOL.append(malname)
 	for femname in femname_archive['femalenameslist']:GAME_FEMNAME_POOL.append(femname)
+	for ammo in ammo_archive['ammolist']:GAME_AMMO_POOL.append(ammo)
+	for book in book_archive['booklist']:GAME_BOOK_POOL.append(book)
 
 
 #'''initializing the main window and pygame'''

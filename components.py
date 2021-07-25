@@ -128,6 +128,7 @@ class ItemComponent:
 		game_instance.game_message(self.current_container.owner.creature.name + " drops " + item_name + ".")
 
 	def use(self, actor_in, game_instance = None):
+		print("Item use function called.")
 		if self.owner.equipment:
 			self.owner.equipment.toggle_equip(actor_in, game_state = game_instance)
 			return
@@ -326,7 +327,7 @@ class Creature_Component:
 				tile_is_wall = (game_instance.current_map[next_x][next_y].block_path == True)
 				target = map_check_for_creatures(next_x, next_y, self.owner, game_instance)
 
-				#is there are target where the actor iss attempting to movie
+				#is there are target where the actor is attempting to movie
 				if target:
 
 					#check if moving to a trap
