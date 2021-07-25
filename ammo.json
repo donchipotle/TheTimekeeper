@@ -1,0 +1,62 @@
+{
+	"ammolist":
+	[
+		{
+			"name":"Wooden Arrow",
+			"pickup_name":"a flaky, poorly maintained arrow.",
+			"item_description":"It flies straight enough and will ruin someone's day.",
+			"weight":0.1,
+			"icon":" ) ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static": true,
+			"slot": "Ammunition",
+			"rarity":0,
+			"id": "ammo000",
+			"sort_class":"ammunition",
+
+			"dodge_bonus":0,
+			"accuracy_bonus":10,
+			"critical_chance":5,
+			"critical_damage":1.5,
+
+			"bonus_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":7, "piercing":1, "bludgeoning":1, "slashing":0, "eldritch":0},
+
+			"bonus_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+		},
+		{
+			"name":"Iron Arrow",
+			"pickup_name":"a flaky, poorly",
+			"item_description":"It flies straight enough and will ruin someone's day.",
+			"weight":0.1,
+			"icon":" ) ",
+			"icon_r":139,
+			"icon_g":69,
+			"icon_b":19,
+			"static": true,
+			"slot": "Ammunition",
+			"rarity":0,
+			"id": "ammo000",
+			"sort_class":"ammunition",
+
+			"dodge_bonus":0,
+			"accuracy_bonus":10,
+			"critical_chance":5,
+			"critical_damage":1.5,
+
+			"bonus_damages":
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":9, "piercing":1, "bludgeoning":1, "slashing":0, "eldritch":0},
+
+			"bonus_resistances":	
+				{"fire":0,"electricity":0,"poison":0,"frost":0,"magic":0,
+				"ballistic":0, "piercing":0, "bludgeoning":0, "slashing":0, "eldritch":0}
+		}
+
+	]
+}
